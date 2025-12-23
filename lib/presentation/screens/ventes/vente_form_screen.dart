@@ -1,0 +1,682 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import '../../viewmodels/vente_viewmodel.dart';
+import '../../viewmodels/auth_viewmodel.dart';
+import '../../../data/models/adherent_model.dart';
+import '../../../data/models/vente_detail_model.dart';
+import '../../../config/routes/routes.dart';
+
+class VenteFormScreen extends StatefulWidget {
+  final String type; // 'individuelle' ou 'groupee'
+
+  const VenteFormScreen({super.key, required this.type});
+
+  @override
+  State<VenteFormScreen> createState() => _VenteFormScreenState();
+}
+
+class _VenteFormScreenState extends State<VenteFormScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _quantiteController = TextEditingController();
+  final _prixUnitaireController = TextEditingController();
+  final _acheteurController = TextEditingController();
+  final _notesController = TextEditingController();
+
+  int? _selectedAdherentId;
+  DateTime? _dateVente;
+  String? _modePaiement;
+  double? _stockDisponible;
+
+  // Pour ventes groupées
+  final List<VenteDetailItem> _details = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _dateVente = DateTime.now();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = context.read<VenteViewModel>();
+      viewModel.loadAdherents();
+    });
+  }
+
+  @override
+  void dispose() {
+    _quantiteController.dispose();
+    _prixUnitaireController.dispose();
+    _acheteurController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.type == 'individuelle'
+              ? 'Nouvelle vente individuelle'
+              : 'Nouvelle vente groupée',
+        ),
+        backgroundColor: Colors.brown.shade700,
+        foregroundColor: Colors.white,
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          children: [
+            // Container pour limiter la largeur et centrer le formulaire
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 700),
+                child: Padding(
+          padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (widget.type == 'individuelle') _buildIndividuelleForm(),
+            if (widget.type == 'groupee') _buildGroupeeForm(),
+            const SizedBox(height: 32),
+            _buildSubmitButton(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIndividuelleForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('Informations de la vente'),
+        const SizedBox(height: 12),
+        Consumer<VenteViewModel>(
+          builder: (context, viewModel, child) {
+            return DropdownButtonFormField<int>(
+              value: _selectedAdherentId,
+              decoration: InputDecoration(
+                labelText: 'Adhérent *',
+                prefixIcon: const Icon(Icons.person),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              items: viewModel.adherents.map((adherent) {
+                return DropdownMenuItem<int>(
+                  value: adherent.id,
+                  child: Text('${adherent.code} - ${adherent.fullName}'),
+                );
+              }).toList(),
+              onChanged: (value) async {
+                setState(() {
+                  _selectedAdherentId = value;
+                  _stockDisponible = null;
+                });
+                if (value != null) {
+                  final stock = await viewModel.getStockDisponible(value);
+                  setState(() => _stockDisponible = stock);
+                }
+              },
+              validator: (value) {
+                if (value == null) {
+                  return 'Veuillez sélectionner un adhérent';
+                }
+                return null;
+              },
+            );
+          },
+        ),
+        if (_stockDisponible != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _stockDisponible! > 0
+                  ? Colors.green.shade50
+                  : Colors.red.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _stockDisponible! > 0
+                    ? Colors.green.shade200
+                    : Colors.red.shade200,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _stockDisponible! > 0 ? Icons.check_circle : Icons.warning,
+                  color: _stockDisponible! > 0
+                      ? Colors.green.shade700
+                      : Colors.red.shade700,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Stock disponible: ${NumberFormat('#,##0.00').format(_stockDisponible)} kg',
+                  style: TextStyle(
+                    color: _stockDisponible! > 0
+                        ? Colors.green.shade700
+                        : Colors.red.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _quantiteController,
+          decoration: InputDecoration(
+            labelText: 'Quantité (kg) *',
+            prefixIcon: const Icon(Icons.scale),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          keyboardType: TextInputType.number,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'La quantité est obligatoire';
+            }
+            final quantite = double.tryParse(value);
+            if (quantite == null || quantite <= 0) {
+              return 'La quantité doit être supérieure à 0';
+            }
+            if (_stockDisponible != null && quantite > _stockDisponible!) {
+              return 'Stock insuffisant';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _prixUnitaireController,
+          decoration: InputDecoration(
+            labelText: 'Prix unitaire (FCFA/kg) *',
+            prefixIcon: const Icon(Icons.attach_money),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          keyboardType: TextInputType.number,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Le prix unitaire est obligatoire';
+            }
+            final prix = double.tryParse(value);
+            if (prix == null || prix <= 0) {
+              return 'Le prix doit être supérieur à 0';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _acheteurController,
+          decoration: InputDecoration(
+            labelText: 'Acheteur',
+            prefixIcon: const Icon(Icons.business),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value: _modePaiement,
+          decoration: InputDecoration(
+            labelText: 'Mode de paiement',
+            prefixIcon: const Icon(Icons.payment),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          items: const [
+            DropdownMenuItem(value: 'especes', child: Text('Espèces')),
+            DropdownMenuItem(value: 'mobile_money', child: Text('Mobile Money')),
+            DropdownMenuItem(value: 'virement', child: Text('Virement')),
+          ],
+          onChanged: (value) {
+            setState(() => _modePaiement = value);
+          },
+        ),
+        const SizedBox(height: 16),
+        InkWell(
+          onTap: () async {
+            final date = await showDatePicker(
+              context: context,
+              initialDate: _dateVente ?? DateTime.now(),
+              firstDate: DateTime(2000),
+              lastDate: DateTime.now(),
+            );
+            if (date != null) {
+              setState(() => _dateVente = date);
+            }
+          },
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: 'Date de vente *',
+              prefixIcon: const Icon(Icons.calendar_today),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              _dateVente != null
+                  ? DateFormat('dd/MM/yyyy').format(_dateVente!)
+                  : 'Sélectionner une date',
+              style: TextStyle(
+                color: _dateVente != null ? Colors.black87 : Colors.grey.shade600,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _notesController,
+          decoration: InputDecoration(
+            labelText: 'Observations',
+            prefixIcon: const Icon(Icons.note),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          maxLines: 3,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGroupeeForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('Informations générales'),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _prixUnitaireController,
+          decoration: InputDecoration(
+            labelText: 'Prix unitaire (FCFA/kg) *',
+            prefixIcon: const Icon(Icons.attach_money),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          keyboardType: TextInputType.number,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Le prix unitaire est obligatoire';
+            }
+            final prix = double.tryParse(value);
+            if (prix == null || prix <= 0) {
+              return 'Le prix doit être supérieur à 0';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _acheteurController,
+          decoration: InputDecoration(
+            labelText: 'Acheteur',
+            prefixIcon: const Icon(Icons.business),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value: _modePaiement,
+          decoration: InputDecoration(
+            labelText: 'Mode de paiement',
+            prefixIcon: const Icon(Icons.payment),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          items: const [
+            DropdownMenuItem(value: 'especes', child: Text('Espèces')),
+            DropdownMenuItem(value: 'mobile_money', child: Text('Mobile Money')),
+            DropdownMenuItem(value: 'virement', child: Text('Virement')),
+          ],
+          onChanged: (value) {
+            setState(() => _modePaiement = value);
+          },
+        ),
+        const SizedBox(height: 16),
+        InkWell(
+          onTap: () async {
+            final date = await showDatePicker(
+              context: context,
+              initialDate: _dateVente ?? DateTime.now(),
+              firstDate: DateTime(2000),
+              lastDate: DateTime.now(),
+            );
+            if (date != null) {
+              setState(() => _dateVente = date);
+            }
+          },
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: 'Date de vente *',
+              prefixIcon: const Icon(Icons.calendar_today),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              _dateVente != null
+                  ? DateFormat('dd/MM/yyyy').format(_dateVente!)
+                  : 'Sélectionner une date',
+              style: TextStyle(
+                color: _dateVente != null ? Colors.black87 : Colors.grey.shade600,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _notesController,
+          decoration: InputDecoration(
+            labelText: 'Observations',
+            prefixIcon: const Icon(Icons.note),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          maxLines: 3,
+        ),
+        const SizedBox(height: 24),
+        _buildSectionTitle('Détails des adhérents'),
+        const SizedBox(height: 12),
+        ElevatedButton.icon(
+          onPressed: _addDetail,
+          icon: const Icon(Icons.add),
+          label: const Text('Ajouter un adhérent'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.brown.shade700,
+            foregroundColor: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ..._details.asMap().entries.map((entry) {
+          return _buildDetailItem(entry.key, entry.value);
+        }),
+        if (_details.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Text(
+                'Aucun adhérent ajouté',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDetailItem(int index, VenteDetailItem item) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Consumer<VenteViewModel>(
+                    builder: (context, viewModel, child) {
+                      return DropdownButtonFormField<int>(
+                        value: item.adherentId,
+                        decoration: const InputDecoration(
+                          labelText: 'Adhérent *',
+                          isDense: true,
+                        ),
+                        items: viewModel.adherents.map((adherent) {
+                          return DropdownMenuItem<int>(
+                            value: adherent.id,
+                            child: Text('${adherent.code} - ${adherent.fullName}'),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            item.adherentId = value;
+                            item.stockDisponible = null;
+                          });
+                          if (value != null) {
+                            viewModel.getStockDisponible(value).then((stock) {
+                              setState(() => item.stockDisponible = stock);
+                            });
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    setState(() => _details.removeAt(index));
+                  },
+                ),
+              ],
+            ),
+            if (item.stockDisponible != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Stock: ${NumberFormat('#,##0.00').format(item.stockDisponible)} kg',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: item.stockDisponible! > 0
+                      ? Colors.green.shade700
+                      : Colors.red.shade700,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: item.quantiteController,
+              decoration: const InputDecoration(
+                labelText: 'Quantité (kg) *',
+                isDense: true,
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                final quantite = double.tryParse(value);
+                if (quantite != null && _prixUnitaireController.text.isNotEmpty) {
+                  final prix = double.tryParse(_prixUnitaireController.text);
+                  if (prix != null) {
+                    item.montant = quantite * prix;
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _addDetail() {
+    setState(() {
+      _details.add(VenteDetailItem());
+    });
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.brown.shade700,
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return Consumer<VenteViewModel>(
+      builder: (context, viewModel, child) {
+        return ElevatedButton(
+          onPressed: viewModel.isLoading ? null : _handleSubmit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.brown.shade700,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: viewModel.isLoading
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text(
+                  'Créer la vente',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_dateVente == null) {
+      Fluttertoast.showToast(
+        msg: 'Veuillez sélectionner une date de vente',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+      );
+      return;
+    }
+
+    final viewModel = context.read<VenteViewModel>();
+    final authViewModel = context.read<AuthViewModel>();
+    final currentUser = authViewModel.currentUser;
+
+    if (currentUser == null) {
+      Fluttertoast.showToast(
+        msg: 'Erreur: utilisateur non connecté',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+      );
+      return;
+    }
+
+    bool success = false;
+
+    if (widget.type == 'individuelle') {
+      if (_selectedAdherentId == null) {
+        Fluttertoast.showToast(
+          msg: 'Veuillez sélectionner un adhérent',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+        );
+        return;
+      }
+
+      success = await viewModel.createVenteIndividuelle(
+        adherentId: _selectedAdherentId!,
+        quantite: double.parse(_quantiteController.text),
+        prixUnitaire: double.parse(_prixUnitaireController.text),
+        acheteur: _acheteurController.text.trim().isEmpty
+            ? null
+            : _acheteurController.text.trim(),
+        modePaiement: _modePaiement,
+        dateVente: _dateVente!,
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+        createdBy: currentUser.id!,
+      );
+    } else {
+      if (_details.isEmpty) {
+        Fluttertoast.showToast(
+          msg: 'Veuillez ajouter au moins un adhérent',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+        );
+        return;
+      }
+
+      final prixUnitaire = double.parse(_prixUnitaireController.text);
+      final details = _details.map((item) {
+        if (item.adherentId == null) {
+          throw Exception('Adhérent manquant');
+        }
+        final quantite = double.tryParse(item.quantiteController.text) ?? 0.0;
+        return VenteDetailModel(
+          venteId: 0, // Temporaire, sera mis à jour par le service
+          adherentId: item.adherentId!,
+          quantite: quantite,
+          prixUnitaire: prixUnitaire,
+          montant: quantite * prixUnitaire,
+        );
+      }).toList();
+
+      success = await viewModel.createVenteGroupee(
+        details: details,
+        prixUnitaire: prixUnitaire,
+        acheteur: _acheteurController.text.trim().isEmpty
+            ? null
+            : _acheteurController.text.trim(),
+        modePaiement: _modePaiement,
+        dateVente: _dateVente!,
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+        createdBy: currentUser.id!,
+      );
+    }
+
+    if (success && context.mounted) {
+      Fluttertoast.showToast(
+        msg: 'Vente créée avec succès',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+      );
+      Navigator.pop(context);
+    } else if (context.mounted) {
+      Fluttertoast.showToast(
+        msg: viewModel.errorMessage ?? 'Une erreur est survenue',
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    }
+  }
+}
+
+class VenteDetailItem {
+  int? adherentId;
+  final TextEditingController quantiteController = TextEditingController();
+  double? stockDisponible;
+  double montant = 0.0;
+
+  VenteDetailItem();
+}
