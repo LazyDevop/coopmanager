@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:printing/printing.dart';
 import 'dart:io';
 import '../../viewmodels/facture_viewmodel.dart';
@@ -450,10 +449,11 @@ class _FactureDetailScreenState extends State<FactureDetailScreen> {
         if (facture.pdfPath != null) {
           // Ouvrir le PDF
           // TODO: Implémenter l'ouverture du PDF
-          Fluttertoast.showToast(
-            msg: 'Ouverture du PDF: ${facture.pdfPath}',
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Ouverture du PDF: ${facture.pdfPath}'),
+              duration: const Duration(seconds: 3),
+            ),
           );
         }
         break;
@@ -469,10 +469,11 @@ class _FactureDetailScreenState extends State<FactureDetailScreen> {
           currentUser.id!,
         );
         if (success && context.mounted) {
-          Fluttertoast.showToast(
-            msg: 'Facture marquée comme payée',
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Facture marquée comme payée'),
+              duration: Duration(seconds: 3),
+            ),
           );
         }
         break;
@@ -535,10 +536,11 @@ class _FactureDetailScreenState extends State<FactureDetailScreen> {
           );
 
           if (success && context.mounted) {
-            Fluttertoast.showToast(
-              msg: 'Facture annulée avec succès',
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.BOTTOM,
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Facture annulée avec succès'),
+                duration: Duration(seconds: 3),
+              ),
             );
           }
         }
@@ -556,10 +558,11 @@ class _FactureDetailScreenState extends State<FactureDetailScreen> {
       
       // Régénérer le PDF si nécessaire
       if (facture.pdfPath == null || !File(facture.pdfPath!).existsSync()) {
-        Fluttertoast.showToast(
-          msg: 'Génération du PDF en cours...',
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Génération du PDF en cours...'),
+            duration: Duration(seconds: 2),
+          ),
         );
         
         // Régénérer selon le type
@@ -587,12 +590,12 @@ class _FactureDetailScreenState extends State<FactureDetailScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        Fluttertoast.showToast(
-          msg: 'Erreur lors de l\'impression: ${e.toString()}',
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de l\'impression: ${e.toString()}'),
+            duration: const Duration(seconds: 4),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -600,16 +603,18 @@ class _FactureDetailScreenState extends State<FactureDetailScreen> {
 
   Future<void> _exportFacture(BuildContext context, FactureModel facture) async {
     if (facture.pdfPath != null && File(facture.pdfPath!).existsSync()) {
-      Fluttertoast.showToast(
-        msg: 'PDF disponible: ${facture.pdfPath}',
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('PDF disponible: ${facture.pdfPath}'),
+          duration: const Duration(seconds: 3),
+        ),
       );
     } else {
-      Fluttertoast.showToast(
-        msg: 'PDF non disponible. Veuillez régénérer la facture.',
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('PDF non disponible. Veuillez régénérer la facture.'),
+          duration: Duration(seconds: 3),
+        ),
       );
     }
   }

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/routes/routes.dart';
 import '../../data/models/user_model.dart';
-import '../../services/auth/permission_service.dart';
 import '../../services/navigation/navigation_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/notification_viewmodel.dart';
+import '../providers/permission_provider.dart';
 import 'common/toast_helper.dart';
+import '../../../config/app_config.dart';
+import '../../../services/auth/permission_service.dart';
 
 /// Layout principal de type Dashboard/Admin Panel
 /// 
@@ -84,13 +86,18 @@ class _DashboardLayoutState extends State<DashboardLayout> {
       );
     }
 
-    // Utiliser Consumer pour isoler les changements de NotificationViewModel
-    return Consumer<NotificationViewModel>(
-      builder: (context, notificationViewModel, _) {
-        final sidebarModules = NavigationService.getSidebarModules(user);
-        debugPrint('🔵 [DashboardLayout] Modules sidebar: ${sidebarModules.length}');
-        debugPrint('🔵 [DashboardLayout] Construction du scaffold');
-        return _buildScaffold(context, user, sidebarModules, notificationViewModel);
+    // Utiliser Consumer pour isoler les changements de NotificationViewModel et PermissionProvider
+    return Consumer2<NotificationViewModel, PermissionProvider>(
+      builder: (context, notificationViewModel, permissionProvider, _) {
+        return FutureBuilder<List<NavigationItem>>(
+          future: NavigationService.getAccessibleModules(permissionProvider),
+          builder: (context, snapshot) {
+            final sidebarModules = snapshot.data ?? [];
+            debugPrint('🔵 [DashboardLayout] Modules sidebar: ${sidebarModules.length}');
+            debugPrint('🔵 [DashboardLayout] Construction du scaffold');
+            return _buildScaffold(context, user, sidebarModules, notificationViewModel);
+          },
+        );
       },
     );
   }
@@ -444,7 +451,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                 ),
               ),
               Text(
-                PermissionService.getRoleDisplayName(user.role),
+                PermissionProvider.getRoleDisplayName(user.role),
                 style: TextStyle(
                   color: Colors.grey.shade600,
                   fontSize: 12,
@@ -508,9 +515,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   Future<void> _handleLogout(BuildContext context) async {
     final authViewModel = context.read<AuthViewModel>();
     await authViewModel.logout();
-    if (context.mounted) {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
-      ToastHelper.showInfo('Déconnexion réussie');
-    }
+    // Ne pas naviguer manuellement, AuthWrapper gère automatiquement la transition
+    // via le Consumer qui écoute les changements d'état
   }
 }

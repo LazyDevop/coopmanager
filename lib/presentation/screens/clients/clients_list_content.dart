@@ -44,7 +44,7 @@ class _ClientsListContentState extends State<ClientsListContent> {
     });
 
     try {
-      final clients = await _clientService.getAllClients(activeOnly: true);
+      final clients = await _clientService.getClients(statut: ClientModel.statutActif);
       setState(() {
         _clients = clients;
         _isLoading = false;
@@ -61,14 +61,14 @@ class _ClientsListContentState extends State<ClientsListContent> {
     var filtered = _clients;
     
     if (_filterType != null) {
-      filtered = filtered.where((c) => c.type == _filterType).toList();
+      filtered = filtered.where((c) => c.typeClient == _filterType).toList();
     }
     
     if (_searchController.text.isNotEmpty) {
       final query = _searchController.text.toLowerCase();
       filtered = filtered.where((c) {
-        return c.nom.toLowerCase().contains(query) ||
-               c.code.toLowerCase().contains(query) ||
+        return c.raisonSociale.toLowerCase().contains(query) ||
+               c.codeClient.toLowerCase().contains(query) ||
                (c.telephone?.toLowerCase().contains(query) ?? false) ||
                (c.email?.toLowerCase().contains(query) ?? false);
       }).toList();
@@ -250,21 +250,21 @@ class _ClientsListContentState extends State<ClientsListContent> {
           ),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: _getTypeColor(client.type),
+              backgroundColor: _getTypeColor(client.typeClient),
               child: Icon(
-                _getTypeIcon(client.type),
+                _getTypeIcon(client.typeClient),
                 color: Colors.white,
               ),
             ),
             title: Text(
-              client.nom,
+              client.raisonSociale,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Text('Code: ${client.code}'),
+                Text('Code: ${client.codeClient}'),
                 if (client.telephone != null)
                   Text('Tél: ${client.telephone}'),
                 if (client.ville != null)

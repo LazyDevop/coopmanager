@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../viewmodels/adherent_viewmodel.dart';
+import '../../viewmodels/auth_viewmodel.dart';
 import '../../../config/routes/routes.dart';
 import '../../../config/theme/app_theme.dart';
 import '../../../data/models/adherent_model.dart';
@@ -78,7 +79,7 @@ class _AdherentsListScreenImprovedState extends State<AdherentsListScreenImprove
                     isLoading: viewModel.isLoading,
                     searchHint: 'Rechercher un adhérent...',
                     searchFilter: (adherent) =>
-                        '${adherent.nom} ${adherent.prenom} ${adherent.codeAdherent} ${adherent.telephone}',
+                        '${adherent.nom} ${adherent.prenom} ${adherent.code} ${adherent.telephone}',
                     actions: [
                       LoadingButton(
                         text: 'Ajouter',
@@ -116,7 +117,7 @@ class _AdherentsListScreenImprovedState extends State<AdherentsListScreenImprove
                         cells: [
                           DataCell(
                             Text(
-                              adherent.codeAdherent,
+                              adherent.code,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontFamily: 'monospace',
@@ -318,13 +319,28 @@ class _AdherentsListScreenImprovedState extends State<AdherentsListScreenImprove
 
     if (confirmed == true && context.mounted) {
       try {
-        await viewModel.toggleAdherentStatus(adherent.id!);
-        if (context.mounted) {
+        final authViewModel = context.read<AuthViewModel>();
+        final currentUser = authViewModel.currentUser;
+        
+        if (currentUser == null) {
+          ToastHelper.showError('Erreur: utilisateur non connecté');
+          return;
+        }
+        
+        final success = await viewModel.toggleAdherentStatus(
+          adherent.id!,
+          !adherent.isActive,
+          currentUser.id!,
+        );
+        
+        if (success && context.mounted) {
           ToastHelper.showSuccess(
             adherent.isActive
                 ? 'Adhérent désactivé avec succès'
                 : 'Adhérent activé avec succès',
           );
+        } else if (context.mounted) {
+          ToastHelper.showError('Erreur lors de la modification du statut');
         }
       } catch (e) {
         if (context.mounted) {

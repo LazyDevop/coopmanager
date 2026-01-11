@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import '../../viewmodels/vente_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import '../../viewmodels/stock_viewmodel.dart';
 import '../../../data/models/adherent_model.dart';
 import '../../../data/models/vente_detail_model.dart';
 import '../../../config/routes/routes.dart';
@@ -566,10 +566,11 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
     }
 
     if (_dateVente == null) {
-      Fluttertoast.showToast(
-        msg: 'Veuillez sélectionner une date de vente',
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez sélectionner une date de vente'),
+          duration: Duration(seconds: 3),
+        ),
       );
       return;
     }
@@ -579,10 +580,11 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
     final currentUser = authViewModel.currentUser;
 
     if (currentUser == null) {
-      Fluttertoast.showToast(
-        msg: 'Erreur: utilisateur non connecté',
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erreur: utilisateur non connecté'),
+          duration: Duration(seconds: 3),
+        ),
       );
       return;
     }
@@ -591,10 +593,11 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
 
     if (widget.type == 'individuelle') {
       if (_selectedAdherentId == null) {
-        Fluttertoast.showToast(
-          msg: 'Veuillez sélectionner un adhérent',
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veuillez sélectionner un adhérent'),
+            duration: Duration(seconds: 3),
+          ),
         );
         return;
       }
@@ -615,10 +618,11 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
       );
     } else {
       if (_details.isEmpty) {
-        Fluttertoast.showToast(
-          msg: 'Veuillez ajouter au moins un adhérent',
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veuillez ajouter au moins un adhérent'),
+            duration: Duration(seconds: 3),
+          ),
         );
         return;
       }
@@ -654,19 +658,49 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
     }
 
     if (success && context.mounted) {
-      Fluttertoast.showToast(
-        msg: 'Vente créée avec succès',
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
+      // Recharger les stocks après la vente
+      try {
+        final stockViewModel = context.read<StockViewModel>();
+        await stockViewModel.loadStocks();
+      } catch (e) {
+        print('Erreur lors du rechargement des stocks: $e');
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Vente créée avec succès'),
+          duration: const Duration(seconds: 3),
+          action: viewModel.lastCreatedFactureId != null
+              ? SnackBarAction(
+                  label: 'Voir le reçu',
+                  textColor: Colors.white,
+                  onPressed: () {
+                    Navigator.of(context, rootNavigator: false).pushNamed(
+                      AppRoutes.factureDetail,
+                      arguments: viewModel.lastCreatedFactureId,
+                    );
+                  },
+                )
+              : null,
+        ),
       );
-      Navigator.pop(context);
+      
+      // Si une facture a été créée, naviguer vers le reçu
+      if (viewModel.lastCreatedFactureId != null) {
+        Navigator.of(context, rootNavigator: false).pushReplacementNamed(
+          AppRoutes.factureDetail,
+          arguments: viewModel.lastCreatedFactureId,
+        );
+      } else {
+        Navigator.pop(context);
+      }
     } else if (context.mounted) {
-      Fluttertoast.showToast(
-        msg: viewModel.errorMessage ?? 'Une erreur est survenue',
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(viewModel.errorMessage ?? 'Une erreur est survenue'),
+          duration: const Duration(seconds: 4),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }

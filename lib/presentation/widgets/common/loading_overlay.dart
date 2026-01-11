@@ -15,10 +15,12 @@ class LoadingOverlay extends StatelessWidget {
       builder: (context, authViewModel, _) {
         // Afficher le loader uniquement si l'authentification est en cours
         if (authViewModel.isLoading) {
-          return Container(
-            color: Colors.black.withOpacity(0.3),
-            child: const Center(
-              child: CircularProgressIndicator(),
+          return AbsorbPointer(
+            child: Container(
+              color: Colors.black.withOpacity(0.3),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
             ),
           );
         }

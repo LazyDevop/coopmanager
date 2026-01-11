@@ -4,6 +4,8 @@ import '../../services/workflow/workflow_service.dart';
 import '../../data/models/vente_model.dart';
 import '../widgets/common/loading_overlay.dart';
 import '../widgets/common/toast_helper.dart';
+// TODO: Update the import below to the correct path if LoadingButton exists elsewhere,
+// or create the file at ../widgets/common/loading_button.dart if it does not exist.
 import '../widgets/common/loading_button.dart';
 import '../widgets/common/confirmation_dialog.dart';
 import '../../config/theme/app_theme.dart';

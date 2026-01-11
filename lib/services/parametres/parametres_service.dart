@@ -1,8 +1,6 @@
-import 'package:sqflite_common/sqlite_api.dart';
 import '../database/db_initializer.dart';
 import '../../data/models/parametres_cooperative_model.dart';
 import '../auth/audit_service.dart';
-import '../../data/models/audit_log_model.dart';
 import '../../config/app_config.dart';
 
 class ParametresService {
@@ -44,10 +42,36 @@ class ParametresService {
     int? periodeCampagneDays,
     DateTime? dateDebutCampagne,
     DateTime? dateFinCampagne,
+    String? codeCooperative,
     required int updatedBy,
   }) async {
     try {
       final db = await DatabaseInitializer.database;
+      
+      // Validation des données
+      if (nomCooperative != null && nomCooperative.trim().isEmpty) {
+        throw Exception('Le nom de la coopérative ne peut pas être vide');
+      }
+      
+      if (commissionRate != null && (commissionRate < 0 || commissionRate > 1)) {
+        throw Exception('Le taux de commission doit être entre 0 et 100%');
+      }
+      
+      if (periodeCampagneDays != null && periodeCampagneDays <= 0) {
+        throw Exception('La période de campagne doit être supérieure à 0');
+      }
+      
+      if (email != null && email.isNotEmpty && !email.contains('@')) {
+        throw Exception('Format d\'email invalide');
+      }
+      
+      // Validation du code coopérative (2 lettres majuscules)
+      if (codeCooperative != null && codeCooperative.isNotEmpty) {
+        final codeUpper = codeCooperative.toUpperCase().trim();
+        if (codeUpper.length != 2 || !RegExp(r'^[A-Z]{2}$').hasMatch(codeUpper)) {
+          throw Exception('Le code coopérative doit être exactement 2 lettres majuscules (ex: CO, CE, ES)');
+        }
+      }
       
       // Récupérer les paramètres actuels
       final current = await getParametres();
@@ -66,6 +90,7 @@ class ParametresService {
       if (periodeCampagneDays != null) updateData['periode_campagne_days'] = periodeCampagneDays;
       if (dateDebutCampagne != null) updateData['date_debut_campagne'] = dateDebutCampagne.toIso8601String();
       if (dateFinCampagne != null) updateData['date_fin_campagne'] = dateFinCampagne.toIso8601String();
+      if (codeCooperative != null) updateData['code_cooperative'] = codeCooperative.toUpperCase().trim();
       
       // Mettre à jour ou insérer
       if (current.id != null) {
@@ -243,7 +268,6 @@ class ParametresService {
     try {
       final campagnes = await getAllCampagnes(isActive: true);
       
-      final now = DateTime.now();
       for (final campagne in campagnes) {
         if (campagne.isEnCours) {
           return campagne;
@@ -289,6 +313,23 @@ class ParametresService {
     double? commissionRate,
   }) async {
     try {
+      // Validation des données
+      if (prixMin != null && prixMin < 0) {
+        throw Exception('Le prix minimum ne peut pas être négatif');
+      }
+      
+      if (prixMax != null && prixMax < 0) {
+        throw Exception('Le prix maximum ne peut pas être négatif');
+      }
+      
+      if (prixMin != null && prixMax != null && prixMin > prixMax) {
+        throw Exception('Le prix minimum doit être inférieur au prix maximum');
+      }
+      
+      if (commissionRate != null && (commissionRate < 0 || commissionRate > 1)) {
+        throw Exception('Le taux de commission doit être entre 0 et 100%');
+      }
+      
       final db = await DatabaseInitializer.database;
       
       // Vérifier si le barème existe déjà

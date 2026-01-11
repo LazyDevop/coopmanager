@@ -9,7 +9,10 @@ import '../../data/models/adherent_model.dart';
 import '../../data/models/vente_model.dart';
 import '../../data/models/recette_model.dart';
 import '../../data/models/vente_detail_model.dart';
+import '../../data/models/client_model.dart';
+import '../../data/models/parametres_cooperative_model.dart';
 import '../database/db_initializer.dart';
+import '../qrcode/document_security_service.dart';
 
 class FacturePdfService {
   final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
@@ -652,6 +655,296 @@ class FacturePdfService {
   Future<void> printFacture(pw.Document pdf) async {
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => await pdf.save(),
+    );
+  }
+
+  /// Générer une facture PDF V1 avec QR Code pour une vente
+  Future<String> generateFactureVenteV1({
+    required VenteModel vente,
+    required ClientModel client,
+    required AdherentModel adherent,
+    CampagneModel? campagne,
+    String? qrCodeHash,
+  }) async {
+    try {
+      final pdf = pw.Document();
+      final coopSettings = await _getCoopSettings();
+      
+      // Note: QR Code visuel sera ajouté plus tard si nécessaire
+      // Pour l'instant, on affiche juste le hash textuel
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(40),
+          build: (pw.Context context) {
+            return [
+              _buildHeader(coopSettings),
+              pw.SizedBox(height: 30),
+              _buildClientInfoV1(client, adherent),
+              pw.SizedBox(height: 20),
+              _buildFactureInfoV1(vente, campagne),
+              pw.SizedBox(height: 20),
+              _buildVenteDetailsV1(vente),
+              pw.SizedBox(height: 20),
+              _buildTotalsV1(vente),
+              pw.SizedBox(height: 30),
+              if (qrCodeHash != null) ...[
+                pw.SizedBox(height: 20),
+                _buildQRCodeSection(qrCodeHash!),
+              ],
+              pw.SizedBox(height: 30),
+              _buildFooter(coopSettings),
+            ];
+          },
+        ),
+      );
+
+      return await _savePdf(pdf, 'VENTE-${vente.id}');
+    } catch (e) {
+      throw Exception('Erreur lors de la génération de la facture V1: $e');
+    }
+  }
+
+
+  pw.Widget _buildClientInfoV1(ClientModel client, AdherentModel adherent) {
+    return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Expanded(
+          child: pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey300),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'CLIENT (ACHETEUR)',
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+                pw.SizedBox(height: 8),
+                pw.Text('${client.raisonSociale}'),
+                pw.Text('Code: ${client.codeClient}'),
+                if (client.telephone != null) pw.Text('Téléphone: ${client.telephone}'),
+                if (client.email != null) pw.Text('Email: ${client.email}'),
+                if (client.adresse != null) pw.Text('Adresse: ${client.adresse}'),
+              ],
+            ),
+          ),
+        ),
+        pw.SizedBox(width: 16),
+        pw.Expanded(
+          child: pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey300),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'ADHÉRENT (VENDEUR)',
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+                pw.SizedBox(height: 8),
+                pw.Text('${adherent.prenom} ${adherent.nom}'),
+                pw.Text('Code: ${adherent.code}'),
+                if (adherent.village != null) pw.Text('Village: ${adherent.village}'),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildFactureInfoV1(VenteModel vente, CampagneModel? campagne) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'Vente #${vente.id}',
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.Text('Date: ${_dateFormat.format(vente.dateVente)}'),
+                if (campagne != null) pw.Text('Campagne: ${campagne.nom}'),
+              ],
+            ),
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: pw.BoxDecoration(
+                color: vente.isPayee ? PdfColors.green : PdfColors.orange,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
+              ),
+              child: pw.Text(
+                vente.isPayee ? 'PAYÉE' : 'NON PAYÉE',
+                style: const pw.TextStyle(
+                  fontSize: 10,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildVenteDetailsV1(VenteModel vente) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey300),
+      columnWidths: {
+        0: const pw.FlexColumnWidth(2),
+        1: const pw.FlexColumnWidth(1),
+        2: const pw.FlexColumnWidth(1),
+        3: const pw.FlexColumnWidth(1),
+      },
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+          children: [
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text('Description', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text('Quantité (kg)', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text('Prix unitaire', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text('Montant', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            ),
+          ],
+        ),
+        pw.TableRow(
+          children: [
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text('Cacao'),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text(_numberFormat.format(vente.quantiteTotal)),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text('${_numberFormat.format(vente.prixUnitaire)} FCFA/kg'),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text('${_numberFormat.format(vente.montantTotal)} FCFA'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildTotalsV1(VenteModel vente) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey400, width: 2),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.end,
+        children: [
+          _buildTotalLine('Montant brut', vente.montantTotal),
+          pw.SizedBox(height: 8),
+          _buildTotalLine('Commission (${(vente.montantCommission / vente.montantTotal * 100).toStringAsFixed(1)}%)', vente.montantCommission),
+          pw.Divider(),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            'Montant net: ${_numberFormat.format(vente.montantNet)} FCFA',
+            style: pw.TextStyle(
+              fontSize: 16,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.grey900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildTotalLine(String label, double montant) {
+    return pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      children: [
+        pw.Text(label),
+        pw.Text('${_numberFormat.format(montant)} FCFA'),
+      ],
+    );
+  }
+
+  pw.Widget _buildQRCodeSection(String hash) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey400),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+      ),
+      child: pw.Column(
+        children: [
+          pw.Text(
+            'Code de vérification sécurisé',
+            style: pw.TextStyle(
+              fontSize: 12,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 12),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey100,
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+            ),
+            child: pw.Text(
+              hash,
+              style: const pw.TextStyle(
+                fontSize: 10,
+                color: PdfColors.grey800,
+              ),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            'Ce code permet de vérifier l\'authenticité de cette facture',
+            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+            textAlign: pw.TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }

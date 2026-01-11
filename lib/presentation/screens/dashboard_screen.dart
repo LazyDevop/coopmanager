@@ -353,9 +353,8 @@ class DashboardScreen extends StatelessWidget {
   Future<void> _handleLogout(BuildContext context) async {
     final authViewModel = context.read<AuthViewModel>();
     await authViewModel.logout();
-    if (context.mounted) {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
-    }
+    // Ne pas naviguer manuellement, AuthWrapper gère automatiquement la transition
+    // via le Consumer qui écoute les changements d'état
   }
 }
 

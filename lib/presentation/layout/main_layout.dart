@@ -5,6 +5,7 @@ import '../../data/models/user_model.dart';
 import '../../services/navigation/navigation_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/notification_viewmodel.dart';
+import '../providers/permission_provider.dart';
 import 'header/app_header.dart';
 import 'sidebar/app_sidebar.dart';
 import '../widgets/common/loading_overlay.dart';
@@ -49,6 +50,8 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   bool _isSidebarExpanded = true;
+  Future<List<NavigationItem>>? _cachedModulesFuture;
+  PermissionProvider? _cachedPermissionProvider;
 
   @override
   void initState() {
@@ -77,11 +80,41 @@ class _MainLayoutState extends State<MainLayout> {
       );
     }
 
-    // Utiliser Consumer pour isoler les changements de NotificationViewModel
-    return Consumer<NotificationViewModel>(
-      builder: (context, notificationViewModel, _) {
-        final sidebarModules = NavigationService.getSidebarModules(user);
-        return _buildLayout(context, user, sidebarModules, notificationViewModel);
+    final permissionProvider = context.watch<PermissionProvider>();
+    
+    // Mémoriser le Future pour éviter les reconstructions inutiles
+    if (_cachedModulesFuture == null || _cachedPermissionProvider != permissionProvider) {
+      _cachedModulesFuture = NavigationService.getSidebarModules(permissionProvider);
+      _cachedPermissionProvider = permissionProvider;
+    }
+    
+    return FutureBuilder<List<NavigationItem>>(
+      key: ValueKey(_cachedPermissionProvider),
+      future: _cachedModulesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(
+              child: Text('Erreur: ${snapshot.error}'),
+            ),
+          );
+        }
+        
+        final sidebarModules = snapshot.data ?? [];
+        // Utiliser Selector uniquement pour NotificationViewModel dans _buildLayout
+        return Selector<NotificationViewModel, NotificationViewModel>(
+          selector: (_, vm) => vm,
+          shouldRebuild: (prev, next) => false, // Ne pas reconstruire à cause de NotificationViewModel
+          builder: (context, notificationViewModel, _) {
+            return _buildLayout(context, user, sidebarModules, notificationViewModel);
+          },
+        );
       },
     );
   }

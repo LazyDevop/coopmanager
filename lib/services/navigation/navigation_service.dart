@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../../config/app_config.dart';
 import '../../config/routes/routes.dart';
 import '../../data/models/user_model.dart';
-import '../../services/auth/permission_service.dart';
+import '../../data/models/permissions/ui_view_model.dart';
+import '../../presentation/providers/permission_provider.dart';
 
 class NavigationItem {
   final String title;
@@ -10,6 +11,7 @@ class NavigationItem {
   final String route;
   final String module;
   final List<String> requiredPermissions;
+  final String? uiViewCode; // Code de la vue UI associée
 
   const NavigationItem({
     required this.title,
@@ -17,18 +19,71 @@ class NavigationItem {
     required this.route,
     required this.module,
     this.requiredPermissions = const [],
+    this.uiViewCode,
   });
 }
 
 class NavigationService {
-  /// Obtenir les modules accessibles selon le rôle
-  static List<NavigationItem> getAccessibleModules(UserModel user) {
+  /// Obtenir les modules accessibles selon les permissions
+  static Future<List<NavigationItem>> getAccessibleModules(PermissionProvider permissionProvider) async {
+    final accessibleViews = permissionProvider.accessibleViews;
+    
+    // Si aucune vue n'est chargée, retourner les modules par défaut (fallback)
+    if (accessibleViews.isEmpty) {
+      return _getAllModules();
+    }
+    
+    // Convertir les vues UI en NavigationItem
+    final items = <NavigationItem>[];
+    for (final view in accessibleViews) {
+      items.add(NavigationItem(
+        title: view.name,
+        icon: _getIconFromString(view.icon ?? ''),
+        route: view.route,
+        module: view.code,
+        uiViewCode: view.code,
+      ));
+    }
+    
+    // Trier par displayOrder
+    items.sort((a, b) {
+      final viewA = accessibleViews.firstWhere((v) => v.code == a.uiViewCode);
+      final viewB = accessibleViews.firstWhere((v) => v.code == b.uiViewCode);
+      return viewA.displayOrder.compareTo(viewB.displayOrder);
+    });
+    
+    return items;
+  }
+  
+  /// Obtenir l'icône depuis une chaîne
+  static IconData _getIconFromString(String iconName) {
+    switch (iconName) {
+      case 'dashboard': return Icons.dashboard;
+      case 'people': return Icons.people;
+      case 'inventory': return Icons.inventory;
+      case 'shopping_cart': return Icons.shopping_cart;
+      case 'payments': return Icons.payments;
+      case 'receipt': return Icons.receipt;
+      case 'credit_card': return Icons.credit_card;
+      case 'account_balance': return Icons.account_balance;
+      case 'settings': return Icons.settings;
+      case 'assessment': return Icons.assessment;
+      case 'business': return Icons.business;
+      case 'notifications': return Icons.notifications;
+      default: return Icons.folder;
+    }
+  }
+  
+  /// Obtenir les modules accessibles selon le rôle (méthode legacy pour compatibilité)
+  static List<NavigationItem> getAccessibleModulesLegacy(UserModel user) {
     final allModules = _getAllModules();
     return allModules.where((module) {
-      if (user.role == AppConfig.roleAdmin) {
-        return true; // Admin a accès à tout
+      // SuperAdmin et Admin ont accès à tout
+      if (user.role == AppConfig.roleSuperAdmin || user.role == AppConfig.roleAdmin) {
+        return true;
       }
-      return PermissionService.canAccessModule(user, module.module);
+      // Logique legacy simplifiée - sera filtré par les permissions réelles
+      return true;
     }).toList();
   }
 
@@ -80,7 +135,7 @@ class NavigationService {
       NavigationItem(
         title: 'Paramétrage',
         icon: Icons.settings,
-        route: AppRoutes.settings,
+        route: AppRoutes.settingsMain,
         module: 'settings',
       ),
       // V2: Nouveaux modules
@@ -111,41 +166,14 @@ class NavigationService {
     ];
   }
 
-  /// Obtenir les modules pour le menu latéral selon le rôle
-  static List<NavigationItem> getSidebarModules(UserModel user) {
-    final accessibleModules = getAccessibleModules(user);
+  /// Obtenir les modules pour le menu latéral selon le rôle (méthode legacy pour compatibilité)
+  /// Note: Cette méthode est dépréciée, utilisez getAccessibleModules avec PermissionProvider
+  @Deprecated('Utilisez getAccessibleModules avec PermissionProvider')
+  static Future<List<NavigationItem>> getSidebarModules(PermissionProvider permissionProvider) async {
+    final accessibleModules = await getAccessibleModules(permissionProvider);
     
-    // Filtrer selon les règles spécifiques par rôle
-    switch (user.role) {
-      case AppConfig.roleAdmin:
-        return accessibleModules; // Tous les modules
-      
-      case AppConfig.roleCaissier:
-        return accessibleModules.where((module) {
-          return ['dashboard', 'ventes', 'recettes', 'factures', 'clients', 'notifications']
-              .contains(module.module);
-        }).toList();
-      
-      case AppConfig.roleGestionnaireStock:
-        return accessibleModules.where((module) {
-          return ['dashboard', 'adherents', 'stock', 'notifications']
-              .contains(module.module);
-        }).toList();
-      
-      case AppConfig.roleComptable:
-        return accessibleModules.where((module) {
-          return ['dashboard', 'ventes', 'recettes', 'factures', 'comptabilite', 'notifications']
-              .contains(module.module);
-        }).toList();
-      
-      case AppConfig.roleResponsableSocial:
-        return accessibleModules.where((module) {
-          return ['dashboard', 'adherents', 'social', 'notifications']
-              .contains(module.module);
-        }).toList();
-      
-      default:
-        return accessibleModules;
-    }
+    // Le filtrage par rôle est maintenant géré par les permissions dans la base de données
+    // Cette méthode retourne simplement les modules accessibles
+    return accessibleModules;
   }
 }

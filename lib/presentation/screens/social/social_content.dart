@@ -5,7 +5,7 @@ import '../../widgets/common/empty_state.dart';
 import '../../widgets/common/error_state.dart';
 import '../../widgets/common/stat_card.dart';
 import '../../../services/social/social_service.dart';
-import '../../../data/models/aide_sociale_model.dart';
+import '../../../data/models/social/social_aide_model.dart';
 import '../../../config/app_config.dart';
 import '../../../config/routes/routes.dart';
 import 'package:intl/intl.dart';
@@ -21,12 +21,12 @@ class SocialContent extends StatefulWidget {
 class _SocialContentState extends State<SocialContent> {
   final SocialService _socialService = SocialService();
   
-  List<AideSocialeModel> _aides = [];
-  SocialStatistics? _statistics;
+  List<SocialAideModel> _aides = [];
+  Map<String, dynamic>? _statistics;
   bool _isLoading = false;
   String? _errorMessage;
   String? _filterStatut;
-  String? _filterType;
+  int? _filterTypeId;
 
   @override
   void initState() {
@@ -41,11 +41,11 @@ class _SocialContentState extends State<SocialContent> {
     });
 
     try {
-      final aides = await _socialService.getAllAidesSociales(
+      final aides = await _socialService.getAllAides(
         statut: _filterStatut,
-        typeAide: _filterType,
+        aideTypeId: _filterTypeId,
       );
-      final stats = await _socialService.getStatistics();
+      final stats = await _socialService.getStatistiques();
       
       setState(() {
         _aides = aides;
@@ -60,7 +60,7 @@ class _SocialContentState extends State<SocialContent> {
     }
   }
 
-  List<AideSocialeModel> get _filteredAides => _aides;
+  List<SocialAideModel> get _filteredAides => _aides;
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +112,8 @@ class _SocialContentState extends State<SocialContent> {
         ),
         ElevatedButton.icon(
           onPressed: () {
-            Navigator.of(context, rootNavigator: false).pushNamed(AppRoutes.aideSocialeAdd);
+            // TODO: Naviguer vers le formulaire d'aide
+            // Navigator.of(context).push(...);
           },
           icon: const Icon(Icons.add),
           label: const Text('Nouvelle Aide'),
@@ -122,14 +123,21 @@ class _SocialContentState extends State<SocialContent> {
   }
 
   Widget _buildStats(BuildContext context) {
+    if (_statistics == null) return const SizedBox.shrink();
+    
     final format = NumberFormat('#,##0', 'fr_FR');
+    final totalAides = _statistics!['total_aides'] as int? ?? 0;
+    final totalMontant = (_statistics!['total_montant'] as num?)?.toDouble() ?? 0.0;
+    final parStatut = _statistics!['par_statut'] as Map<String, dynamic>? ?? {};
+    final accordees = parStatut['accordee'] as int? ?? 0;
+    final remboursees = parStatut['remboursée'] as int? ?? 0;
     
     return Row(
       children: [
         Expanded(
           child: StatCard(
             title: 'Total Aides',
-            value: '${_statistics!.totalAides}',
+            value: '$totalAides',
             icon: Icons.favorite,
             color: Colors.red,
           ),
@@ -137,8 +145,8 @@ class _SocialContentState extends State<SocialContent> {
         const SizedBox(width: 16),
         Expanded(
           child: StatCard(
-            title: 'Approuvées',
-            value: '${_statistics!.approuvees}',
+            title: 'Accordées',
+            value: '$accordees',
             icon: Icons.check_circle,
             color: Colors.green,
           ),
@@ -146,8 +154,8 @@ class _SocialContentState extends State<SocialContent> {
         const SizedBox(width: 16),
         Expanded(
           child: StatCard(
-            title: 'Versées',
-            value: '${_statistics!.versees}',
+            title: 'Remboursées',
+            value: '$remboursees',
             icon: Icons.payment,
             color: Colors.blue,
           ),
@@ -156,7 +164,7 @@ class _SocialContentState extends State<SocialContent> {
         Expanded(
           child: StatCard(
             title: 'Montant Total',
-            value: '${format.format(_statistics!.montantTotal)} FCFA',
+            value: '${format.format(totalMontant)} FCFA',
             icon: Icons.attach_money,
             color: Colors.orange,
           ),
@@ -187,10 +195,10 @@ class _SocialContentState extends State<SocialContent> {
               ),
               items: const [
                 DropdownMenuItem<String?>(value: null, child: Text('Tous')),
-                DropdownMenuItem<String>(value: 'en_attente', child: Text('En attente')),
-                DropdownMenuItem<String>(value: 'approuve', child: Text('Approuvé')),
-                DropdownMenuItem<String>(value: 'verse', child: Text('Versé')),
-                DropdownMenuItem<String>(value: 'refuse', child: Text('Refusé')),
+                DropdownMenuItem<String>(value: 'accordee', child: Text('Accordée')),
+                DropdownMenuItem<String>(value: 'en_cours', child: Text('En cours')),
+                DropdownMenuItem<String>(value: 'remboursée', child: Text('Remboursée')),
+                DropdownMenuItem<String>(value: 'annulée', child: Text('Annulée')),
               ],
               onChanged: (value) {
                 setState(() {
@@ -202,40 +210,48 @@ class _SocialContentState extends State<SocialContent> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: DropdownButtonFormField<String?>(
-              value: _filterType,
-              decoration: InputDecoration(
-                labelText: 'Type d\'aide',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              items: const [
-                DropdownMenuItem<String?>(value: null, child: Text('Tous')),
-                DropdownMenuItem<String>(
-                  value: AppConfig.aideTypeSante,
-                  child: Text('Santé'),
-                ),
-                DropdownMenuItem<String>(
-                  value: AppConfig.aideTypeEducation,
-                  child: Text('Éducation'),
-                ),
-                DropdownMenuItem<String>(
-                  value: AppConfig.aideTypeUrgence,
-                  child: Text('Urgence'),
-                ),
-                DropdownMenuItem<String>(
-                  value: AppConfig.aideTypeAutre,
-                  child: Text('Autre'),
-                ),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _filterType = value;
-                });
-                _loadData();
+            child: FutureBuilder<List>(
+              future: _socialService.getAllAideTypes(actifsOnly: true),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return DropdownButtonFormField<int?>(
+                    value: null,
+                    items: const [],
+                    decoration: const InputDecoration(
+                      labelText: 'Type d\'aide',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      // Ne rien faire pendant le chargement
+                    },
+                  );
+                }
+                
+                final types = snapshot.data!;
+                return DropdownButtonFormField<int?>(
+                  value: _filterTypeId,
+                  decoration: InputDecoration(
+                    labelText: 'Type d\'aide',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  items: [
+                    const DropdownMenuItem<int?>(value: null, child: Text('Tous')),
+                    ...types.map((type) => DropdownMenuItem<int?>(
+                      value: type.id,
+                      child: Text(type.libelle),
+                    )),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _filterTypeId = value;
+                    });
+                    _loadData();
+                  },
+                );
               },
             ),
           ),
@@ -246,7 +262,7 @@ class _SocialContentState extends State<SocialContent> {
             onPressed: () {
               setState(() {
                 _filterStatut = null;
-                _filterType = null;
+                _filterTypeId = null;
               });
               _loadData();
             },
@@ -291,26 +307,28 @@ class _SocialContentState extends State<SocialContent> {
           ),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: _getTypeColor(aide.typeAide),
+              backgroundColor: _getCategorieColor(aide.aideType?.categorie ?? ''),
               child: Icon(
-                _getTypeIcon(aide.typeAide),
+                _getCategorieIcon(aide.aideType?.categorie ?? ''),
                 color: Colors.white,
               ),
             ),
             title: Text(
-              _getTypeLabel(aide.typeAide),
+              aide.aideType?.libelle ?? 'Type inconnu',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
+                if (aide.adherentNom != null)
+                  Text('Adhérent: ${aide.adherentNom}'),
                 Text('Montant: ${format.format(aide.montant)} FCFA'),
-                Text('Date: ${dateFormat.format(aide.dateAide)}'),
+                Text('Date: ${dateFormat.format(aide.dateOctroi)}'),
                 Text('Statut: ${_getStatutLabel(aide.statut)}'),
-                if (aide.description.isNotEmpty)
+                if (aide.observations != null && aide.observations!.isNotEmpty)
                   Text(
-                    aide.description,
+                    aide.observations!,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -318,10 +336,8 @@ class _SocialContentState extends State<SocialContent> {
             ),
             trailing: _buildStatutBadge(aide.statut),
             onTap: () {
-              Navigator.of(context, rootNavigator: false).pushNamed(
-                AppRoutes.aideSocialeDetail,
-                arguments: aide.id,
-              );
+              // TODO: Naviguer vers le détail de l'aide
+              // Navigator.of(context).push(...);
             },
           ),
         );
@@ -329,55 +345,46 @@ class _SocialContentState extends State<SocialContent> {
     );
   }
 
-  Color _getTypeColor(String type) {
-    switch (type) {
-      case AppConfig.aideTypeSante:
-        return Colors.red;
-      case AppConfig.aideTypeEducation:
+  Color _getCategorieColor(String categorie) {
+    switch (categorie) {
+      case 'FINANCIERE':
+        return Colors.green;
+      case 'MATERIELLE':
         return Colors.blue;
-      case AppConfig.aideTypeUrgence:
+      case 'SOCIALE':
+        return Colors.pink;
+      case 'TECHNIQUE':
         return Colors.orange;
       default:
         return Colors.grey;
     }
   }
 
-  IconData _getTypeIcon(String type) {
-    switch (type) {
-      case AppConfig.aideTypeSante:
-        return Icons.local_hospital;
-      case AppConfig.aideTypeEducation:
-        return Icons.school;
-      case AppConfig.aideTypeUrgence:
-        return Icons.warning;
+  IconData _getCategorieIcon(String categorie) {
+    switch (categorie) {
+      case 'FINANCIERE':
+        return Icons.attach_money;
+      case 'MATERIELLE':
+        return Icons.inventory;
+      case 'SOCIALE':
+        return Icons.people;
+      case 'TECHNIQUE':
+        return Icons.build;
       default:
         return Icons.help;
     }
   }
 
-  String _getTypeLabel(String type) {
-    switch (type) {
-      case AppConfig.aideTypeSante:
-        return 'Aide Santé';
-      case AppConfig.aideTypeEducation:
-        return 'Aide Éducation';
-      case AppConfig.aideTypeUrgence:
-        return 'Aide Urgence';
-      default:
-        return 'Aide Autre';
-    }
-  }
-
   String _getStatutLabel(String statut) {
     switch (statut) {
-      case 'en_attente':
-        return 'En attente';
-      case 'approuve':
-        return 'Approuvé';
-      case 'verse':
-        return 'Versé';
-      case 'refuse':
-        return 'Refusé';
+      case 'accordee':
+        return 'Accordée';
+      case 'en_cours':
+        return 'En cours';
+      case 'remboursée':
+        return 'Remboursée';
+      case 'annulée':
+        return 'Annulée';
       default:
         return statut;
     }
@@ -386,16 +393,16 @@ class _SocialContentState extends State<SocialContent> {
   Widget _buildStatutBadge(String statut) {
     Color color;
     switch (statut) {
-      case 'en_attente':
-        color = Colors.orange;
-        break;
-      case 'approuve':
+      case 'accordee':
         color = Colors.blue;
         break;
-      case 'verse':
+      case 'en_cours':
+        color = Colors.orange;
+        break;
+      case 'remboursée':
         color = Colors.green;
         break;
-      case 'refuse':
+      case 'annulée':
         color = Colors.red;
         break;
       default:

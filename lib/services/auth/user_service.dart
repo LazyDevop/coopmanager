@@ -292,20 +292,39 @@ class UserService {
   /// Vérifier si un rôle est valide
   bool _isValidRole(String role) {
     return [
+      AppConfig.roleSuperAdmin,
       AppConfig.roleAdmin,
-      AppConfig.roleGestionnaireStock,
+      AppConfig.roleComptable,
       AppConfig.roleCaissier,
+      AppConfig.roleMagasinier,
+      // Rôles obsolètes pour compatibilité
+      AppConfig.roleGestionnaireStock,
       AppConfig.roleConsultation,
+      AppConfig.roleResponsableSocial,
     ].contains(role);
   }
 
   /// Obtenir tous les rôles disponibles
   List<String> getAvailableRoles() {
     return [
+      AppConfig.roleSuperAdmin,
       AppConfig.roleAdmin,
-      AppConfig.roleGestionnaireStock,
+      AppConfig.roleComptable,
       AppConfig.roleCaissier,
-      AppConfig.roleConsultation,
+      AppConfig.roleMagasinier,
     ];
+  }
+  
+  /// Obtenir tous les rôles disponibles pour un utilisateur donné
+  /// (un Admin ne peut pas créer de SuperAdmin)
+  List<String> getAvailableRolesForUser(UserModel? currentUser) {
+    final allRoles = getAvailableRoles();
+    
+    // Seul un SuperAdmin peut créer un SuperAdmin
+    if (currentUser == null || currentUser.role != AppConfig.roleSuperAdmin) {
+      return allRoles.where((role) => role != AppConfig.roleSuperAdmin).toList();
+    }
+    
+    return allRoles;
   }
 }

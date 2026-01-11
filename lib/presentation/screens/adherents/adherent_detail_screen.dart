@@ -21,7 +21,7 @@ class AdherentDetailScreen extends StatefulWidget {
 }
 
 class _AdherentDetailScreenState extends State<AdherentDetailScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, RouteAware {
   late TabController _tabController;
 
   @override
@@ -32,6 +32,12 @@ class _AdherentDetailScreenState extends State<AdherentDetailScreen>
       final viewModel = context.read<AdherentViewModel>();
       viewModel.loadAdherentDetails(widget.adherentId);
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Ne pas recharger ici pour éviter les clignotements
   }
 
   @override
@@ -122,6 +128,13 @@ class _AdherentDetailScreenState extends State<AdherentDetailScreen>
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           indicatorColor: Colors.white,
+          onTap: (index) {
+            // Recharger les données quand on change d'onglet
+            if (mounted) {
+              final viewModel = context.read<AdherentViewModel>();
+              viewModel.loadAdherentDetails(widget.adherentId);
+            }
+          },
           tabs: const [
             Tab(icon: Icon(Icons.person), text: 'Informations'),
             Tab(icon: Icon(Icons.inventory), text: 'Dépôts'),
@@ -967,89 +980,156 @@ class _AdherentDetailScreenState extends State<AdherentDetailScreen>
   }
 
   Widget _buildVentesTab(AdherentViewModel viewModel) {
-    if (viewModel.ventes.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(
-              'Aucune vente enregistrée',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-      );
-    }
-
     final dateFormat = DateFormat('dd/MM/yyyy');
     final numberFormat = NumberFormat('#,##0.00');
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: viewModel.ventes.length,
-      itemBuilder: (context, index) {
-        final vente = viewModel.ventes[index];
-        final quantite = vente['quantite_total'] as double;
-        final montantTotal = vente['montant_total'] as double;
-        final dateVente = DateTime.parse(vente['date_vente'] as String);
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            leading: SizedBox(
-              width: 40,
-              child: CircleAvatar(
-                backgroundColor: Colors.purple.shade100,
-                child: Icon(Icons.shopping_cart, color: Colors.purple.shade700),
-              ),
-            ),
-            title: Text(
-              '${numberFormat.format(quantite)} kg',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text('Date: ${dateFormat.format(dateVente)}'),
-            trailing: Text(
-              '${numberFormat.format(montantTotal)} FCFA',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.purple.shade700,
-              ),
-            ),
-          ),
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        await viewModel.loadAdherentDetails(widget.adherentId);
       },
+      child: viewModel.ventes.isEmpty
+          ? ListView(
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.5,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey.shade400),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Aucune vente enregistrée',
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: viewModel.ventes.length,
+              itemBuilder: (context, index) {
+                final vente = viewModel.ventes[index];
+                
+                // Gérer les différents formats de données possibles
+                // Pour les ventes groupées, utiliser quantite/montant du détail
+                // Pour les ventes individuelles, utiliser quantite_total/montant_total
+                final quantite = (vente['quantite'] as num?)?.toDouble() ?? 
+                                (vente['quantite_total'] as num?)?.toDouble() ?? 0.0;
+                final montantTotal = (vente['montant'] as num?)?.toDouble() ?? 
+                                    (vente['montant_total'] as num?)?.toDouble() ?? 0.0;
+                
+                // Gérer la date de vente (peut être date_vente ou created_at)
+                DateTime dateVente;
+                try {
+                  if (vente['date_vente'] != null) {
+                    dateVente = DateTime.parse(vente['date_vente'] as String);
+                  } else if (vente['created_at'] != null) {
+                    dateVente = DateTime.parse(vente['created_at'] as String);
+                  } else {
+                    dateVente = DateTime.now();
+                  }
+                } catch (e) {
+                  print('⚠️ Erreur lors du parsing de la date: $e');
+                  dateVente = DateTime.now();
+                }
+
+                // Déterminer si c'est une vente groupée
+                final isGroupee = vente['type'] == 'groupee' || vente['quantite'] != null;
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    leading: SizedBox(
+                      width: 40,
+                      child: CircleAvatar(
+                        backgroundColor: isGroupee ? Colors.blue.shade100 : Colors.purple.shade100,
+                        child: Icon(
+                          isGroupee ? Icons.people : Icons.shopping_cart,
+                          color: isGroupee ? Colors.blue.shade700 : Colors.purple.shade700,
+                        ),
+                      ),
+                    ),
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${numberFormat.format(quantite)} kg',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        if (isGroupee)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'Groupée',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.blue.shade700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    subtitle: Text('Date: ${dateFormat.format(dateVente)}'),
+                    trailing: Text(
+                      '${numberFormat.format(montantTotal)} FCFA',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isGroupee ? Colors.blue.shade700 : Colors.purple.shade700,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 
   Widget _buildRecettesTab(AdherentViewModel viewModel) {
-    if (viewModel.recettes.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.attach_money_outlined, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(
-              'Aucune recette enregistrée',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-      );
-    }
-
     final dateFormat = DateFormat('dd/MM/yyyy');
     final numberFormat = NumberFormat('#,##0.00');
 
-    return ListView.builder(
+    return RefreshIndicator(
+      onRefresh: () async {
+        await viewModel.loadAdherentDetails(widget.adherentId);
+      },
+      child: viewModel.recettes.isEmpty
+          ? ListView(
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.5,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.attach_money_outlined, size: 64, color: Colors.grey.shade400),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Aucune recette enregistrée',
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : ListView.builder(
       padding: const EdgeInsets.all(16.0),
       itemCount: viewModel.recettes.length,
       itemBuilder: (context, index) {
@@ -1160,6 +1240,7 @@ class _AdherentDetailScreenState extends State<AdherentDetailScreen>
           ),
         );
       },
+            ),
     );
   }
 

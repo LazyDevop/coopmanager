@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:sqflite_common/sqlite_api.dart';
 import '../database/db_initializer.dart';
 import '../../data/models/notification_model.dart';
@@ -46,19 +45,20 @@ class NotificationService {
   }
 
   /// Afficher un toast (notification in-app)
+  /// Nécessite un BuildContext pour utiliser ScaffoldMessenger
   void showToast({
+    required BuildContext context,
     required String message,
-    Toast length = Toast.LENGTH_SHORT,
-    ToastGravity gravity = ToastGravity.BOTTOM,
+    Duration duration = const Duration(seconds: 3),
     Color? backgroundColor,
     Color? textColor,
   }) {
-    Fluttertoast.showToast(
-      msg: message,
-      toastLength: length,
-      gravity: gravity,
-      backgroundColor: backgroundColor,
-      textColor: textColor,
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: duration,
+        backgroundColor: backgroundColor,
+      ),
     );
   }
 
@@ -124,6 +124,7 @@ class NotificationService {
   }
 
   /// Afficher une notification complète (toast + système + log)
+  /// Si showToast est true, un BuildContext doit être fourni
   Future<void> notify({
     required String type,
     required String titre,
@@ -135,6 +136,7 @@ class NotificationService {
     String priority = 'normal',
     bool showToast = true,
     bool showSystem = false,
+    BuildContext? context,
   }) async {
     // Logger dans la base de données
     await logNotification(
@@ -148,9 +150,9 @@ class NotificationService {
       priority: priority,
     );
 
-    // Afficher le toast
-    if (showToast) {
-      _showToastByType(type, message);
+    // Afficher le toast si un contexte est disponible
+    if (showToast && context != null) {
+      _showToastByType(context, type, message);
     }
 
     // Afficher la notification système si demandée ou si priorité élevée
@@ -165,35 +167,32 @@ class NotificationService {
   }
 
   /// Afficher un toast selon le type
-  void _showToastByType(String type, String message) {
+  void _showToastByType(BuildContext context, String type, String message) {
     Color? backgroundColor;
-    Color? textColor;
 
     switch (type) {
       case 'success':
         backgroundColor = Colors.green;
-        textColor = Colors.white;
         break;
       case 'error':
       case 'critical':
         backgroundColor = Colors.red;
-        textColor = Colors.white;
         break;
       case 'warning':
         backgroundColor = Colors.orange;
-        textColor = Colors.white;
         break;
       case 'info':
       default:
         backgroundColor = Colors.blue;
-        textColor = Colors.white;
         break;
     }
 
-    showToast(
-      message: message,
-      backgroundColor: backgroundColor,
-      textColor: textColor,
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 3),
+        backgroundColor: backgroundColor,
+      ),
     );
   }
 
@@ -483,6 +482,26 @@ class NotificationService {
   }
 
   /// Notification : Recette calculée
+  /// Notifier qu'un paiement a été effectué
+  Future<void> notifyPaiementEffectue({
+    required int paiementId,
+    required double montant,
+    required int userId,
+  }) async {
+    await notify(
+      type: 'success',
+      titre: 'Paiement effectué',
+      message: 'Un paiement de ${montant.toStringAsFixed(2)} FCFA a été enregistré',
+      module: 'paiements',
+      entityType: 'paiement',
+      entityId: paiementId,
+      userId: userId,
+      priority: 'normal',
+      showToast: true,
+      showSystem: false,
+    );
+  }
+
   Future<void> notifyRecetteCalculated({
     required int recetteId,
     required double montantNet,

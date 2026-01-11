@@ -9,6 +9,7 @@ import '../viewmodels/stock_viewmodel.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../../data/models/adherent_model.dart';
 import '../../config/app_config.dart';
+import '../../services/adherent/adherent_service.dart';
 
 class StockDepotFormScreen extends StatefulWidget {
   final int? adherentId; // Adhérent présélectionné (optionnel)
@@ -27,6 +28,7 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
   final _autresController = TextEditingController();
   final _prixUnitaireController = TextEditingController();
   final _humiditeController = TextEditingController();
+  final _densiteArbresAssociesController = TextEditingController();
   final _observationsController = TextEditingController();
   
   AdherentModel? _selectedAdherent;
@@ -35,6 +37,7 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
   String? _photoPath;
   bool _isLoading = false;
   final ImagePicker _imagePicker = ImagePicker();
+  final AdherentService _adherentService = AdherentService();
   
   // Calculer le poids net automatiquement
   double get _poidsNet {
@@ -48,8 +51,23 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<StockViewModel>().loadAdherents();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final stockViewModel = context.read<StockViewModel>();
+      await stockViewModel.loadAdherents();
+      
+      // Si un adhérent est passé en paramètre, le charger automatiquement
+      if (widget.adherentId != null) {
+        try {
+          final adherent = await _adherentService.getAdherentById(widget.adherentId!);
+          if (adherent != null && mounted) {
+            setState(() {
+              _selectedAdherent = adherent;
+            });
+          }
+        } catch (e) {
+          print('Erreur lors du chargement de l\'adhérent: $e');
+        }
+      }
     });
   }
 
@@ -61,6 +79,7 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
     _autresController.dispose();
     _prixUnitaireController.dispose();
     _humiditeController.dispose();
+    _densiteArbresAssociesController.dispose();
     _observationsController.dispose();
     super.dispose();
   }
@@ -79,7 +98,9 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
       }
       
       final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.camera,
+        source: ImageSource.gallery,
+        maxWidth: 1200,
+        maxHeight: 1200,
         imageQuality: 85,
       );
       
@@ -98,7 +119,7 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de la prise de photo: $e'),
+            content: Text('Erreur lors de la sélection de la photo: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -131,6 +152,7 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
       return;
     }
 
+    // Si un adhérent n'est pas présélectionné, vérifier qu'un adhérent a été sélectionné
     if (_selectedAdherent == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -140,6 +162,9 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
       );
       return;
     }
+    
+    // Utiliser l'adhérent présélectionné ou celui sélectionné dans le formulaire
+    final adherentIdToUse = widget.adherentId ?? _selectedAdherent!.id!;
 
     setState(() {
       _isLoading = true;
@@ -198,8 +223,12 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
       return;
     }
 
+    final densiteArbresAssocies = _densiteArbresAssociesController.text.isNotEmpty
+        ? double.parse(_densiteArbresAssociesController.text)
+        : null;
+
     final success = await stockViewModel.createDepot(
-      adherentId: _selectedAdherent!.id!,
+      adherentId: adherentIdToUse,
       stockBrut: stockBrut,
       poidsSac: poidsSac,
       poidsDechets: poidsDechets,
@@ -211,6 +240,7 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
       dateDepot: _selectedDate,
       qualite: _selectedQualite,
       humidite: humidite,
+      densiteArbresAssocies: densiteArbresAssocies,
       photoPath: _photoPath,
       observations: _observationsController.text.isNotEmpty
           ? _observationsController.text
@@ -284,38 +314,67 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Sélection adhérent
-              DropdownButtonFormField<AdherentModel>(
-                value: _selectedAdherent,
-                decoration: InputDecoration(
-                  labelText: 'Adhérent *',
-                  prefixIcon: const Icon(Icons.person),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              // Affichage de l'adhérent (si présélectionné) ou sélection (si depuis gestion stock)
+              if (widget.adherentId != null && _selectedAdherent != null)
+                // Afficher l'adhérent en lecture seule si présélectionné
+                InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Adhérent',
+                    prefixIcon: const Icon(Icons.person),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
                   ),
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${_selectedAdherent!.code} - ${_selectedAdherent!.fullName}',
+                          style: TextStyle(
+                            color: Colors.brown.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.lock, size: 18, color: Colors.grey.shade600),
+                    ],
+                  ),
+                )
+              else
+                // Afficher le dropdown de sélection si pas d'adhérent présélectionné
+                DropdownButtonFormField<AdherentModel>(
+                  value: _selectedAdherent,
+                  decoration: InputDecoration(
+                    labelText: 'Adhérent *',
+                    prefixIcon: const Icon(Icons.person),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                  ),
+                  items: stockViewModel.adherents
+                      .where((a) => a.isActive)
+                      .map((adherent) {
+                    return DropdownMenuItem<AdherentModel>(
+                      value: adherent,
+                      child: Text('${adherent.code} - ${adherent.fullName}'),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedAdherent = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Veuillez sélectionner un adhérent';
+                    }
+                    return null;
+                  },
                 ),
-                items: stockViewModel.adherents
-                    .where((a) => a.isActive)
-                    .map((adherent) {
-                  return DropdownMenuItem<AdherentModel>(
-                    value: adherent,
-                    child: Text('${adherent.code} - ${adherent.fullName}'),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedAdherent = value;
-                  });
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Veuillez sélectionner un adhérent';
-                  }
-                  return null;
-                },
-              ),
               const SizedBox(height: 16),
 
               // Date de dépôt
@@ -562,6 +621,33 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
               ),
               const SizedBox(height: 16),
               
+              // Densité des arbres associés
+              TextFormField(
+                controller: _densiteArbresAssociesController,
+                decoration: InputDecoration(
+                  labelText: 'Densité des arbres associés (arbres/ha)',
+                  hintText: 'Nombre d\'arbres associés par hectare',
+                  prefixIcon: const Icon(Icons.forest),
+                  suffixText: 'arbres/ha',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    final densite = double.tryParse(value);
+                    if (densite == null || densite < 0) {
+                      return 'La densité doit être un nombre positif';
+                    }
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              
               // Photo
               Card(
                 elevation: 1,
@@ -611,8 +697,8 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
                       ],
                       ElevatedButton.icon(
                         onPressed: _pickImage,
-                        icon: Icon(_photoPath == null ? Icons.camera_alt : Icons.camera_alt_outlined),
-                        label: Text(_photoPath == null ? 'Prendre une photo' : 'Changer la photo'),
+                        icon: Icon(_photoPath == null ? Icons.photo_library : Icons.photo_library_outlined),
+                        label: Text(_photoPath == null ? 'Sélectionner une photo' : 'Changer la photo'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.brown.shade700,
                           foregroundColor: Colors.white,

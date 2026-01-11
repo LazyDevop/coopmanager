@@ -119,6 +119,22 @@ class FactureService {
       createdBy: createdBy,
     );
 
+    // Mettre à jour la facture avec le venteId dans la base de données
+    if (facture.id != null) {
+      try {
+        final db = await DatabaseInitializer.database;
+        await db.update(
+          'factures',
+          {'vente_id': venteId},
+          where: 'id = ?',
+          whereArgs: [facture.id],
+        );
+        print('✅ Facture #${facture.id} liée à la vente #$venteId');
+      } catch (e) {
+        print('⚠️ Erreur lors de la mise à jour du lien vente_id dans la facture: $e');
+      }
+    }
+
     return facture.copyWith(venteId: venteId);
   }
 

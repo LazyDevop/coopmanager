@@ -5,12 +5,15 @@ import '../../config/app_config.dart';
 import '../notification/notification_service.dart';
 // V2: Nouveaux imports
 import '../comptabilite/comptabilite_service.dart';
+import '../social/social_service.dart';
+import '../database/migrations/ensure_all_columns_migration.dart';
 
 class RecetteService {
   final AuditService _auditService = AuditService();
   final NotificationService _notificationService = NotificationService();
   // V2: Nouveaux services
   final ComptabiliteService _comptabiliteService = ComptabiliteService();
+  final SocialService _socialService = SocialService();
 
   /// Obtenir le taux de commission depuis les paramètres de la coopérative
   Future<double> getCommissionRate() async {
@@ -45,14 +48,38 @@ class RecetteService {
     bool generateEcritureComptable = true, // V2: Générer écriture comptable
   }) async {
     try {
+      print('💰 Création de recette pour vente #$venteId, adhérent #$adherentId, montant brut: $montantBrut');
       final db = await DatabaseInitializer.database;
       
       // Obtenir le taux de commission si non fourni
       final tauxCommission = commissionRate ?? await getCommissionRate();
+      print('💰 Taux de commission: $tauxCommission');
       
       // Calculer la commission et le montant net
       final commissionAmount = RecetteModel.calculateCommissionAmount(montantBrut, tauxCommission);
-      final montantNet = RecetteModel.calculateMontantNet(montantBrut, tauxCommission);
+      var montantNet = RecetteModel.calculateMontantNet(montantBrut, tauxCommission);
+      print('💰 Commission: $commissionAmount, Montant net initial: $montantNet');
+      
+      // Intégration Social: Calculer les retenues automatiques sur les aides remboursables
+      Map<int, double> retenuesSociales = {};
+      try {
+        retenuesSociales = await _calculerRetenuesSociales(
+          adherentId: adherentId,
+          montantRecette: montantNet,
+        );
+        
+        if (retenuesSociales.isNotEmpty) {
+          final totalRetenues = retenuesSociales.values.fold<double>(
+            0.0,
+            (sum, montant) => sum + montant,
+          );
+          montantNet -= totalRetenues;
+          print('💰 Retenues sociales: $totalRetenues, Montant net final: $montantNet');
+        }
+      } catch (e) {
+        print('⚠️ Erreur lors du calcul des retenues sociales: $e');
+        // Ne pas faire échouer la création de recette
+      }
       
       final recette = RecetteModel(
         adherentId: adherentId,
@@ -67,7 +94,63 @@ class RecetteService {
         createdAt: DateTime.now(),
       );
 
-      final id = await db.insert('recettes', recette.toMap());
+      print('💰 Insertion de la recette dans la base de données...');
+      print('💰 Données de la recette: ${recette.toMap()}');
+      
+      // Vérifier que la table existe et a les bonnes colonnes
+      try {
+        final tableInfo = await db.rawQuery('PRAGMA table_info(recettes)');
+        final columnNames = tableInfo.map((c) => c['name'] as String).toList();
+        print('💰 Colonnes de la table recettes: $columnNames');
+        
+        // Vérifier que toutes les colonnes nécessaires existent
+        final requiredColumns = ['adherent_id', 'montant_brut', 'commission_rate', 'commission_amount', 'montant_net', 'date_recette', 'created_at'];
+        final missingColumns = requiredColumns.where((col) => !columnNames.contains(col)).toList();
+        if (missingColumns.isNotEmpty) {
+          print('⚠️ Colonnes manquantes dans recettes: $missingColumns');
+          throw Exception('Colonnes manquantes dans la table recettes: ${missingColumns.join(", ")}');
+        }
+      } catch (e) {
+        print('❌ Erreur lors de la vérification de la table recettes: $e');
+        // Ne pas faire échouer si c'est juste une vérification
+        if (e.toString().contains('no such table')) {
+          rethrow;
+        }
+      }
+      
+      // S'assurer que les colonnes existent avant l'insertion
+      await EnsureAllColumnsMigration.ensureAllColumns(db);
+      
+      final recetteMap = recette.toMap();
+      print('💰 Map à insérer: $recetteMap');
+      
+      final id = await db.insert('recettes', recetteMap);
+      print('✅ Recette créée avec succès! ID: $id');
+      
+      // Vérifier que la recette a bien été insérée
+      final verification = await db.query('recettes', where: 'id = ?', whereArgs: [id]);
+      print('✅ Vérification: ${verification.length} recette(s) trouvée(s) avec ID $id');
+      
+      // Intégration Social: Enregistrer les remboursements automatiques après création de la recette
+      if (retenuesSociales.isNotEmpty) {
+        try {
+          for (var entry in retenuesSociales.entries) {
+            await _socialService.enregistrerRemboursement(
+              aideId: entry.key,
+              montant: entry.value,
+              dateRemboursement: DateTime.now(),
+              source: 'RETENUE_RECETTE',
+              recetteId: id,
+              notes: 'Retenue automatique sur recette #$id',
+              createdBy: createdBy,
+            );
+          }
+          print('✅ ${retenuesSociales.length} remboursement(s) automatique(s) enregistré(s)');
+        } catch (e) {
+          print('⚠️ Erreur lors de l\'enregistrement des remboursements: $e');
+          // Ne pas faire échouer la création de recette
+        }
+      }
 
       await _auditService.logAction(
         userId: createdBy,
@@ -264,6 +347,19 @@ class RecetteService {
     try {
       final db = await DatabaseInitializer.database;
       
+      print('🔍 getRecettesByAdherent - Recherche recettes pour adhérent ID: $adherentId');
+      
+      // Vérifier d'abord combien de recettes existent au total
+      final totalCount = await db.rawQuery('SELECT COUNT(*) as count FROM recettes');
+      print('🔍 Nombre total de recettes dans la base: ${totalCount.first['count']}');
+      
+      // Vérifier combien de recettes ont cet adherent_id
+      final countForAdherent = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM recettes WHERE adherent_id = ?',
+        [adherentId],
+      );
+      print('🔍 Nombre de recettes pour adhérent $adherentId: ${countForAdherent.first['count']}');
+      
       final result = await db.query(
         'recettes',
         where: 'adherent_id = ?',
@@ -271,8 +367,16 @@ class RecetteService {
         orderBy: 'date_recette DESC',
       );
       
+      print('🔍 Résultats de la requête: ${result.length} recettes trouvées');
+      if (result.isNotEmpty) {
+        for (final row in result) {
+          print('  - Recette ID ${row['id']}: adherent_id=${row['adherent_id']}, montant_net=${row['montant_net']}');
+        }
+      }
+      
       return result.map((map) => RecetteModel.fromMap(map)).toList();
     } catch (e) {
+      print('❌ Erreur getRecettesByAdherent: $e');
       throw Exception('Erreur lors de la récupération des recettes: $e');
     }
   }
@@ -347,16 +451,28 @@ class RecetteService {
     try {
       final db = await DatabaseInitializer.database;
       
+      // Vérifier d'abord si des recettes existent
+      final countResult = await db.rawQuery('SELECT COUNT(*) as count FROM recettes');
+      final totalRecettes = (countResult.first['count'] as int?) ?? 0;
+      print('📊 Nombre total de recettes dans la base: $totalRecettes');
+      
+      if (totalRecettes == 0) {
+        print('⚠️ Aucune recette trouvée dans la base de données');
+        return [];
+      }
+      
       List<dynamic> whereArgs = [];
       String sqlWhere = 'WHERE a.is_active = 1';
       if (startDate != null) {
         sqlWhere += ' AND r.date_recette >= ?';
+        whereArgs.add(startDate.toIso8601String());
       }
       if (endDate != null) {
         sqlWhere += ' AND r.date_recette <= ?';
+        whereArgs.add(endDate.toIso8601String());
       }
       
-      final result = await db.rawQuery('''
+      final query = '''
         SELECT 
           a.id as adherent_id,
           a.code as adherent_code,
@@ -373,22 +489,36 @@ class RecetteService {
         GROUP BY a.id, a.code, a.nom, a.prenom
         HAVING COUNT(r.id) > 0
         ORDER BY total_montant_net DESC
-      ''', whereArgs.isEmpty ? null : whereArgs);
+      ''';
       
-      return result.map((row) => RecetteSummaryModel(
-        adherentId: row['adherent_id'] as int,
-        adherentCode: row['adherent_code'] as String,
-        adherentNom: row['adherent_nom'] as String,
-        adherentPrenom: row['adherent_prenom'] as String,
-        totalMontantBrut: (row['total_montant_brut'] as num?)?.toDouble() ?? 0.0,
-        totalCommission: (row['total_commission'] as num?)?.toDouble() ?? 0.0,
-        totalMontantNet: (row['total_montant_net'] as num?)?.toDouble() ?? 0.0,
-        nombreRecettes: row['nombre_recettes'] as int,
-        derniereRecette: row['derniere_recette'] != null
-            ? DateTime.parse(row['derniere_recette'] as String)
-            : null,
-      )).toList();
+      print('🔍 Requête SQL: $query');
+      print('🔍 Arguments: $whereArgs');
+      
+      final result = await db.rawQuery(query, whereArgs.isEmpty ? null : whereArgs);
+      
+      print('✅ Nombre de résumés trouvés: ${result.length}');
+      
+      final summaries = result.map((row) {
+        print('📋 Résumé pour adhérent ${row['adherent_code']}: ${row['nombre_recettes']} recettes, ${row['total_montant_net']} FCFA');
+        return RecetteSummaryModel(
+          adherentId: row['adherent_id'] as int,
+          adherentCode: row['adherent_code'] as String,
+          adherentNom: row['adherent_nom'] as String,
+          adherentPrenom: row['adherent_prenom'] as String,
+          totalMontantBrut: (row['total_montant_brut'] as num?)?.toDouble() ?? 0.0,
+          totalCommission: (row['total_commission'] as num?)?.toDouble() ?? 0.0,
+          totalMontantNet: (row['total_montant_net'] as num?)?.toDouble() ?? 0.0,
+          nombreRecettes: row['nombre_recettes'] as int,
+          derniereRecette: row['derniere_recette'] != null
+              ? DateTime.parse(row['derniere_recette'] as String)
+              : null,
+        );
+      }).toList();
+      
+      return summaries;
     } catch (e) {
+      print('❌ Erreur lors de la récupération du résumé: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
       throw Exception('Erreur lors de la récupération du résumé: $e');
     }
   }
@@ -445,6 +575,54 @@ class RecetteService {
       return result;
     } catch (e) {
       throw Exception('Erreur lors de la récupération des ventes: $e');
+    }
+  }
+
+  /// Calculer les retenues sociales automatiques pour un adhérent
+  /// Retourne une Map<aideId, montantRetenu>
+  Future<Map<int, double>> _calculerRetenuesSociales({
+    required int adherentId,
+    required double montantRecette,
+  }) async {
+    try {
+      final retenues = <int, double>{};
+      
+      // Obtenir toutes les aides en cours et remboursables avec retenue automatique
+      final aides = await _socialService.getAllAides(
+        adherentId: adherentId,
+        statut: 'en_cours',
+      );
+      
+      // Filtrer les aides avec retenue automatique
+      final aidesAvecRetenue = aides.where((aide) {
+        return aide.isRemboursable && 
+               aide.aideType?.hasRetenueAutomatique == true;
+      }).toList();
+      
+      // Pour chaque aide, calculer le montant à retenir
+      for (var aide in aidesAvecRetenue) {
+        final soldeRestant = await _socialService.getSoldeRestant(aide.id!);
+        
+        if (soldeRestant > 0.01) { // Tolérance pour arrondis
+          // Retenir le minimum entre le solde restant et le montant de la recette disponible
+          final montantARetenir = soldeRestant < montantRecette 
+              ? soldeRestant 
+              : montantRecette;
+          
+          if (montantARetenir > 0.01) {
+            retenues[aide.id!] = montantARetenir;
+            montantRecette -= montantARetenir; // Réduire le montant disponible
+            
+            // Si le montant disponible est épuisé, arrêter
+            if (montantRecette <= 0.01) break;
+          }
+        }
+      }
+      
+      return retenues;
+    } catch (e) {
+      print('Erreur lors du calcul des retenues sociales: $e');
+      return {};
     }
   }
 }

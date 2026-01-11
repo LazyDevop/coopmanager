@@ -5,20 +5,30 @@ class PermissionService {
   /// Vérifier si un utilisateur a une permission spécifique
   static bool hasPermission(UserModel user, String permission) {
     switch (user.role) {
-      case AppConfig.roleAdmin:
-        return true; // Admin a tous les droits
+      case AppConfig.roleSuperAdmin:
+        return true; // SuperAdmin a tous les droits absolus
       
-      case AppConfig.roleGestionnaireStock:
-        return _stockPermissions.contains(permission);
+      case AppConfig.roleAdmin:
+        // Admin a tous les droits sauf gestion SuperAdmin
+        if (permission.startsWith('manage_super_admin') || 
+            permission.startsWith('delete_super_admin')) {
+          return false;
+        }
+        return true;
+      
+      case AppConfig.roleComptable:
+        return _comptablePermissions.contains(permission);
       
       case AppConfig.roleCaissier:
         return _caissierPermissions.contains(permission);
       
+      case AppConfig.roleMagasinier:
+      case AppConfig.roleGestionnaireStock: // Compatibilité
+        return _magasinierPermissions.contains(permission);
+      
+      // Rôles obsolètes (pour compatibilité)
       case AppConfig.roleConsultation:
         return _consultationPermissions.contains(permission);
-      
-      case AppConfig.roleComptable:
-        return _comptablePermissions.contains(permission);
       
       case AppConfig.roleResponsableSocial:
         return _responsableSocialPermissions.contains(permission);
@@ -96,36 +106,99 @@ class PermissionService {
            hasPermission(user, 'manage_$entity');
   }
 
-  // Permissions pour Gestionnaire Stock
-  static const List<String> _stockPermissions = [
-    'view_adherents',
-    'view_stock',
-    'manage_stock',
-    'create_stock',
-    'update_stock',
+  // ========== SUPER ADMINISTRATEUR ==========
+  // Toutes les permissions (géré dans hasPermission avec return true)
+  
+  // ========== ADMINISTRATEUR ==========
+  // Toutes les permissions sauf gestion SuperAdmin (géré dans hasPermission)
+  
+  // ========== COMPTABLE ==========
+  static const List<String> _comptablePermissions = [
+    // Lecture complète
     'view_ventes',
+    'view_recettes',
+    'view_paiements',
+    'view_factures',
+    'view_clients',
+    'view_adherents', // Pour consultation
+    'view_capital',
+    'view_comptabilite',
+    
+    // Gestion des journaux
+    'manage_journal_caisse',
+    'manage_journal_ventes',
+    'manage_journal_charges',
+    
+    // Génération de rapports
+    'generate_etats_financiers',
+    'generate_rapports_mensuels',
+    'export_pdf',
+    'export_excel',
+    
+    // Consultation uniquement
+    'view_stock', // Lecture seule pour contexte
   ];
-
-  // Permissions pour Caissier
+  
+  // ========== CAISSIER ==========
   static const List<String> _caissierPermissions = [
-    'view_adherents',
-    'view_stock',
+    // VENTES - Le caissier peut vendre
     'view_ventes',
     'manage_ventes',
     'create_ventes',
     'update_ventes',
-    'view_recettes',
-    'manage_recettes',
-    'create_recettes',
+    
+    // FACTURATION - Le caissier peut facturer et imprimer
     'view_factures',
     'manage_factures',
     'create_factures',
+    'update_factures',
+    'generate_factures',
     'print_factures',
-    'view_clients',
-    'manage_clients',
+    
+    // Enregistrement des paiements
+    'create_paiements_adherents',
+    'create_paiements_clients',
+    'manage_paiements',
+    
+    // Consultation
+    'view_recettes',
+    // NOTE: Le caissier ne peut PAS voir ni manipuler les adhérents
+    // Il peut seulement sélectionner un adhérent lors d'une vente via la liste déroulante
+    'view_clients', // Pour identifier les clients
+    'view_stock', // Lecture seule pour vérifier les disponibilités
+    
+    // Génération de documents
+    'generate_recus_paiement',
+    'print_recus',
+    
+    // Journal de caisse (écriture)
+    'manage_journal_caisse',
+    'create_journal_caisse',
+    'update_journal_caisse',
   ];
-
-  // Permissions pour Consultation
+  
+  // ========== MAGASINIER ==========
+  static const List<String> _magasinierPermissions = [
+    // Enregistrement des dépôts
+    'create_depots_cacao',
+    'manage_depots',
+    'update_depots',
+    
+    // Mouvements de stock
+    'create_mouvements_stock',
+    'manage_mouvements_stock',
+    'update_mouvements_stock',
+    
+    // Consultation
+    'view_stock',
+    'view_adherents', // Lecture seule pour identifier les producteurs
+    
+    // Impression
+    'print_recus_depot',
+    'generate_recus_depot',
+  ];
+  
+  // ========== RÔLES OBSOLÈTES (pour compatibilité) ==========
   static const List<String> _consultationPermissions = [
     'view_adherents',
     'view_stock',
@@ -138,17 +211,6 @@ class PermissionService {
     'view_social',
   ];
   
-  // Permissions pour Comptable
-  static const List<String> _comptablePermissions = [
-    'view_ventes',
-    'view_recettes',
-    'view_factures',
-    'view_comptabilite',
-    'manage_comptabilite',
-    'view_clients',
-  ];
-  
-  // Permissions pour Responsable Social
   static const List<String> _responsableSocialPermissions = [
     'view_adherents',
     'view_social',
@@ -160,20 +222,47 @@ class PermissionService {
   /// Obtenir le nom lisible d'un rôle
   static String getRoleDisplayName(String role) {
     switch (role) {
+      case AppConfig.roleSuperAdmin:
+        return 'Super Administrateur';
       case AppConfig.roleAdmin:
         return 'Administrateur';
-      case AppConfig.roleGestionnaireStock:
-        return 'Gestionnaire Stock';
-      case AppConfig.roleCaissier:
-        return 'Caissier / Comptable';
-      case AppConfig.roleConsultation:
-        return 'Superviseur / Consultation';
       case AppConfig.roleComptable:
         return 'Comptable';
+      case AppConfig.roleCaissier:
+        return 'Caissier';
+      case AppConfig.roleMagasinier:
+      case AppConfig.roleGestionnaireStock: // Compatibilité
+        return 'Magasinier';
+      case AppConfig.roleConsultation:
+        return 'Superviseur / Consultation';
       case AppConfig.roleResponsableSocial:
         return 'Responsable Social';
       default:
         return role;
     }
+  }
+  
+  /// Vérifier si un utilisateur est SuperAdmin
+  static bool isSuperAdmin(UserModel user) {
+    return user.role == AppConfig.roleSuperAdmin;
+  }
+  
+  /// Vérifier si un utilisateur peut gérer les SuperAdmins
+  static bool canManageSuperAdmin(UserModel user) {
+    return user.role == AppConfig.roleSuperAdmin;
+  }
+  
+  /// Vérifier si un utilisateur peut supprimer un autre utilisateur
+  static bool canDeleteUser(UserModel currentUser, UserModel targetUser) {
+    // SuperAdmin peut supprimer tout le monde sauf lui-même
+    if (isSuperAdmin(currentUser)) {
+      return currentUser.id != targetUser.id;
+    }
+    // Admin peut supprimer tout le monde sauf SuperAdmin et lui-même
+    if (currentUser.role == AppConfig.roleAdmin) {
+      return targetUser.role != AppConfig.roleSuperAdmin && 
+             currentUser.id != targetUser.id;
+    }
+    return false;
   }
 }

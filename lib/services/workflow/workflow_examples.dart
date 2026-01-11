@@ -50,17 +50,29 @@ class WorkflowExamples {
       }
 
       // Afficher une notification de succès personnalisée
-      _notificationService.showToast(
+      // Note: showToast nécessite maintenant un BuildContext
+      // Utiliser notify() à la place pour logger dans la base de données
+      await _notificationService.notify(
+        type: 'success',
+        titre: 'Vente créée',
         message: 'Vente #${result['vente'].id} créée avec succès',
+        module: 'ventes',
+        entityType: 'vente',
+        entityId: result['vente'].id,
+        showToast: false, // Pas de toast car pas de BuildContext disponible
       );
     } catch (e) {
       // L'erreur est déjà gérée par le WorkflowService
       // La transaction a été annulée automatiquement
       print('❌ Erreur lors de la création de la vente: $e');
       
-      // Afficher une notification d'erreur
-      _notificationService.showToast(
+      // Logger l'erreur dans la base de données
+      await _notificationService.notify(
+        type: 'error',
+        titre: 'Erreur de vente',
         message: 'Erreur: ${e.toString()}',
+        module: 'ventes',
+        showToast: false, // Pas de toast car pas de BuildContext disponible
       );
     }
   }
@@ -270,14 +282,22 @@ class WorkflowExamples {
       
       // Vous pouvez ajouter votre propre logique de gestion d'erreur ici
       if (e.toString().contains('Stock insuffisant')) {
-        // Afficher un message spécifique pour les erreurs de stock
-        _notificationService.showToast(
+        // Logger un message spécifique pour les erreurs de stock
+        await _notificationService.notify(
+          type: 'error',
+          titre: 'Stock insuffisant',
           message: 'Stock insuffisant pour cette vente',
+          module: 'ventes',
+          showToast: false, // Pas de toast car pas de BuildContext disponible
         );
       } else {
-        // Afficher un message générique pour les autres erreurs
-        _notificationService.showToast(
+        // Logger un message générique pour les autres erreurs
+        await _notificationService.notify(
+          type: 'error',
+          titre: 'Erreur',
           message: 'Une erreur est survenue lors de l\'opération',
+          module: 'ventes',
+          showToast: false, // Pas de toast car pas de BuildContext disponible
         );
       }
     }

@@ -36,11 +36,14 @@ import '../../../services/vente/vente_service.dart';
 import '../../../services/recette/recette_service.dart';
 import '../../../data/models/stock_model.dart';
 import '../../../data/models/vente_model.dart';
+import '../../../data/models/vente_detail_model.dart';
 import '../../../data/models/recette_model.dart';
 import '../../../data/models/adherent_expert/capital_social_model.dart';
 import '../../../data/models/adherent_expert/credit_social_model.dart';
+import '../../../services/database/db_initializer.dart';
 import 'ayant_droit_form_screen.dart';
 import 'champ_parcelle_form_screen.dart';
+import 'champs_map_screen.dart';
 import 'traitement_agricole_form_screen.dart';
 import 'capital_social_form_screen.dart';
 import 'credit_social_form_screen.dart';
@@ -112,6 +115,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       // Charger les champs
       final champs = await _champParcelleService.getChampsByAdherent(widget.adherentId);
       
+      // Debug: vérifier les coordonnées récupérées
+      for (final champ in champs) {
+        print('🔍 _loadAdherent - Champ ${champ.codeChamp}: lat=${champ.latitude}, lng=${champ.longitude}');
+      }
+      
       // Charger les traitements
       final traitements = await _traitementService.getTraitementsByAdherent(widget.adherentId);
       
@@ -128,7 +136,12 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       );
       
       // Charger les recettes (paiements)
+      print('🔍 Chargement des recettes pour adhérent ID: ${widget.adherentId}');
       final recettes = await _recetteService.getRecettesByAdherent(widget.adherentId);
+      print('🔍 Recettes récupérées: ${recettes.length}');
+      for (final recette in recettes) {
+        print('  - Recette ID ${recette.id}: ${recette.montantNet} FCFA le ${recette.dateRecette}');
+      }
       
       // Charger les souscriptions au capital social
       final souscriptionsCapital = await _capitalSocialService.getSouscriptionsByAdherent(widget.adherentId);
@@ -164,6 +177,12 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
 
   Future<void> _refreshChamps() async {
     final champs = await _champParcelleService.getChampsByAdherent(widget.adherentId);
+    
+    // Debug: vérifier les coordonnées récupérées
+    for (final champ in champs) {
+      print('🔍 _refreshChamps - Champ ${champ.codeChamp}: lat=${champ.latitude}, lng=${champ.longitude}');
+    }
+    
     if (mounted) {
       setState(() {
         _champs = champs;
@@ -211,11 +230,170 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   }
 
   Future<void> _refreshRecettes() async {
-    final recettes = await _recetteService.getRecettesByAdherent(widget.adherentId);
-    if (mounted) {
-      setState(() {
-        _recettes = recettes;
-      });
+    print('🔍 Rafraîchissement des recettes pour adhérent ID: ${widget.adherentId}');
+    try {
+      final recettes = await _recetteService.getRecettesByAdherent(widget.adherentId);
+      print('🔍 Recettes récupérées lors du rafraîchissement: ${recettes.length}');
+      if (mounted) {
+        setState(() {
+          _recettes = recettes;
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement des recettes: $e');
+      if (mounted) {
+        setState(() {
+          _recettes = [];
+        });
+      }
+    }
+  }
+
+  /// Créer les recettes manquantes pour les ventes existantes
+  Future<void> _createMissingRecettes() async {
+    try {
+      // Récupérer toutes les ventes valides de cet adhérent
+      final ventes = await _venteService.getAllVentes(
+        adherentId: widget.adherentId,
+        statut: 'valide',
+      );
+
+      if (ventes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Aucune vente trouvée pour cet adhérent')),
+        );
+        return;
+      }
+
+      // Récupérer toutes les recettes existantes
+      final recettesExistantes = await _recetteService.getRecettesByAdherent(widget.adherentId);
+      final ventesAvecRecette = recettesExistantes
+          .where((r) => r.venteId != null)
+          .map((r) => r.venteId!)
+          .toSet();
+
+      // Identifier les ventes sans recette
+      final ventesSansRecette = ventes.where((v) => !ventesAvecRecette.contains(v.id)).toList();
+
+      if (ventesSansRecette.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Toutes les recettes sont déjà générées')),
+        );
+        return;
+      }
+
+      // Afficher un dialogue de confirmation
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Générer les recettes manquantes'),
+          content: Text(
+            '${ventesSansRecette.length} vente(s) sans recette trouvée(s).\n'
+            'Voulez-vous générer les recettes manquantes ?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Générer'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+
+      // Afficher un indicateur de chargement
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      int recettesCreees = 0;
+      int erreurs = 0;
+
+      // Récupérer l'utilisateur actuel
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      final currentUser = authViewModel.currentUser;
+      if (currentUser == null || currentUser.id == null) {
+        Navigator.pop(context); // Fermer le dialogue de chargement
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur: utilisateur non connecté')),
+        );
+        return;
+      }
+
+      // Créer les recettes manquantes
+      for (final vente in ventesSansRecette) {
+        try {
+          print('💰 Création de recette pour vente #${vente.id}');
+          
+          // Pour les ventes individuelles
+          if (vente.isIndividuelle && vente.adherentId != null) {
+            await _recetteService.createRecetteFromVente(
+              adherentId: vente.adherentId!,
+              venteId: vente.id!,
+              montantBrut: vente.montantTotal,
+              notes: 'Recette générée rétroactivement pour vente #${vente.id}',
+              createdBy: currentUser.id!,
+              generateEcritureComptable: false,
+            );
+            recettesCreees++;
+          }
+          // Pour les ventes groupées, récupérer les détails
+          else if (vente.isGroupee) {
+            final db = await DatabaseInitializer.database;
+            final detailsResult = await db.query(
+              'vente_details',
+              where: 'vente_id = ? AND adherent_id = ?',
+              whereArgs: [vente.id, widget.adherentId],
+            );
+            
+            for (final detailMap in detailsResult) {
+              final detail = VenteDetailModel.fromMap(detailMap);
+              await _recetteService.createRecetteFromVente(
+                adherentId: detail.adherentId,
+                venteId: vente.id!,
+                montantBrut: detail.montant,
+                notes: 'Recette générée rétroactivement pour vente groupée #${vente.id}',
+                createdBy: currentUser.id!,
+                generateEcritureComptable: false,
+              );
+              recettesCreees++;
+            }
+          }
+        } catch (e) {
+          print('❌ Erreur lors de la création de la recette pour vente #${vente.id}: $e');
+          erreurs++;
+        }
+      }
+
+      Navigator.pop(context); // Fermer le dialogue de chargement
+
+      // Rafraîchir les recettes
+      await _refreshRecettes();
+
+      // Afficher un message de résultat
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '$recettesCreees recette(s) créée(s)${erreurs > 0 ? ', $erreurs erreur(s)' : ''}',
+          ),
+          backgroundColor: erreurs > 0 ? Colors.orange : Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('❌ Erreur lors de la création des recettes manquantes: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -592,26 +770,51 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildSectionTitle('Champs & Parcelles'),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChampParcelleFormScreen(
-                        adherentId: widget.adherentId,
-                      ),
+              Row(
+                children: [
+                  // Bouton pour voir la carte
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChampsMapScreen(
+                            adherentId: widget.adherentId,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.map),
+                    tooltip: 'Voir sur la carte',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.green.shade50,
+                      foregroundColor: Colors.green.shade700,
                     ),
-                  );
-                  if (result == true) {
-                    await _refreshChamps();
-                  }
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Ajouter'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.brown.shade700,
-                  foregroundColor: Colors.white,
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Bouton pour ajouter un champ
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChampParcelleFormScreen(
+                            adherentId: widget.adherentId,
+                          ),
+                        ),
+                      );
+                      if (result == true) {
+                        await _refreshChamps();
+                      }
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Ajouter'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.brown.shade700,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1419,7 +1622,23 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
           const SizedBox(height: 24),
           
           // Section Paiements (Recettes)
-          _buildSectionTitle('Paiements (Recettes)'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSectionTitle('Paiements (Recettes)'),
+              if (_ventes.isNotEmpty && _recettes.isEmpty)
+                TextButton.icon(
+                  onPressed: () async {
+                    await _createMissingRecettes();
+                  },
+                  icon: const Icon(Icons.sync),
+                  label: const Text('Générer les recettes'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.green.shade700,
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: 8),
           
           if (_recettes.isEmpty)
@@ -1435,6 +1654,26 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                         'Aucun paiement enregistré',
                         style: TextStyle(color: Colors.grey.shade600),
                       ),
+                      if (_ventes.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          'Des ventes existent mais aucune recette n\'a été générée.',
+                          style: TextStyle(color: Colors.orange.shade700, fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            await _createMissingRecettes();
+                          },
+                          icon: const Icon(Icons.sync),
+                          label: const Text('Générer les recettes manquantes'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green.shade700,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -2801,11 +3040,23 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               children: [
                 if (champ.localisation != null)
                   _buildInfoRow('Localisation', champ.localisation!),
-                if (champ.latitude != null && champ.longitude != null)
-                  _buildInfoRow(
-                    'Coordonnées GPS',
-                    '${champ.latitude!.toStringAsFixed(6)}, ${champ.longitude!.toStringAsFixed(6)}',
-                  ),
+                Builder(
+                  builder: (context) {
+                    // Debug: vérifier les valeurs dans le widget
+                    final hasCoords = champ.latitude != null && 
+                                     champ.longitude != null && 
+                                     champ.latitude != 0.0 && 
+                                     champ.longitude != 0.0;
+                    print('🔍 _buildChampCard - Champ ${champ.codeChamp}: lat=${champ.latitude}, lng=${champ.longitude}, hasCoords=$hasCoords');
+                    
+                    return _buildInfoRow(
+                      'Coordonnées GPS',
+                      hasCoords
+                          ? '${champ.latitude!.toStringAsFixed(6)}, ${champ.longitude!.toStringAsFixed(6)}'
+                          : 'Non renseignées',
+                    );
+                  },
+                ),
                 if (champ.typeSol != null)
                   _buildInfoRow('Type de sol', getTypeSolLabel(champ.typeSol)),
                 if (champ.anneeMiseEnCulture != null)

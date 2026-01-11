@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
 import '../../viewmodels/adherent_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../../data/models/adherent_model.dart';
@@ -55,6 +56,7 @@ class _AdherentFormScreenState extends State<AdherentFormScreen> {
   String? _categorie; // type_personne
   String? _statut;
   bool _isCodeGenerating = false;
+  String? _existingPhotoPath;
 
   @override
   void initState() {
@@ -104,6 +106,7 @@ class _AdherentFormScreenState extends State<AdherentFormScreen> {
     _dateAdhesion = adherent.dateAdhesion;
     _categorie = adherent.categorie;
     _statut = adherent.statut;
+    _existingPhotoPath = adherent.photoPath;
     
     // Nouveaux champs
     _siteCooperativeController.text = adherent.siteCooperative ?? '';
@@ -208,6 +211,8 @@ class _AdherentFormScreenState extends State<AdherentFormScreen> {
                 Expanded(child: _buildPrenomField()),
               ],
             ),
+            const SizedBox(height: 16),
+            _buildPhotoField(),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -790,6 +795,92 @@ class _AdherentFormScreenState extends State<AdherentFormScreen> {
         }
         return null;
       },
+    );
+  }
+
+  Widget _buildPhotoField() {
+    final viewModel = context.watch<AdherentViewModel>();
+    final selectedPhoto = viewModel.selectedPhotoFile;
+    final existingPhoto = _existingPhotoPath;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Photo de profil',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Colors.brown.shade700,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: selectedPhoto != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          selectedPhoto,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : existingPhoto != null && File(existingPhoto).existsSync()
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              File(existingPhoto),
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Icon(
+                            Icons.person,
+                            size: 80,
+                            color: Colors.grey.shade400,
+                          ),
+              ),
+              if (selectedPhoto != null || existingPhoto != null)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.red),
+                    onPressed: () {
+                      setState(() {
+                        _existingPhotoPath = null;
+                      });
+                      viewModel.clearSelectedPhoto();
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Center(
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              await viewModel.pickPhoto();
+            },
+            icon: const Icon(Icons.photo_library),
+            label: const Text('Sélectionner une photo'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.brown.shade700,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

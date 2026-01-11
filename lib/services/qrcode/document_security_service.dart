@@ -46,6 +46,27 @@ class DocumentSecurityService {
     return documentSecurise.copyWith(id: id);
   }
 
+  /// Générer un hash QR Code pour un document
+  static Future<String> generateQRCodeHash({
+    required String type,
+    required int id,
+    required int adherentId,
+    required double montant,
+  }) async {
+    final qrCodeData = QRCodeService.generateQRCodeData(
+      documentType: type,
+      documentId: id.toString(),
+      documentContent: {
+        'adherent_id': adherentId,
+        'montant': montant,
+        'date': DateTime.now().toIso8601String(),
+      },
+    );
+    
+    final qrCodeDataString = QRCodeService.encodeQRCodeData(qrCodeData);
+    return QRCodeService.generateHash(qrCodeDataString);
+  }
+
   /// Récupérer un document sécurisé par type et ID
   static Future<DocumentSecuriseModel?> getSecureDocument({
     required String documentType,

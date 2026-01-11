@@ -8,6 +8,13 @@ import 'presentation/viewmodels/parametres_viewmodel.dart';
 import 'presentation/viewmodels/vente_viewmodel.dart';
 import 'presentation/viewmodels/facture_viewmodel.dart';
 import 'presentation/viewmodels/notification_viewmodel.dart';
+import 'presentation/viewmodels/document_viewmodel.dart';
+import 'presentation/viewmodels/client_viewmodel.dart';
+import 'presentation/viewmodels/capital_viewmodel.dart';
+import 'presentation/viewmodels/user_viewmodel.dart';
+import 'presentation/viewmodels/commission_viewmodel.dart';
+import 'presentation/providers/settings_provider.dart';
+import 'presentation/providers/permission_provider.dart';
 import 'presentation/widgets/auth_wrapper.dart';
 import 'services/notification/notification_service.dart';
 import 'config/routes/routes.dart';
@@ -23,6 +30,7 @@ import 'presentation/screens/stock_adjustment_screen.dart';
 import 'presentation/screens/stock_export_screen.dart';
 import 'presentation/screens/ventes/ventes_list_screen.dart';
 import 'presentation/screens/ventes/vente_form_screen.dart';
+import 'presentation/screens/ventes/vente_form_v1_screen.dart';
 import 'presentation/screens/ventes/vente_detail_screen.dart';
 import 'presentation/screens/recettes/recettes_list_screen.dart';
 import 'presentation/screens/recettes/recette_detail_screen.dart';
@@ -52,14 +60,26 @@ class CoopManagerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) {
+          final authViewModel = AuthViewModel();
+          final permissionProvider = PermissionProvider();
+          authViewModel.setPermissionProvider(permissionProvider);
+          return authViewModel;
+        }),
+        ChangeNotifierProvider(create: (_) => PermissionProvider()),
         ChangeNotifierProvider(create: (_) => AdherentViewModel()),
         ChangeNotifierProvider(create: (_) => StockViewModel()),
         ChangeNotifierProvider(create: (_) => RecetteViewModel()),
         ChangeNotifierProvider(create: (_) => ParametresViewModel()),
         ChangeNotifierProvider(create: (_) => VenteViewModel()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => FactureViewModel()),
         ChangeNotifierProvider(create: (_) => NotificationViewModel()),
+        ChangeNotifierProvider(create: (_) => DocumentViewModel()),
+        ChangeNotifierProvider(create: (_) => ClientViewModel()),
+        ChangeNotifierProvider(create: (_) => CapitalViewModel()),
+        ChangeNotifierProvider(create: (_) => UserViewModel()),
+        ChangeNotifierProvider(create: (_) => CommissionViewModel()),
       ],
       child: MaterialApp(
         title: 'CoopManager',

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import '../../viewmodels/vente_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../../data/models/vente_model.dart';
@@ -418,10 +417,11 @@ class _VenteDetailScreenState extends State<VenteDetailScreen> {
           );
 
           if (success && context.mounted) {
-            Fluttertoast.showToast(
-              msg: 'Vente annulée avec succès',
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.BOTTOM,
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Vente annulée avec succès'),
+                duration: Duration(seconds: 3),
+              ),
             );
           }
         }
@@ -443,20 +443,21 @@ class _VenteDetailScreenState extends State<VenteDetailScreen> {
       );
 
       if (success && context.mounted) {
-        Fluttertoast.showToast(
-          msg: 'Vente exportée avec succès',
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vente exportée avec succès'),
+            duration: Duration(seconds: 3),
+          ),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        Fluttertoast.showToast(
-          msg: 'Erreur lors de l\'export: ${e.toString()}',
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de l\'export: ${e.toString()}'),
+            duration: const Duration(seconds: 4),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

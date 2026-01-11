@@ -23,6 +23,7 @@ class StockService {
     required DateTime dateDepot,
     String? qualite,
     double? humidite,
+    double? densiteArbresAssocies,
     String? photoPath,
     String? observations,
     required int createdBy,
@@ -42,6 +43,7 @@ class StockService {
         dateDepot: dateDepot,
         qualite: qualite,
         humidite: humidite,
+        densiteArbresAssocies: densiteArbresAssocies,
         photoPath: photoPath,
         observations: observations,
         createdBy: createdBy,
@@ -79,6 +81,9 @@ class StockService {
         userId: createdBy,
       );
 
+      // Vérifier les alertes de stock après dépôt (le stock peut toujours être faible après ajout)
+      await getStockActuel(adherentId, checkAlerts: true);
+
       return depot.copyWith(id: id);
     } catch (e, stackTrace) {
       print('Erreur détaillée lors de la création du dépôt: $e');
@@ -113,9 +118,20 @@ class StockService {
         createdAt: DateTime.now(),
       );
 
-      final id = await db.insert('stock_mouvements', movement.toMap());
+      final movementMap = movement.toMap();
+      print('📝 Insertion mouvement: type=$type, adherent=$adherentId, quantite=$quantite, venteId=$venteId');
+      
+      final id = await db.insert('stock_mouvements', movementMap);
+      
+      if (id == null || id <= 0) {
+        throw Exception('Échec de l\'insertion du mouvement: ID invalide ($id)');
+      }
+      
+      print('✅ Mouvement inséré avec succès: ID $id');
       return movement.copyWith(id: id);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ ERREUR lors de la création du mouvement: $e');
+      print('Stack trace: $stackTrace');
       throw Exception('Erreur lors de la création du mouvement: $e');
     }
   }
@@ -150,6 +166,9 @@ class StockService {
         details: 'Ajustement de $quantite kg pour adhérent $adherentId. Raison: $raison',
       );
 
+      // Vérifier les alertes de stock après ajustement
+      await getStockActuel(adherentId, checkAlerts: true);
+
       return ajustement.copyWith(id: id);
     } catch (e) {
       throw Exception('Erreur lors de l\'ajustement: $e');
@@ -164,7 +183,10 @@ class StockService {
     required int createdBy,
   }) async {
     try {
-      await _createMovement(
+      print('🔴 DÉDUCTION STOCK: Adhérent $adherentId, Quantité: $quantite kg, Vente: $venteId');
+      
+      // Créer le mouvement de déduction directement
+      final movement = await _createMovement(
         adherentId: adherentId,
         type: 'vente',
         quantite: -quantite, // Négatif pour déduction
@@ -174,6 +196,8 @@ class StockService {
         createdBy: createdBy,
       );
 
+      print('✅ Mouvement créé: ID ${movement.id}, Quantité: ${movement.quantite}');
+
       await _auditService.logAction(
         userId: createdBy,
         action: 'STOCK_DEDUCTION',
@@ -181,13 +205,19 @@ class StockService {
         entityId: venteId,
         details: 'Déduction de $quantite kg pour vente $venteId',
       );
-    } catch (e) {
+
+      // Vérifier le stock après déduction et les alertes
+      final stockApres = await getStockActuel(adherentId, checkAlerts: true);
+      print('📊 Stock après déduction: $stockApres kg');
+    } catch (e, stackTrace) {
+      print('❌ ERREUR lors de la déduction du stock: $e');
+      print('Stack trace: $stackTrace');
       throw Exception('Erreur lors de la déduction du stock: $e');
     }
   }
 
   /// Calculer le stock actuel d'un adhérent
-  Future<double> getStockActuel(int adherentId) async {
+  Future<double> getStockActuel(int adherentId, {bool checkAlerts = false}) async {
     try {
       final db = await DatabaseInitializer.database;
       
@@ -211,8 +241,10 @@ class StockService {
       
       final stockActuel = totalDepots + totalMouvements; // totalMouvements est négatif pour les ventes
       
-      // Vérifier le stock et envoyer des notifications si nécessaire
-      await _checkStockAndNotify(adherentId, stockActuel);
+      // Vérifier le stock et envoyer des notifications si nécessaire (seulement si demandé)
+      if (checkAlerts) {
+        await _checkStockAndNotify(adherentId, stockActuel);
+      }
       
       return stockActuel;
     } catch (e) {
@@ -221,22 +253,66 @@ class StockService {
   }
 
   /// Vérifier le stock et envoyer des notifications si nécessaire
+  /// Évite les notifications en double en vérifiant les notifications récentes
   Future<void> _checkStockAndNotify(int adherentId, double stockActuel) async {
-    // Seuils de stock (à configurer dans les paramètres)
-    const seuilFaible = 50.0; // kg
-    const seuilCritique = 10.0; // kg
+    try {
+      // Seuils de stock (à configurer dans les paramètres)
+      const seuilFaible = 50.0; // kg
+      const seuilCritique = 10.0; // kg
 
-    if (stockActuel <= seuilCritique) {
-      await _notificationService.notifyStockCritical(
-        adherentId: adherentId,
-        stockActuel: stockActuel,
-      );
-    } else if (stockActuel <= seuilFaible) {
-      await _notificationService.notifyStockLow(
-        adherentId: adherentId,
-        stockActuel: stockActuel,
-        seuil: seuilFaible,
-      );
+      final db = await DatabaseInitializer.database;
+      
+      // Vérifier si une notification similaire a déjà été envoyée dans les dernières 24 heures
+      final yesterday = DateTime.now().subtract(const Duration(hours: 24));
+      
+      // Vérifier pour stock critique
+      if (stockActuel <= seuilCritique) {
+        final existingCritical = await db.rawQuery('''
+          SELECT COUNT(*) as count
+          FROM notifications
+          WHERE entity_type = 'adherent'
+            AND entity_id = ?
+            AND type = 'critical'
+            AND module = 'stock'
+            AND created_at > ?
+        ''', [adherentId, yesterday.toIso8601String()]);
+        
+        final count = (existingCritical.first['count'] as int?) ?? 0;
+        
+        // Envoyer seulement si aucune notification critique n'a été envoyée récemment
+        if (count == 0) {
+          await _notificationService.notifyStockCritical(
+            adherentId: adherentId,
+            stockActuel: stockActuel,
+          );
+        }
+      } 
+      // Vérifier pour stock faible (seulement si pas critique)
+      else if (stockActuel <= seuilFaible) {
+        final existingLow = await db.rawQuery('''
+          SELECT COUNT(*) as count
+          FROM notifications
+          WHERE entity_type = 'adherent'
+            AND entity_id = ?
+            AND type = 'warning'
+            AND module = 'stock'
+            AND created_at > ?
+        ''', [adherentId, yesterday.toIso8601String()]);
+        
+        final count = (existingLow.first['count'] as int?) ?? 0;
+        
+        // Envoyer seulement si aucune notification faible n'a été envoyée récemment
+        if (count == 0) {
+          await _notificationService.notifyStockLow(
+            adherentId: adherentId,
+            stockActuel: stockActuel,
+            seuil: seuilFaible,
+          );
+        }
+      }
+    } catch (e) {
+      // Ne pas faire échouer le calcul de stock si la notification échoue
+      print('Erreur lors de la vérification des alertes de stock: $e');
     }
   }
 
@@ -276,21 +352,35 @@ class StockService {
     try {
       final db = await DatabaseInitializer.database;
       
+      // Utiliser des sous-requêtes pour éviter les problèmes de duplication avec JOIN
       final result = await db.rawQuery('''
         SELECT 
           a.id as adherent_id,
           a.code as adherent_code,
           a.nom as adherent_nom,
           a.prenom as adherent_prenom,
-          COALESCE(SUM(sd.quantite), 0) as total_depots,
-          COALESCE(SUM(CASE WHEN sm.type IN ('vente', 'ajustement') THEN sm.quantite ELSE 0 END), 0) as total_mouvements,
-          MAX(sd.date_depot) as dernier_depot,
-          MAX(sm.date_mouvement) as dernier_mouvement
+          COALESCE((
+            SELECT SUM(quantite) 
+            FROM stock_depots 
+            WHERE adherent_id = a.id
+          ), 0) as total_depots,
+          COALESCE((
+            SELECT SUM(quantite) 
+            FROM stock_mouvements 
+            WHERE adherent_id = a.id AND type IN ('vente', 'ajustement')
+          ), 0) as total_mouvements,
+          (
+            SELECT MAX(date_depot) 
+            FROM stock_depots 
+            WHERE adherent_id = a.id
+          ) as dernier_depot,
+          (
+            SELECT MAX(date_mouvement) 
+            FROM stock_mouvements 
+            WHERE adherent_id = a.id
+          ) as dernier_mouvement
         FROM adherents a
-        LEFT JOIN stock_depots sd ON sd.adherent_id = a.id
-        LEFT JOIN stock_mouvements sm ON sm.adherent_id = a.id
         WHERE a.is_active = 1
-        GROUP BY a.id, a.code, a.nom, a.prenom
         ORDER BY a.nom, a.prenom
       ''');
       
@@ -344,6 +434,53 @@ class StockService {
       return result.map((map) => StockDepotModel.fromMap(map)).toList();
     } catch (e) {
       throw Exception('Erreur lors de la récupération des dépôts: $e');
+    }
+  }
+
+  /// Obtenir les dépôts disponibles en FIFO (First In First Out) pour un adhérent
+  /// Retourne les dépôts avec leur quantité disponible (après déduction des ventes)
+  /// Triés par date de dépôt (plus ancien en premier)
+  Future<List<Map<String, dynamic>>> getDepotsDisponiblesFIFO(int adherentId) async {
+    try {
+      final db = await DatabaseInitializer.database;
+      
+      // Récupérer tous les dépôts de l'adhérent triés par date (FIFO)
+      final depots = await db.query(
+        'stock_depots',
+        where: 'adherent_id = ?',
+        whereArgs: [adherentId],
+        orderBy: 'date_depot ASC, id ASC', // FIFO: plus ancien en premier
+      );
+      
+      // Pour chaque dépôt, calculer la quantité disponible
+      final depotsDisponibles = <Map<String, dynamic>>[];
+      
+      for (final depot in depots) {
+        final depotId = depot['id'] as int;
+        final quantiteDepot = (depot['quantite'] as num).toDouble();
+        
+        // Calculer la quantité déjà vendue depuis ce dépôt
+        final ventesResult = await db.rawQuery('''
+          SELECT COALESCE(SUM(vl.quantite), 0) as quantite_vendue
+          FROM vente_lignes vl
+          WHERE vl.stock_depot_id = ?
+        ''', [depotId]);
+        
+        final quantiteVendue = (ventesResult.first['quantite_vendue'] as num?)?.toDouble() ?? 0.0;
+        final quantiteDisponible = quantiteDepot - quantiteVendue;
+        
+        if (quantiteDisponible > 0) {
+          depotsDisponibles.add({
+            'depot': StockDepotModel.fromMap(depot),
+            'quantite_disponible': quantiteDisponible,
+            'depot_id': depotId,
+          });
+        }
+      }
+      
+      return depotsDisponibles;
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération des dépôts FIFO: $e');
     }
   }
 

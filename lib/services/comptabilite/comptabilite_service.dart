@@ -86,7 +86,66 @@ class ComptabiliteService {
     );
   }
 
-  /// Générer une écriture comptable pour une recette (wrapper simplifié)
+  /// Générer une écriture comptable pour une libération de capital
+  Future<int> generateEcritureForLiberationCapital({
+    required int liberationId,
+    required double montant,
+    required int createdBy,
+  }) async {
+    final ecriture = await createEcriture(
+      dateEcriture: DateTime.now(),
+      typeOperation: 'LIBERATION_CAPITAL',
+      operationId: liberationId,
+      compteDebit: '512', // Caisse ou Banque
+      compteCredit: '101', // Capital social
+      montant: montant,
+      libelle: 'Libération de capital - Libération #$liberationId',
+      reference: 'LIB-CAP-$liberationId',
+      createdBy: createdBy,
+    );
+    return ecriture.id!;
+  }
+
+  /// Générer une écriture comptable pour un paiement client
+  Future<int> generateEcritureForPaiementClient({
+    required int paiementId,
+    required double montant,
+    required int createdBy,
+  }) async {
+    final ecriture = await createEcriture(
+      dateEcriture: DateTime.now(),
+      typeOperation: 'PAIEMENT_CLIENT',
+      operationId: paiementId,
+      compteDebit: '512', // Caisse ou Banque
+      compteCredit: '411', // Clients
+      montant: montant,
+      libelle: 'Paiement client - Paiement #$paiementId',
+      reference: 'PAY-CLI-$paiementId',
+      createdBy: createdBy,
+    );
+    return ecriture.id!;
+  }
+
+  /// Générer une écriture comptable pour un paiement
+  Future<int> generateEcritureForPaiement({
+    required int paiementId,
+    required double montant,
+    required int createdBy,
+  }) async {
+    final ecriture = await createEcriture(
+      dateEcriture: DateTime.now(),
+      typeOperation: 'PAIEMENT',
+      operationId: paiementId,
+      compteDebit: '512', // Caisse ou Banque
+      compteCredit: '411', // Adhérents
+      montant: montant,
+      libelle: 'Paiement adhérent - Paiement #$paiementId',
+      reference: 'PAY-$paiementId',
+      createdBy: createdBy,
+    );
+    return ecriture.id!;
+  }
+
   Future<EcritureComptableModel> generateEcritureForRecette({
     required int recetteId,
     required double montant,
@@ -196,6 +255,27 @@ class ComptabiliteService {
       montant: montant,
       libelle: 'Acquisition parts sociales adhérent ID: $adherentId',
       reference: 'CAPITAL-$partSocialeId',
+      createdBy: createdBy,
+    );
+  }
+
+  /// Créer une écriture comptable pour le fonds social (V2)
+  Future<EcritureComptableModel> createEcritureFondsSocial({
+    required int fondsSocialId,
+    required double montant,
+    int? venteId,
+    required DateTime dateContribution,
+    required int createdBy,
+  }) async {
+    return await createEcriture(
+      dateEcriture: dateContribution,
+      typeOperation: 'fonds_social',
+      operationId: fondsSocialId,
+      compteDebit: PlanComptes.compteCaisse,
+      compteCredit: PlanComptes.compteFondsSocial,
+      montant: montant,
+      libelle: 'Contribution au fonds social${venteId != null ? ' - Vente #$venteId' : ''}',
+      reference: 'FONDS-$fondsSocialId',
       createdBy: createdBy,
     );
   }

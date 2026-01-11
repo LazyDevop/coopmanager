@@ -1,10 +1,17 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../../data/models/adherent_model.dart';
 import '../../data/models/adherent_historique_model.dart';
+import '../../data/models/vente_adherent_model.dart';
 import '../../services/adherent/adherent_service.dart';
+import '../../services/integration/adherent_vente_integration_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class AdherentViewModel extends ChangeNotifier {
   final AdherentService _adherentService = AdherentService();
+  final AdherentVenteIntegrationService _integrationService = AdherentVenteIntegrationService();
   
   List<AdherentModel> _adherents = [];
   AdherentModel? _selectedAdherent;
@@ -14,8 +21,16 @@ class AdherentViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> _recettes = [];
   List<String> _villages = [];
   
+  // Intégration Ventes
+  List<VenteAdherentModel> _ventesAdherent = [];
+  Map<String, dynamic>? _stockDisponible;
+  Map<String, dynamic>? _statistiquesVentes;
+  
   bool _isLoading = false;
   String? _errorMessage;
+  
+  // Photo de profil
+  File? _selectedPhotoFile;
   
   // Filtres
   bool? _filterActive;
@@ -32,6 +47,7 @@ class AdherentViewModel extends ChangeNotifier {
   List<String> get villages => _villages;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  File? get selectedPhotoFile => _selectedPhotoFile;
   bool? get filterActive => _filterActive;
   String? get filterVillage => _filterVillage;
   String get searchQuery => _searchQuery;
@@ -183,6 +199,15 @@ class AdherentViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Générer le code si nécessaire pour le nom du fichier photo
+      final finalCode = code ?? await _adherentService.generateNextCode();
+      
+      // Copier la photo si une photo a été sélectionnée
+      String? photoPath;
+      if (_selectedPhotoFile != null) {
+        photoPath = await _copyPhotoFile(_selectedPhotoFile!, finalCode);
+      }
+      
       await _adherentService.createAdherent(
         code: code, // Peut être null, sera auto-généré
         nom: nom,
@@ -213,7 +238,11 @@ class AdherentViewModel extends ChangeNotifier {
         rendementMoyenHa: rendementMoyenHa,
         tonnageTotalProduit: tonnageTotalProduit,
         tonnageTotalVendu: tonnageTotalVendu,
+        photoPath: photoPath,
       );
+      
+      // Réinitialiser la photo sélectionnée après création
+      _selectedPhotoFile = null;
       
       await loadAdherents();
       await loadVillages();
@@ -270,6 +299,19 @@ class AdherentViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Récupérer le code de l'adhérent pour le nom du fichier photo
+      final adherent = await _adherentService.getAdherentById(id);
+      final adherentCode = code ?? adherent?.code ?? 'UNKNOWN';
+      
+      // Copier la photo si une nouvelle photo a été sélectionnée
+      String? photoPath;
+      if (_selectedPhotoFile != null) {
+        photoPath = await _copyPhotoFile(_selectedPhotoFile!, adherentCode);
+      } else if (adherent?.photoPath != null) {
+        // Conserver la photo existante si aucune nouvelle photo n'a été sélectionnée
+        photoPath = adherent!.photoPath;
+      }
+      
       await _adherentService.updateAdherent(
         id: id,
         code: code,
@@ -301,7 +343,11 @@ class AdherentViewModel extends ChangeNotifier {
         rendementMoyenHa: rendementMoyenHa,
         tonnageTotalProduit: tonnageTotalProduit,
         tonnageTotalVendu: tonnageTotalVendu,
+        photoPath: photoPath,
       );
+      
+      // Réinitialiser la photo sélectionnée après mise à jour
+      _selectedPhotoFile = null;
       
       await loadAdherents();
       if (_selectedAdherent?.id == id) {
@@ -389,6 +435,10 @@ class AdherentViewModel extends ChangeNotifier {
   }
 
   /// Générer le prochain code adhérent disponible
+  /// 
+  /// ⚠️ DÉPRÉCIÉ : Utilisez AdherentCodeGenerator.generateUniqueCode() à la place
+  /// Cette méthode est conservée pour compatibilité
+  @Deprecated('Utilisez AdherentCodeGenerator.generateUniqueCode() pour la nouvelle nomenclature ERP')
   Future<String> generateNextCode() async {
     try {
       return await _adherentService.generateNextCode();
@@ -413,6 +463,59 @@ class AdherentViewModel extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+  
+  /// Sélectionner une photo de profil
+  Future<void> pickPhoto() async {
+    try {
+      _errorMessage = null;
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      
+      if (pickedFile != null) {
+        final file = File(pickedFile.path);
+        if (await file.exists()) {
+          _selectedPhotoFile = file;
+          notifyListeners();
+        } else {
+          _errorMessage = 'Le fichier sélectionné n\'existe plus';
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      _errorMessage = 'Erreur lors de la sélection de la photo: ${e.toString()}';
+      notifyListeners();
+    }
+  }
+  
+  /// Supprimer la photo sélectionnée
+  void clearSelectedPhoto() {
+    _selectedPhotoFile = null;
+    notifyListeners();
+  }
+  
+  /// Copier le fichier photo vers le répertoire de l'application
+  Future<String?> _copyPhotoFile(File sourceFile, String adherentCode) async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final photosDir = Directory('${directory.path}/adherent_photos');
+      if (!await photosDir.exists()) {
+        await photosDir.create(recursive: true);
+      }
+      
+      final fileName = 'photo_${adherentCode}_${DateTime.now().millisecondsSinceEpoch}.png';
+      final destFile = File('${photosDir.path}/$fileName');
+      await sourceFile.copy(destFile.path);
+      
+      return destFile.path;
+    } catch (e) {
+      throw Exception('Erreur lors de la copie de la photo: $e');
+    }
   }
 
   /// Calculer les indicateurs expert pour l'adhérent sélectionné

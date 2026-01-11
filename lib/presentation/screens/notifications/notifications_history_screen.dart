@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import '../../viewmodels/notification_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../../data/models/notification_model.dart';
@@ -488,10 +487,11 @@ class _NotificationsHistoryScreenState extends State<NotificationsHistoryScreen>
           userId: currentUser?.id,
         );
         if (success && context.mounted) {
-          Fluttertoast.showToast(
-            msg: 'Toutes les notifications ont été marquées comme lues',
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Toutes les notifications ont été marquées comme lues'),
+              duration: Duration(seconds: 3),
+            ),
           );
         }
         break;
@@ -525,10 +525,11 @@ class _NotificationsHistoryScreenState extends State<NotificationsHistoryScreen>
             userId: currentUser?.id,
           );
           if (success && context.mounted) {
-            Fluttertoast.showToast(
-              msg: 'Notifications lues supprimées',
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.BOTTOM,
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Notifications lues supprimées'),
+                duration: Duration(seconds: 3),
+              ),
             );
           }
         }
@@ -575,10 +576,11 @@ class _NotificationsHistoryScreenState extends State<NotificationsHistoryScreen>
         if (confirm == true) {
           final success = await viewModel.deleteNotification(notification.id!);
           if (success && context.mounted) {
-            Fluttertoast.showToast(
-              msg: 'Notification supprimée',
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.BOTTOM,
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Notification supprimée'),
+                duration: Duration(seconds: 3),
+              ),
             );
           }
         }
@@ -597,20 +599,21 @@ class _NotificationsHistoryScreenState extends State<NotificationsHistoryScreen>
       );
 
       if (success && context.mounted) {
-        Fluttertoast.showToast(
-          msg: 'Notifications exportées avec succès',
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notifications exportées avec succès'),
+            duration: Duration(seconds: 3),
+          ),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        Fluttertoast.showToast(
-          msg: 'Erreur lors de l\'export: ${e.toString()}',
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de l\'export: ${e.toString()}'),
+            duration: const Duration(seconds: 4),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

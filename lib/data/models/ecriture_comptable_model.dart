@@ -112,6 +112,7 @@ class PlanComptes {
   // Comptes de classe 1 - Financement
   static const String compteCapital = '101';
   static const String compteReserves = '106';
+  static const String compteFondsSocial = '107'; // V2: Fonds social
   
   // Comptes de classe 2 - Immobilisations
   static const String compteImmobilisations = '200';

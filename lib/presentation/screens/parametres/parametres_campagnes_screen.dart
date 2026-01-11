@@ -5,7 +5,6 @@ import '../../viewmodels/parametres_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../../data/models/parametres_cooperative_model.dart';
 import 'campagne_form_screen.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 class ParametresCampagnesScreen extends StatefulWidget {
   const ParametresCampagnesScreen({super.key});
@@ -32,11 +31,12 @@ class _ParametresCampagnesScreenState extends State<ParametresCampagnesScreen> {
     );
 
     if (success && mounted) {
-      Fluttertoast.showToast(
-        msg: 'Statut de la campagne mis à jour',
-        toastLength: Toast.LENGTH_SHORT,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Statut de la campagne mis à jour'),
+          duration: Duration(seconds: 3),
+          backgroundColor: Colors.green,
+        ),
       );
     }
   }
@@ -66,18 +66,20 @@ class _ParametresCampagnesScreenState extends State<ParametresCampagnesScreen> {
       final success = await viewModel.deleteCampagne(id, userId);
 
       if (success && mounted) {
-        Fluttertoast.showToast(
-          msg: 'Campagne supprimée',
-          toastLength: Toast.LENGTH_SHORT,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Campagne supprimée'),
+            duration: Duration(seconds: 3),
+            backgroundColor: Colors.green,
+          ),
         );
       } else if (mounted) {
-        Fluttertoast.showToast(
-          msg: viewModel.errorMessage ?? 'Erreur lors de la suppression',
-          toastLength: Toast.LENGTH_LONG,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(viewModel.errorMessage ?? 'Erreur lors de la suppression'),
+            duration: const Duration(seconds: 4),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

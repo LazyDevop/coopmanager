@@ -4,9 +4,12 @@ import '../../data/models/adherent_historique_model.dart';
 import '../auth/audit_service.dart';
 import '../../config/app_config.dart';
 import 'capital_social_service.dart';
+import 'adherent_code_generator.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class AdherentService {
   final AuditService _auditService = AuditService();
+  final AdherentCodeGenerator _codeGenerator = AdherentCodeGenerator();
 
   /// Créer un nouvel adhérent
   Future<AdherentModel> createAdherent({
@@ -43,17 +46,37 @@ class AdherentService {
     double? rendementMoyenHa,
     double? tonnageTotalProduit,
     double? tonnageTotalVendu,
+    // Photo de profil
+    String? photoPath,
   }) async {
     try {
-      // Générer automatiquement le code s'il n'est pas fourni
-      final finalCode = code ?? await generateNextCode();
+      // Générer automatiquement le code selon la nouvelle nomenclature s'il n'est pas fourni
+      String finalCode;
       
-      // Vérifier si le code existe déjà
-      if (await codeExists(finalCode)) {
-        throw Exception('Ce code adhérent existe déjà');
+      if (code != null) {
+        // Valider le format du code fourni
+        final normalizedCode = AdherentCodeGenerator.validateAndNormalize(code);
+        if (normalizedCode == null) {
+          throw Exception('Format de code invalide. Le code doit respecter le format: [2 lettres][2 chiffres][4 alphanumériques] (ex: CE25A9F2)');
+        }
+        finalCode = normalizedCode;
+        
+        // Vérifier si le code existe déjà
+        if (await codeExists(finalCode)) {
+          throw Exception('Ce code adhérent existe déjà');
+        }
+      } else {
+        // Générer un nouveau code selon la nomenclature ERP
+        finalCode = await _codeGenerator.generateUniqueCode(
+          dateAdhesion: dateAdhesion,
+          siteCooperative: siteCooperative,
+        );
       }
 
       final db = await DatabaseInitializer.database;
+      
+      // S'assurer que la colonne photo_path existe avant l'insertion
+      await _ensurePhotoPathColumn(db);
       
       final adherent = AdherentModel(
         code: finalCode,
@@ -92,6 +115,8 @@ class AdherentService {
         rendementMoyenHa: rendementMoyenHa,
         tonnageTotalProduit: tonnageTotalProduit,
         tonnageTotalVendu: tonnageTotalVendu,
+        // Photo de profil
+        photoPath: photoPath,
       );
 
       final dataToInsert = adherent.toMap();
@@ -161,6 +186,8 @@ class AdherentService {
     double? rendementMoyenHa,
     double? tonnageTotalProduit,
     double? tonnageTotalVendu,
+    // Photo de profil
+    String? photoPath,
   }) async {
     try {
       final db = await DatabaseInitializer.database;
@@ -179,10 +206,16 @@ class AdherentService {
 
       final currentAdherent = AdherentModel.fromMap(currentResult.first);
       
-      // Vérifier l'unicité du code si modifié
+      // Le code ne peut pas être modifié après création
       if (code != null && code != currentAdherent.code) {
-        if (await codeExists(code)) {
-          throw Exception('Ce code adhérent existe déjà');
+        throw Exception('Le code adhérent ne peut pas être modifié après création');
+      }
+      
+      // Valider le format du code existant si nécessaire
+      if (code != null) {
+        final normalizedCode = AdherentCodeGenerator.validateAndNormalize(code);
+        if (normalizedCode == null) {
+          throw Exception('Format de code invalide. Le code doit respecter le format: [2 lettres][2 chiffres][4 alphanumériques] (ex: CE25A9F2)');
         }
       }
 
@@ -223,6 +256,8 @@ class AdherentService {
       if (rendementMoyenHa != null) updateData['rendement_moyen_ha'] = rendementMoyenHa;
       if (tonnageTotalProduit != null) updateData['tonnage_total_produit'] = tonnageTotalProduit;
       if (tonnageTotalVendu != null) updateData['tonnage_total_vendu'] = tonnageTotalVendu;
+      // Photo de profil
+      if (photoPath != null) updateData['photo_path'] = photoPath;
 
       await db.update(
         'adherents',
@@ -425,7 +460,13 @@ class AdherentService {
   }
 
   /// Générer automatiquement le prochain code adhérent disponible
-  /// Format: ADH001, ADH002, ADH003, etc.
+  /// 
+  /// ⚠️ DÉPRÉCIÉ : Utilisez AdherentCodeGenerator.generateUniqueCode() à la place
+  /// Cette méthode est conservée pour compatibilité avec l'ancien format
+  /// 
+  /// Format ancien: ADH001, ADH002, ADH003, etc.
+  /// Format nouveau: CE25A9F2, CO24B103, ES26Z7Q8 (via AdherentCodeGenerator)
+  @Deprecated('Utilisez AdherentCodeGenerator.generateUniqueCode() pour la nouvelle nomenclature ERP')
   Future<String> generateNextCode() async {
     try {
       final db = await DatabaseInitializer.database;
@@ -634,15 +675,84 @@ class AdherentService {
     try {
       final db = await DatabaseInitializer.database;
       
-      final result = await db.query(
+      // Récupérer les ventes individuelles (où adherent_id correspond directement)
+      final ventesIndividuelles = await db.query(
         'ventes',
-        where: 'adherent_id = ?',
-        whereArgs: [adherentId],
-        orderBy: 'date_vente DESC',
+        where: 'adherent_id = ? AND statut = ?',
+        whereArgs: [adherentId, 'valide'],
+        orderBy: 'date_vente DESC, created_at DESC',
       );
 
-      return result;
+      // Récupérer les ventes groupées (via vente_details)
+      final detailsResult = await db.query(
+        'vente_details',
+        where: 'adherent_id = ?',
+        whereArgs: [adherentId],
+      );
+      
+      final venteIdsFromDetails = detailsResult.map((d) => d['vente_id'] as int).toSet();
+      
+      List<Map<String, dynamic>> ventesGroupees = [];
+      if (venteIdsFromDetails.isNotEmpty) {
+        final placeholders = venteIdsFromDetails.map((_) => '?').join(',');
+        final ventesGroupeesRaw = await db.query(
+          'ventes',
+          where: 'id IN ($placeholders) AND statut = ?',
+          whereArgs: [...venteIdsFromDetails, 'valide'],
+          orderBy: 'date_vente DESC, created_at DESC',
+        );
+        
+        // Enrichir les ventes groupées avec les détails spécifiques à l'adhérent
+        // Créer des copies modifiables car les Maps SQLite sont en lecture seule
+        for (var venteRaw in ventesGroupeesRaw) {
+          final vente = Map<String, dynamic>.from(venteRaw); // Copie modifiable
+          final detail = detailsResult.firstWhere(
+            (d) => d['vente_id'] == vente['id'],
+            orElse: () => <String, dynamic>{},
+          );
+          
+          if (detail.isNotEmpty) {
+            // Ajouter les informations spécifiques de l'adhérent pour cette vente groupée
+            vente['quantite'] = detail['quantite'];
+            vente['montant'] = detail['montant'];
+            vente['prix_unitaire'] = detail['prix_unitaire'];
+            // Garder aussi les valeurs totales pour référence
+            vente['quantite_total'] = vente['quantite_total'];
+            vente['montant_total'] = vente['montant_total'];
+          }
+          ventesGroupees.add(vente);
+        }
+      }
+
+      // Combiner les deux listes et supprimer les doublons (au cas où)
+      // Créer des copies modifiables pour toutes les ventes
+      final allVentes = <int, Map<String, dynamic>>{};
+      
+      for (var venteRaw in ventesIndividuelles) {
+        final vente = Map<String, dynamic>.from(venteRaw); // Copie modifiable
+        allVentes[vente['id'] as int] = vente;
+      }
+      
+      for (var vente in ventesGroupees) {
+        // Déjà une copie modifiable, pas besoin de recopier
+        allVentes[vente['id'] as int] = vente;
+      }
+
+      // Trier par date de vente (plus récent en premier)
+      final sortedVentes = allVentes.values.toList();
+      sortedVentes.sort((a, b) {
+        final dateA = a['date_vente'] != null 
+            ? DateTime.parse(a['date_vente'] as String)
+            : DateTime.parse(a['created_at'] as String);
+        final dateB = b['date_vente'] != null
+            ? DateTime.parse(b['date_vente'] as String)
+            : DateTime.parse(b['created_at'] as String);
+        return dateB.compareTo(dateA);
+      });
+
+      return sortedVentes;
     } catch (e) {
+      print('❌ Erreur lors de la récupération des ventes: $e');
       throw Exception('Erreur lors de la récupération des ventes: $e');
     }
   }
@@ -662,6 +772,200 @@ class AdherentService {
       return result;
     } catch (e) {
       throw Exception('Erreur lors de la récupération des recettes: $e');
+    }
+  }
+
+  // ========== INTÉGRATION MODULE VENTES ==========
+
+  /// Récupérer le stock disponible d'un adhérent par campagne
+  /// Retourne le stock disponible en kg pour une campagne donnée
+  Future<double> getStockByCampagne({
+    required int adherentId,
+    int? campagneId,
+  }) async {
+    try {
+      final db = await DatabaseInitializer.database;
+      
+      // Si pas de campagne spécifiée, retourner le stock total
+      if (campagneId == null) {
+        return await _getStockTotal(adherentId);
+      }
+      
+      // Récupérer les dépôts (note: campagne_id peut ne pas exister dans stock_depots)
+      // On récupère tous les dépôts et on filtre par campagne via les ventes
+      final depotsResult = await db.rawQuery('''
+        SELECT COALESCE(SUM(poids_net), SUM(quantite), 0) as total
+        FROM stock_depots
+        WHERE adherent_id = ?
+      ''', [adherentId]);
+      
+      final totalDepots = (depotsResult.first['total'] as num?)?.toDouble() ?? 0.0;
+      
+      // Récupérer les mouvements de vente liés à cette campagne
+      final mouvementsResult = await db.rawQuery('''
+        SELECT COALESCE(SUM(sm.quantite), 0) as total
+        FROM stock_mouvements sm
+        INNER JOIN ventes v ON v.id = sm.vente_id
+        WHERE sm.adherent_id = ? 
+        AND v.campagne_id = ?
+        AND sm.type IN ('vente', 'ajustement')
+      ''', [adherentId, campagneId]);
+      
+      final totalMouvements = (mouvementsResult.first['total'] as num?)?.toDouble() ?? 0.0;
+      
+      return totalDepots + totalMouvements;
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération du stock par campagne: $e');
+    }
+  }
+
+  /// Récupérer le stock total d'un adhérent (méthode helper)
+  Future<double> _getStockTotal(int adherentId) async {
+    try {
+      final db = await DatabaseInitializer.database;
+      
+      final depotsResult = await db.rawQuery('''
+        SELECT COALESCE(SUM(poids_net), SUM(quantite), 0) as total
+        FROM stock_depots
+        WHERE adherent_id = ?
+      ''', [adherentId]);
+      
+      final totalDepots = (depotsResult.first['total'] as num?)?.toDouble() ?? 0.0;
+      
+      final mouvementsResult = await db.rawQuery('''
+        SELECT COALESCE(SUM(quantite), 0) as total
+        FROM stock_mouvements
+        WHERE adherent_id = ? AND type IN ('vente', 'ajustement')
+      ''', [adherentId]);
+      
+      final totalMouvements = (mouvementsResult.first['total'] as num?)?.toDouble() ?? 0.0;
+      
+      return totalDepots + totalMouvements;
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération du stock total: $e');
+    }
+  }
+
+  /// Récupérer le taux de commission applicable pour un adhérent
+  /// Selon sa catégorie (producteur/adherent/actionnaire)
+  Future<double> getCommissionRateForAdherent(int adherentId) async {
+    try {
+      final adherent = await getAdherentById(adherentId);
+      if (adherent == null) {
+        throw Exception('Adhérent non trouvé');
+      }
+      
+      final db = await DatabaseInitializer.database;
+      final parametres = await db.query('coop_settings', limit: 1);
+      
+      if (parametres.isEmpty) {
+        return AppConfig.defaultCommissionRate;
+      }
+      
+      final settings = parametres.first;
+      
+      // Commission différenciée selon catégorie
+      if (adherent.isActionnaire) {
+        final rate = settings['commission_rate_actionnaire'] as num?;
+        return rate?.toDouble() ?? settings['commission_rate'] as double;
+      } else if (adherent.isProducteur) {
+        final rate = settings['commission_rate_producteur'] as num?;
+        return rate?.toDouble() ?? settings['commission_rate'] as double;
+      } else {
+        // Adhérent simple : commission standard
+        return (settings['commission_rate'] as num).toDouble();
+      }
+    } catch (e) {
+      print('Erreur lors de la récupération du taux de commission: $e');
+      return AppConfig.defaultCommissionRate;
+    }
+  }
+
+  /// Vérifier si un adhérent est actif et peut vendre
+  Future<bool> canAdherentSell(int adherentId) async {
+    try {
+      final adherent = await getAdherentById(adherentId);
+      if (adherent == null) return false;
+      
+      // Vérifier si actif ET statut actif
+      return adherent.isActive && adherent.isStatutActif;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Récupérer les campagnes actives d'un adhérent
+  /// (basé sur les dépôts effectués)
+  Future<List<int>> getCampagnesActives(int adherentId) async {
+    try {
+      final db = await DatabaseInitializer.database;
+      
+      final result = await db.rawQuery('''
+        SELECT DISTINCT campagne_id
+        FROM stock_depots
+        WHERE adherent_id = ? AND campagne_id IS NOT NULL
+      ''', [adherentId]);
+      
+      return result.map((row) => row['campagne_id'] as int).toList();
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération des campagnes actives: $e');
+    }
+  }
+
+  /// Récupérer le solde financier d'un adhérent
+  /// Retourne le montant dû à l'adhérent (recettes - paiements)
+  Future<double> getSoldeFinancier(int adherentId) async {
+    try {
+      final db = await DatabaseInitializer.database;
+      
+      // Montant total des ventes (montant net après commission)
+      final ventesResult = await db.rawQuery('''
+        SELECT COALESCE(SUM(montant_net), 0) as total
+        FROM ventes
+        WHERE adherent_id = ? AND statut = 'valide'
+      ''', [adherentId]);
+      
+      final montantVentes = (ventesResult.first['total'] as num?)?.toDouble() ?? 0.0;
+      
+      // Montant total payé (recettes)
+      final recettesResult = await db.rawQuery('''
+        SELECT COALESCE(SUM(montant_net), 0) as total
+        FROM recettes
+        WHERE adherent_id = ?
+      ''', [adherentId]);
+      
+      final montantPaye = (recettesResult.first['total'] as num?)?.toDouble() ?? 0.0;
+      
+      return montantVentes - montantPaye;
+    } catch (e) {
+      throw Exception('Erreur lors du calcul du solde financier: $e');
+    }
+  }
+
+  /// Récupérer les ventes d'un adhérent avec détails complets
+  Future<List<Map<String, dynamic>>> getVentesWithDetails(int adherentId) async {
+    try {
+      final db = await DatabaseInitializer.database;
+      
+      final result = await db.rawQuery('''
+        SELECT 
+          v.*,
+          va.poids_utilise,
+          va.montant_brut,
+          va.commission_rate,
+          va.commission_amount,
+          va.montant_net as montant_net_adherent,
+          va.campagne_id,
+          va.qualite
+        FROM ventes v
+        LEFT JOIN vente_adherents va ON va.vente_id = v.id AND va.adherent_id = ?
+        WHERE v.adherent_id = ? OR va.adherent_id = ?
+        ORDER BY v.date_vente DESC
+      ''', [adherentId, adherentId, adherentId]);
+      
+      return result;
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération des ventes avec détails: $e');
     }
   }
 
@@ -784,6 +1088,32 @@ class AdherentService {
         'capitalSocialRestant': 0.0,
         'rendementMoyenHa': 0.0,
       };
+    }
+  }
+  
+  /// S'assurer que la colonne photo_path existe dans la table adherents
+  /// Cette méthode est appelée avant chaque insertion pour garantir la compatibilité
+  Future<void> _ensurePhotoPathColumn(Database db) async {
+    try {
+      final columns = await db.rawQuery('PRAGMA table_info(adherents)');
+      final columnNames = columns.map((c) => c['name'] as String).toList();
+      
+      if (!columnNames.contains('photo_path')) {
+        try {
+          await db.execute('ALTER TABLE adherents ADD COLUMN photo_path TEXT');
+          print('✅ Colonne photo_path ajoutée à adherents (vérification runtime)');
+        } catch (e) {
+          // Ignorer si la colonne existe déjà (cas de race condition)
+          if (!e.toString().contains('duplicate column') && 
+              !e.toString().contains('already exists')) {
+            print('⚠️ Erreur lors de l\'ajout de photo_path: $e');
+            // Ne pas faire échouer l'opération, mais logger l'erreur
+          }
+        }
+      }
+    } catch (e) {
+      print('⚠️ Erreur lors de la vérification de photo_path: $e');
+      // Ne pas faire échouer l'opération
     }
   }
 }

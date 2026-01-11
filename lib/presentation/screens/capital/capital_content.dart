@@ -20,7 +20,7 @@ class CapitalContent extends StatefulWidget {
 class _CapitalContentState extends State<CapitalContent> {
   final CapitalService _capitalService = CapitalService();
   
-  CapitalSocialSummary? _summary;
+  Map<String, dynamic>? _summary;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -37,7 +37,7 @@ class _CapitalContentState extends State<CapitalContent> {
     });
 
     try {
-      final summary = await _capitalService.getCapitalSocialSummary();
+      final summary = await _capitalService.getStatistiquesCapital();
       setState(() {
         _summary = summary;
         _isLoading = false;
@@ -95,7 +95,7 @@ class _CapitalContentState extends State<CapitalContent> {
         ),
         ElevatedButton.icon(
           onPressed: () {
-            Navigator.of(context, rootNavigator: false).pushNamed(AppRoutes.partsSociales);
+            Navigator.of(context, rootNavigator: false).pushNamed(AppRoutes.capital);
           },
           icon: const Icon(Icons.list),
           label: const Text('Voir les Parts'),
@@ -112,7 +112,7 @@ class _CapitalContentState extends State<CapitalContent> {
         Expanded(
           child: StatCard(
             title: 'Capital Total',
-            value: '${format.format(_summary!.capitalTotal)} FCFA',
+            value: '${format.format((_summary!['capital_souscrit'] as num?)?.toDouble() ?? 0.0)} FCFA',
             icon: Icons.account_balance,
             color: Colors.green,
           ),
@@ -121,7 +121,7 @@ class _CapitalContentState extends State<CapitalContent> {
         Expanded(
           child: StatCard(
             title: 'Parts Actives',
-            value: format.format(_summary!.nombrePartsActives),
+            value: format.format((_summary!['nombre_actionnaires'] as int?) ?? 0),
             icon: Icons.assignment,
             color: Colors.blue,
           ),
@@ -130,7 +130,7 @@ class _CapitalContentState extends State<CapitalContent> {
         Expanded(
           child: StatCard(
             title: 'Valeur Unitaire',
-            value: '${format.format(_summary!.valeurUnitaire)} FCFA',
+            value: '${format.format((_summary!['valeur_part'] as num?)?.toDouble() ?? 0.0)} FCFA',
             icon: Icons.attach_money,
             color: Colors.orange,
           ),
@@ -139,7 +139,7 @@ class _CapitalContentState extends State<CapitalContent> {
         Expanded(
           child: StatCard(
             title: 'Actionnaires',
-            value: '${_summary!.nombreActionnaires}',
+            value: '${(_summary!['nombre_actionnaires'] as int?) ?? 0}',
             icon: Icons.people,
             color: Colors.purple,
           ),
@@ -181,7 +181,7 @@ class _CapitalContentState extends State<CapitalContent> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      Navigator.of(context, rootNavigator: false).pushNamed(AppRoutes.partsSociales);
+                      Navigator.of(context, rootNavigator: false).pushNamed(AppRoutes.capital);
                     },
                     icon: const Icon(Icons.list),
                     label: const Text('Liste des Parts'),

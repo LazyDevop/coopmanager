@@ -15,12 +15,32 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _usernameFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Réinitialiser l'état d'authentification quand on arrive sur l'écran de connexion
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final authViewModel = context.read<AuthViewModel>();
+        authViewModel.clearError();
+        // Réinitialiser les champs du formulaire
+        _usernameController.clear();
+        _passwordController.clear();
+        _formKey.currentState?.reset();
+      }
+    });
+  }
 
   @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _usernameFocusNode.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -80,6 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -94,6 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.all(24.0),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 450),
@@ -106,6 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     padding: const EdgeInsets.all(32.0),
                     child: Form(
                       key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -137,6 +160,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         // Champ Username
                         TextFormField(
                           controller: _usernameController,
+                          focusNode: _usernameFocusNode,
+                          enabled: true,
+                          autofocus: false,
+                          keyboardType: TextInputType.text,
                           decoration: InputDecoration(
                             labelText: 'Nom d\'utilisateur',
                             prefixIcon: const Icon(Icons.person),
@@ -147,6 +174,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             fillColor: Colors.grey.shade50,
                           ),
                           textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) {
+                            FocusScope.of(context).requestFocus(_passwordFocusNode);
+                          },
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Veuillez entrer votre nom d\'utilisateur';
@@ -159,7 +189,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         // Champ Mot de passe
                         TextFormField(
                           controller: _passwordController,
+                          focusNode: _passwordFocusNode,
+                          enabled: true,
+                          autofocus: false,
                           obscureText: _obscurePassword,
+                          keyboardType: TextInputType.visiblePassword,
                           decoration: InputDecoration(
                             labelText: 'Mot de passe',
                             prefixIcon: const Icon(Icons.lock),
@@ -195,22 +229,22 @@ class _LoginScreenState extends State<LoginScreen> {
                         // Bouton Connexion
                         Consumer<AuthViewModel>(
                           builder: (context, authViewModel, _) {
+                            final isLoading = authViewModel.isLoading;
                             return SizedBox(
                               width: double.infinity,
                               height: 50,
                               child: ElevatedButton(
-                                onPressed: authViewModel.isLoading
-                                    ? null
-                                    : _handleLogin,
+                                onPressed: isLoading ? null : _handleLogin,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.brown.shade700,
                                   foregroundColor: Colors.white,
+                                  disabledBackgroundColor: Colors.grey.shade400,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   elevation: 2,
                                 ),
-                                child: authViewModel.isLoading
+                                child: isLoading
                                     ? const SizedBox(
                                         height: 20,
                                         width: 20,

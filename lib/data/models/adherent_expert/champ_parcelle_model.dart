@@ -63,6 +63,9 @@ class ChampParcelleModel {
   /// Âge moyen des arbres (en années)
   final int? ageMoyenArbres;
   
+  /// Densité des arbres associés (arbres/hectare)
+  final double? densiteArbresAssocies;
+  
   /// Système d'irrigation
   /// Valeurs possibles: 'pluvial', 'irrigue', 'mixte'
   final String? systemeIrrigation;
@@ -96,6 +99,7 @@ class ChampParcelleModel {
     this.varieteCacao,
     this.nombreArbres,
     this.ageMoyenArbres,
+    this.densiteArbresAssocies,
     this.systemeIrrigation,
     this.notes,
     required this.createdAt,
@@ -127,6 +131,7 @@ class ChampParcelleModel {
       varieteCacao: map['variete_cacao'] as String?,
       nombreArbres: map['nombre_arbres'] as int?,
       ageMoyenArbres: map['age_moyen_arbres'] as int?,
+      densiteArbresAssocies: (map['densite_arbres_associes'] as num?)?.toDouble(),
       systemeIrrigation: map['systeme_irrigation'] as String?,
       notes: map['notes'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
@@ -144,8 +149,8 @@ class ChampParcelleModel {
       'code_champ': codeChamp,
       'nom_champ': nomChamp,
       'localisation': localisation,
-      'latitude': latitude,
-      'longitude': longitude,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
       'superficie': superficie,
       'type_sol': typeSol,
       'annee_mise_en_culture': anneeMiseEnCulture,
@@ -155,6 +160,7 @@ class ChampParcelleModel {
       'variete_cacao': varieteCacao,
       'nombre_arbres': nombreArbres,
       'age_moyen_arbres': ageMoyenArbres,
+      'densite_arbres_associes': densiteArbresAssocies,
       'systeme_irrigation': systemeIrrigation,
       'notes': notes,
       'created_at': createdAt.toIso8601String(),
@@ -180,6 +186,7 @@ class ChampParcelleModel {
     String? varieteCacao,
     int? nombreArbres,
     int? ageMoyenArbres,
+    double? densiteArbresAssocies,
     String? systemeIrrigation,
     String? notes,
     DateTime? createdAt,
@@ -203,6 +210,7 @@ class ChampParcelleModel {
       varieteCacao: varieteCacao ?? this.varieteCacao,
       nombreArbres: nombreArbres ?? this.nombreArbres,
       ageMoyenArbres: ageMoyenArbres ?? this.ageMoyenArbres,
+      densiteArbresAssocies: densiteArbresAssocies ?? this.densiteArbresAssocies,
       systemeIrrigation: systemeIrrigation ?? this.systemeIrrigation,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,

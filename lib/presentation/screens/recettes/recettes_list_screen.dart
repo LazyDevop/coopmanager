@@ -18,11 +18,27 @@ class RecettesListScreen extends StatefulWidget {
 }
 
 class _RecettesListScreenState extends State<RecettesListScreen> {
+  bool _hasLoaded = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<RecetteViewModel>().loadRecettesSummary();
+      if (!_hasLoaded) {
+        _hasLoaded = true;
+        context.read<RecetteViewModel>().loadRecettesSummary();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Recharger quand on revient sur cet écran
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _hasLoaded) {
+        context.read<RecetteViewModel>().loadRecettesSummary();
+      }
     });
   }
 
@@ -78,32 +94,55 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
               
               // Liste des recettes
               Expanded(
-                child: recetteViewModel.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : recetteViewModel.recettesSummary.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    await recetteViewModel.loadRecettesSummary();
+                  },
+                  child: recetteViewModel.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : recetteViewModel.recettesSummary.isEmpty
+                          ? ListView(
                               children: [
-                                Icon(
-                                  Icons.receipt_long_outlined,
-                                  size: 64,
-                                  color: Colors.grey.shade400,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Aucune recette enregistrée',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.grey.shade600,
+                                SizedBox(
+                                  height: MediaQuery.of(context).size.height * 0.5,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.receipt_long_outlined,
+                                          size: 64,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'Aucune recette enregistrée',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        if (recetteViewModel.errorMessage != null) ...[
+                                          const SizedBox(height: 8),
+                                          Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: Text(
+                                              recetteViewModel.errorMessage!,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.red.shade600,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: () => recetteViewModel.loadRecettesSummary(),
-                            child: ListView.builder(
+                            )
+                          : ListView.builder(
                               padding: const EdgeInsets.all(8),
                               itemCount: recetteViewModel.recettesSummary.length,
                               itemBuilder: (context, index) {
@@ -111,7 +150,7 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
                                 return _buildRecetteCard(context, summary, recetteViewModel);
                               },
                             ),
-                          ),
+                ),
               ),
             ],
           ),
@@ -121,18 +160,10 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
   }
 
   Widget _buildStatisticsCard(RecetteViewModel viewModel) {
-    final totalBrut = viewModel.recettesSummary.fold(
-      0.0,
-      (sum, s) => sum + s.totalMontantBrut,
-    );
-    final totalCommission = viewModel.recettesSummary.fold(
-      0.0,
-      (sum, s) => sum + s.totalCommission,
-    );
-    final totalNet = viewModel.recettesSummary.fold(
-      0.0,
-      (sum, s) => sum + s.totalMontantNet,
-    );
+    // Utiliser les recettes complètes pour les statistiques globales
+    final totalBrut = viewModel.totalMontantBrut;
+    final totalCommission = viewModel.totalCommission;
+    final totalNet = viewModel.totalMontantNet;
 
     return Container(
       margin: const EdgeInsets.all(8),

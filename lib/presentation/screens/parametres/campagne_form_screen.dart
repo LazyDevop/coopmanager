@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../../viewmodels/parametres_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../../data/models/parametres_cooperative_model.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 class CampagneFormScreen extends StatefulWidget {
   final CampagneModel? campagne;
@@ -80,11 +79,12 @@ class _CampagneFormScreenState extends State<CampagneFormScreen> {
     }
 
     if (_dateFin.isBefore(_dateDebut)) {
-      Fluttertoast.showToast(
-        msg: 'La date de fin doit être après la date de début',
-        toastLength: Toast.LENGTH_LONG,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('La date de fin doit être après la date de début'),
+          duration: Duration(seconds: 4),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -121,21 +121,23 @@ class _CampagneFormScreenState extends State<CampagneFormScreen> {
     }
 
     if (success && mounted) {
-      Fluttertoast.showToast(
-        msg: widget.campagne != null
-            ? 'Campagne mise à jour avec succès'
-            : 'Campagne créée avec succès',
-        toastLength: Toast.LENGTH_SHORT,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(widget.campagne != null
+              ? 'Campagne mise à jour avec succès'
+              : 'Campagne créée avec succès'),
+          duration: const Duration(seconds: 3),
+          backgroundColor: Colors.green,
+        ),
       );
       Navigator.pop(context);
     } else if (mounted) {
-      Fluttertoast.showToast(
-        msg: viewModel.errorMessage ?? 'Erreur lors de la sauvegarde',
-        toastLength: Toast.LENGTH_LONG,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(viewModel.errorMessage ?? 'Erreur lors de la sauvegarde'),
+          duration: const Duration(seconds: 4),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }

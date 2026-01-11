@@ -31,6 +31,7 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
   final _campagneAgricoleController = TextEditingController();
   final _nombreArbresController = TextEditingController();
   final _ageMoyenArbresController = TextEditingController();
+  final _densiteArbresAssociesController = TextEditingController();
   final _notesController = TextEditingController();
 
   final ChampParcelleService _service = ChampParcelleService();
@@ -92,6 +93,7 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
     _varieteCacao = champ.varieteCacao;
     _nombreArbresController.text = champ.nombreArbres?.toString() ?? '';
     _ageMoyenArbresController.text = champ.ageMoyenArbres?.toString() ?? '';
+    _densiteArbresAssociesController.text = champ.densiteArbresAssocies?.toString() ?? '';
     _systemeIrrigation = champ.systemeIrrigation;
     _notesController.text = champ.notes ?? '';
   }
@@ -108,6 +110,7 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
     _campagneAgricoleController.dispose();
     _nombreArbresController.dispose();
     _ageMoyenArbresController.dispose();
+    _densiteArbresAssociesController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -134,6 +137,16 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
 
       if (widget.champ == null) {
         // Création
+        final latitudeValue = _latitudeController.text.trim().isEmpty 
+            ? null 
+            : double.tryParse(_latitudeController.text.trim());
+        final longitudeValue = _longitudeController.text.trim().isEmpty 
+            ? null 
+            : double.tryParse(_longitudeController.text.trim());
+        
+        print('🔍 Formulaire - Latitude saisie: "${_latitudeController.text.trim()}" -> $latitudeValue');
+        print('🔍 Formulaire - Longitude saisie: "${_longitudeController.text.trim()}" -> $longitudeValue');
+        
         await _service.createChamp(
           adherentId: widget.adherentId,
           nomChamp: _nomChampController.text.trim().isEmpty 
@@ -142,12 +155,8 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
           localisation: _localisationController.text.trim().isEmpty 
               ? null 
               : _localisationController.text.trim(),
-          latitude: _latitudeController.text.trim().isEmpty 
-              ? null 
-              : double.tryParse(_latitudeController.text.trim()),
-          longitude: _longitudeController.text.trim().isEmpty 
-              ? null 
-              : double.tryParse(_longitudeController.text.trim()),
+          latitude: latitudeValue,
+          longitude: longitudeValue,
           superficie: superficie,
           typeSol: _typeSol,
           anneeMiseEnCulture: _anneeMiseEnCultureController.text.trim().isEmpty 
@@ -165,6 +174,9 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
           ageMoyenArbres: _ageMoyenArbresController.text.trim().isEmpty 
               ? null 
               : int.tryParse(_ageMoyenArbresController.text.trim()),
+          densiteArbresAssocies: _densiteArbresAssociesController.text.trim().isEmpty 
+              ? null 
+              : double.tryParse(_densiteArbresAssociesController.text.trim()),
           systemeIrrigation: _systemeIrrigation,
           notes: _notesController.text.trim().isEmpty 
               ? null 
@@ -173,6 +185,16 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
         );
       } else {
         // Modification
+        final latitudeValue = _latitudeController.text.trim().isEmpty 
+            ? null 
+            : double.tryParse(_latitudeController.text.trim());
+        final longitudeValue = _longitudeController.text.trim().isEmpty 
+            ? null 
+            : double.tryParse(_longitudeController.text.trim());
+        
+        print('🔍 Formulaire UPDATE - Latitude saisie: "${_latitudeController.text.trim()}" -> $latitudeValue');
+        print('🔍 Formulaire UPDATE - Longitude saisie: "${_longitudeController.text.trim()}" -> $longitudeValue');
+        
         await _service.updateChamp(
           id: widget.champ!.id!,
           nomChamp: _nomChampController.text.trim().isEmpty 
@@ -181,12 +203,8 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
           localisation: _localisationController.text.trim().isEmpty 
               ? null 
               : _localisationController.text.trim(),
-          latitude: _latitudeController.text.trim().isEmpty 
-              ? null 
-              : double.tryParse(_latitudeController.text.trim()),
-          longitude: _longitudeController.text.trim().isEmpty 
-              ? null 
-              : double.tryParse(_longitudeController.text.trim()),
+          latitude: latitudeValue,
+          longitude: longitudeValue,
           superficie: superficie,
           typeSol: _typeSol,
           anneeMiseEnCulture: _anneeMiseEnCultureController.text.trim().isEmpty 
@@ -204,6 +222,9 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
           ageMoyenArbres: _ageMoyenArbresController.text.trim().isEmpty 
               ? null 
               : int.tryParse(_ageMoyenArbresController.text.trim()),
+          densiteArbresAssocies: _densiteArbresAssociesController.text.trim().isEmpty 
+              ? null 
+              : double.tryParse(_densiteArbresAssociesController.text.trim()),
           systemeIrrigation: _systemeIrrigation,
           notes: _notesController.text.trim().isEmpty 
               ? null 
@@ -484,6 +505,31 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
                   ),
                 ),
                 keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+
+              // Densité des arbres associés
+              TextFormField(
+                controller: _densiteArbresAssociesController,
+                decoration: InputDecoration(
+                  labelText: 'Densité des arbres associés (arbres/ha)',
+                  hintText: 'Nombre d\'arbres associés par hectare',
+                  prefixIcon: const Icon(Icons.forest),
+                  suffixText: 'arbres/ha',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    final densite = double.tryParse(value);
+                    if (densite == null || densite < 0) {
+                      return 'La densité doit être un nombre positif';
+                    }
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 

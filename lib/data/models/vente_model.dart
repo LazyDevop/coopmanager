@@ -17,6 +17,13 @@ class VenteModel {
   final int? clientId; // Lien avec client
   final int? ecritureComptableId; // Lien avec écriture comptable
   final String? qrCodeHash; // Hash QR Code pour sécurité
+  
+  // V1: Champs obligatoires Module Ventes V1
+  final int? campagneId; // Campagne agricole (obligatoire)
+  final String statutPaiement; // 'payee' ou 'non_payee'
+  final double montantCommission; // Montant de la commission
+  final double montantNet; // Montant net après commission
+  final String? facturePdfPath; // Chemin vers la facture PDF
 
   VenteModel({
     this.id,
@@ -36,12 +43,20 @@ class VenteModel {
     this.clientId,
     this.ecritureComptableId,
     this.qrCodeHash,
+    // V1: Champs Module Ventes V1
+    this.campagneId,
+    this.statutPaiement = 'non_payee',
+    this.montantCommission = 0.0,
+    this.montantNet = 0.0,
+    this.facturePdfPath,
   });
 
   bool get isValide => statut == 'valide';
   bool get isAnnulee => statut == 'annulee';
   bool get isIndividuelle => type == 'individuelle';
   bool get isGroupee => type == 'groupee';
+  bool get isPayee => statutPaiement == 'payee';
+  bool get isNonPayee => statutPaiement == 'non_payee';
 
   // Convertir depuis Map (base de données)
   factory VenteModel.fromMap(Map<String, dynamic> map) {
@@ -63,6 +78,12 @@ class VenteModel {
       clientId: map['client_id'] as int?,
       ecritureComptableId: map['ecriture_comptable_id'] as int?,
       qrCodeHash: map['qr_code_hash'] as String?,
+      // V1: Champs Module Ventes V1
+      campagneId: map['campagne_id'] as int?,
+      statutPaiement: map['statut_paiement'] as String? ?? 'non_payee',
+      montantCommission: (map['montant_commission'] as num?)?.toDouble() ?? 0.0,
+      montantNet: (map['montant_net'] as num?)?.toDouble() ?? 0.0,
+      facturePdfPath: map['facture_pdf_path'] as String?,
     );
   }
 
@@ -86,6 +107,12 @@ class VenteModel {
       'client_id': clientId,
       'ecriture_comptable_id': ecritureComptableId,
       'qr_code_hash': qrCodeHash,
+      // V1: Champs Module Ventes V1
+      if (campagneId != null) 'campagne_id': campagneId,
+      'statut_paiement': statutPaiement,
+      'montant_commission': montantCommission,
+      'montant_net': montantNet,
+      if (facturePdfPath != null) 'facture_pdf_path': facturePdfPath,
     };
   }
 
@@ -107,6 +134,11 @@ class VenteModel {
     int? clientId,
     int? ecritureComptableId,
     String? qrCodeHash,
+    int? campagneId,
+    String? statutPaiement,
+    double? montantCommission,
+    double? montantNet,
+    String? facturePdfPath,
   }) {
     return VenteModel(
       id: id ?? this.id,
@@ -126,6 +158,12 @@ class VenteModel {
       clientId: clientId ?? this.clientId,
       ecritureComptableId: ecritureComptableId ?? this.ecritureComptableId,
       qrCodeHash: qrCodeHash ?? this.qrCodeHash,
+      // V1: Champs Module Ventes V1
+      campagneId: campagneId ?? this.campagneId,
+      statutPaiement: statutPaiement ?? this.statutPaiement,
+      montantCommission: montantCommission ?? this.montantCommission,
+      montantNet: montantNet ?? this.montantNet,
+      facturePdfPath: facturePdfPath ?? this.facturePdfPath,
     );
   }
 }

@@ -5,7 +5,6 @@ import '../../viewmodels/auth_viewmodel.dart';
 import '../../../config/routes/routes.dart';
 import '../../../data/models/adherent_model.dart';
 import 'package:intl/intl.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 class AdherentsListScreen extends StatefulWidget {
   const AdherentsListScreen({super.key});
@@ -478,12 +477,13 @@ class _AdherentsListScreenState extends State<AdherentsListScreen> {
           );
 
           if (success && context.mounted) {
-            Fluttertoast.showToast(
-              msg: action == 'activate'
-                  ? 'Adhérent réactivé avec succès'
-                  : 'Adhérent désactivé avec succès',
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.BOTTOM,
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(action == 'activate'
+                    ? 'Adhérent réactivé avec succès'
+                    : 'Adhérent désactivé avec succès'),
+                duration: const Duration(seconds: 3),
+              ),
             );
           }
         }

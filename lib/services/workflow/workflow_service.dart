@@ -838,8 +838,8 @@ class WorkflowService {
         );
         final ajustementId = await db.insert('stock_mouvements', ajustement.toMap());
 
-        // 2. Calculer le nouveau stock
-        final stockActuel = await _stockService.getStockActuel(adherentId);
+        // 2. Calculer le nouveau stock et vérifier les alertes (avec vérification des doublons)
+        final stockActuel = await _stockService.getStockActuel(adherentId, checkAlerts: true);
 
         // 3. Logger l'audit
         await _auditService.logAction(
@@ -849,24 +849,6 @@ class WorkflowService {
           entityId: ajustementId,
           details: 'Ajustement de $quantite kg pour adhérent $adherentId. Raison: $raison',
         );
-
-        // 4. Notifications si stock faible/critique
-        Future.microtask(() async {
-          if (stockActuel <= 10.0) {
-            await _notificationService.notifyStockCritical(
-              adherentId: adherentId,
-              stockActuel: stockActuel,
-              userId: createdBy,
-            );
-          } else if (stockActuel <= 50.0) {
-            await _notificationService.notifyStockLow(
-              adherentId: adherentId,
-              stockActuel: stockActuel,
-              seuil: 50.0,
-              userId: createdBy,
-            );
-          }
-        });
 
         return {
           'ajustement': ajustement.copyWith(id: ajustementId),

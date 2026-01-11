@@ -4,7 +4,6 @@ import '../../viewmodels/parametres_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../../data/models/parametres_cooperative_model.dart';
 import '../../../config/app_config.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 class ParametresFinancesScreen extends StatefulWidget {
   const ParametresFinancesScreen({super.key});
@@ -13,7 +12,10 @@ class ParametresFinancesScreen extends StatefulWidget {
   State<ParametresFinancesScreen> createState() => _ParametresFinancesScreenState();
 }
 
-class _ParametresFinancesScreenState extends State<ParametresFinancesScreen> {
+class _ParametresFinancesScreenState extends State<ParametresFinancesScreen> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => false; // Ne pas garder l'état, recharger à chaque fois
+  
   final _formKey = GlobalKey<FormState>();
   final _commissionController = TextEditingController();
   final _periodeController = TextEditingController();
@@ -21,22 +23,33 @@ class _ParametresFinancesScreenState extends State<ParametresFinancesScreen> {
   // Contrôleurs pour les barèmes
   final Map<String, TextEditingController> _baremeControllers = {};
   bool _hasChanges = false;
+  int? _lastLoadedPeriode;
 
   @override
   void initState() {
     super.initState();
-    _loadParametres();
+    // Différer le chargement pour éviter notifyListeners() pendant le build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadParametres();
+    });
   }
 
   Future<void> _loadParametres() async {
+    if (!mounted) return;
     final viewModel = context.read<ParametresViewModel>();
     await viewModel.loadParametres();
     await viewModel.loadBaremes();
     
+    if (!mounted) return;
+    
     final parametres = viewModel.parametres;
     if (parametres != null) {
-      _commissionController.text = (parametres.commissionRate * 100).toStringAsFixed(2);
-      _periodeController.text = parametres.periodeCampagneDays.toString();
+      setState(() {
+        _commissionController.text = (parametres.commissionRate * 100).toStringAsFixed(2);
+        _periodeController.text = parametres.periodeCampagneDays.toString();
+        _lastLoadedPeriode = parametres.periodeCampagneDays;
+        _hasChanges = false;
+      });
     }
     
     // Initialiser les contrôleurs pour les barèmes
@@ -46,17 +59,21 @@ class _ParametresFinancesScreenState extends State<ParametresFinancesScreen> {
         orElse: () => BaremeQualiteModel(qualite: qualite),
       );
       
-      _baremeControllers['${qualite}_min'] = TextEditingController(
-        text: bareme.prixMin?.toStringAsFixed(0) ?? '',
-      );
-      _baremeControllers['${qualite}_max'] = TextEditingController(
-        text: bareme.prixMax?.toStringAsFixed(0) ?? '',
-      );
-      _baremeControllers['${qualite}_commission'] = TextEditingController(
-        text: bareme.commissionRate != null
-            ? (bareme.commissionRate! * 100).toStringAsFixed(2)
-            : '',
-      );
+      if (!_baremeControllers.containsKey('${qualite}_min')) {
+        _baremeControllers['${qualite}_min'] = TextEditingController();
+      }
+      if (!_baremeControllers.containsKey('${qualite}_max')) {
+        _baremeControllers['${qualite}_max'] = TextEditingController();
+      }
+      if (!_baremeControllers.containsKey('${qualite}_commission')) {
+        _baremeControllers['${qualite}_commission'] = TextEditingController();
+      }
+      
+      _baremeControllers['${qualite}_min']!.text = bareme.prixMin?.toStringAsFixed(0) ?? '';
+      _baremeControllers['${qualite}_max']!.text = bareme.prixMax?.toStringAsFixed(0) ?? '';
+      _baremeControllers['${qualite}_commission']!.text = bareme.commissionRate != null
+          ? (bareme.commissionRate! * 100).toStringAsFixed(2)
+          : '';
     }
   }
 
@@ -91,21 +108,29 @@ class _ParametresFinancesScreenState extends State<ParametresFinancesScreen> {
     );
 
     if (success && mounted) {
-      Fluttertoast.showToast(
-        msg: 'Paramètres financiers sauvegardés avec succès',
-        toastLength: Toast.LENGTH_SHORT,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
+      // Recharger les paramètres après sauvegarde
+      await viewModel.loadParametres();
+      
+      // Réinitialiser le flag pour permettre le rechargement au retour sur l'onglet
+      _lastLoadedPeriode = null;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Paramètres financiers sauvegardés avec succès'),
+          duration: Duration(seconds: 3),
+          backgroundColor: Colors.green,
+        ),
       );
       setState(() {
         _hasChanges = false;
       });
     } else if (mounted) {
-      Fluttertoast.showToast(
-        msg: viewModel.errorMessage ?? 'Erreur lors de la sauvegarde',
-        toastLength: Toast.LENGTH_LONG,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(viewModel.errorMessage ?? 'Erreur lors de la sauvegarde'),
+          duration: const Duration(seconds: 4),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -123,6 +148,20 @@ class _ParametresFinancesScreenState extends State<ParametresFinancesScreen> {
         ? double.tryParse(_baremeControllers['${qualite}_commission']!.text)
         : null;
 
+    // Validation : prix min doit être inférieur à prix max
+    if (prixMin != null && prixMax != null && prixMin > prixMax) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Le prix minimum doit être inférieur au prix maximum'),
+            duration: Duration(seconds: 3),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
     final success = await viewModel.saveBareme(
       qualite: qualite,
       prixMin: prixMin,
@@ -131,25 +170,68 @@ class _ParametresFinancesScreenState extends State<ParametresFinancesScreen> {
     );
 
     if (success && mounted) {
-      Fluttertoast.showToast(
-        msg: 'Barème sauvegardé avec succès',
-        toastLength: Toast.LENGTH_SHORT,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
+      // Recharger les barèmes après sauvegarde
+      await viewModel.loadBaremes();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Barème ${qualite.toUpperCase()} sauvegardé avec succès'),
+          duration: const Duration(seconds: 3),
+          backgroundColor: Colors.green,
+        ),
       );
     } else if (mounted) {
-      Fluttertoast.showToast(
-        msg: viewModel.errorMessage ?? 'Erreur lors de la sauvegarde',
-        toastLength: Toast.LENGTH_LONG,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(viewModel.errorMessage ?? 'Erreur lors de la sauvegarde'),
+          duration: const Duration(seconds: 4),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Nécessaire pour AutomaticKeepAliveClientMixin
+    
     final viewModel = context.watch<ParametresViewModel>();
+    final parametres = viewModel.parametres;
+    
+    // Mettre à jour automatiquement les contrôleurs quand les paramètres changent dans le ViewModel
+    // (seulement si pas de modifications en cours par l'utilisateur)
+    if (parametres != null && !_hasChanges && _lastLoadedPeriode != parametres.periodeCampagneDays) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && parametres != null && !_hasChanges) {
+          _commissionController.text = (parametres.commissionRate * 100).toStringAsFixed(2);
+          _periodeController.text = parametres.periodeCampagneDays.toString();
+          _lastLoadedPeriode = parametres.periodeCampagneDays;
+          
+          // Mettre à jour les barèmes
+          for (final qualite in AppConfig.qualitesCacao) {
+            final bareme = viewModel.baremes.firstWhere(
+              (b) => b.qualite == qualite,
+              orElse: () => BaremeQualiteModel(qualite: qualite),
+            );
+            
+            _baremeControllers['${qualite}_min']?.text = bareme.prixMin?.toStringAsFixed(0) ?? '';
+            _baremeControllers['${qualite}_max']?.text = bareme.prixMax?.toStringAsFixed(0) ?? '';
+            _baremeControllers['${qualite}_commission']?.text = bareme.commissionRate != null
+                ? (bareme.commissionRate! * 100).toStringAsFixed(2)
+                : '';
+          }
+        }
+      });
+    }
+    
+    // Recharger automatiquement si les paramètres sont chargés mais les champs sont vides
+    if (parametres != null && _commissionController.text.isEmpty && !viewModel.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && parametres != null && !_hasChanges) {
+          _loadParametres();
+        }
+      });
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),

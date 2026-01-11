@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/notification_viewmodel.dart';
+import '../../providers/permission_provider.dart';
 import '../../../config/routes/routes.dart';
 import '../../../config/theme/app_theme.dart';
-import '../../../services/auth/permission_service.dart';
+import '../../../services/navigation/navigation_service.dart';
 import '../../../data/models/user_model.dart';
 import '../common/status_badge.dart';
 
@@ -123,80 +124,65 @@ class _MainLayoutState extends State<MainLayout> {
                   ),
           ),
           const Divider(color: Colors.white24, height: 1),
-          // Menu items
+          // Menu items dynamiques basés sur les permissions
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              children: [
-                _buildMenuItem(
-                  context,
-                  icon: Icons.dashboard,
-                  label: 'Tableau de bord',
-                  route: AppRoutes.dashboard,
-                  isActive: widget.currentRoute == AppRoutes.dashboard,
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.people,
-                  label: 'Adhérents',
-                  route: AppRoutes.adherents,
-                  isActive: widget.currentRoute == AppRoutes.adherents ||
-                      widget.currentRoute.startsWith('/adherent'),
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.inventory,
-                  label: 'Stock',
-                  route: AppRoutes.stock,
-                  isActive: widget.currentRoute == AppRoutes.stock ||
-                      widget.currentRoute.startsWith('/stock'),
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.shopping_cart,
-                  label: 'Ventes',
-                  route: AppRoutes.ventes,
-                  isActive: widget.currentRoute == AppRoutes.ventes ||
-                      widget.currentRoute.startsWith('/vente'),
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.attach_money,
-                  label: 'Recettes',
-                  route: AppRoutes.recettes,
-                  isActive: widget.currentRoute == AppRoutes.recettes ||
-                      widget.currentRoute.startsWith('/recette'),
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.receipt,
-                  label: 'Facturation',
-                  route: AppRoutes.factures,
-                  isActive: widget.currentRoute == AppRoutes.factures ||
-                      widget.currentRoute.startsWith('/facture'),
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.settings,
-                  label: 'Paramétrage',
-                  route: AppRoutes.parametrage,
-                  isActive: widget.currentRoute == AppRoutes.parametrage ||
-                      widget.currentRoute.startsWith('/parametres'),
-                  badge: PermissionService.hasPermission(user, 'manage_settings')
-                      ? null
-                      : Icons.lock,
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.notifications,
-                  label: 'Notifications',
-                  route: AppRoutes.notifications,
-                  isActive: widget.currentRoute == AppRoutes.notifications,
-                  badge: notificationViewModel.unreadCount > 0
-                      ? notificationViewModel.unreadCount.toString()
-                      : null,
-                ),
-              ],
+            child: Consumer<PermissionProvider>(
+              builder: (context, permissionProvider, _) {
+                if (!permissionProvider.isLoaded) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  );
+                }
+                
+                return FutureBuilder<List<NavigationItem>>(
+                  future: NavigationService.getAccessibleModules(permissionProvider),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      );
+                    }
+                    
+                    final menuItems = snapshot.data!;
+                    
+                    return ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      children: [
+                        // Menu items dynamiques
+                        ...menuItems.map((item) {
+                          final isActive = widget.currentRoute == item.route ||
+                              widget.currentRoute.startsWith(item.route.split('/').first);
+                          
+                          // Badge pour notifications
+                          String? badge;
+                          if (item.module == 'notifications' && notificationViewModel.unreadCount > 0) {
+                            badge = notificationViewModel.unreadCount.toString();
+                          }
+                          
+                          // Badge pour paramétrage si pas de permission
+                          IconData? badgeIcon;
+                          if (item.module == 'settings') {
+                            final hasPermission = permissionProvider.hasPermission('manage_settings');
+                            if (!hasPermission) {
+                              badgeIcon = Icons.lock;
+                            }
+                          }
+                          
+                          return _buildMenuItem(
+                            context,
+                            icon: item.icon,
+                            label: item.title,
+                            route: item.route,
+                            isActive: isActive,
+                            badge: badge,
+                            badgeIcon: badgeIcon,
+                          );
+                        }).toList(),
+                      ],
+                    );
+                  },
+                );
+              },
             ),
           ),
           // Bouton collapse/expand
@@ -475,8 +461,7 @@ class _MainLayoutState extends State<MainLayout> {
   Future<void> _handleLogout(BuildContext context) async {
     final authViewModel = context.read<AuthViewModel>();
     await authViewModel.logout();
-    if (context.mounted) {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
-    }
+    // Ne pas naviguer manuellement, AuthWrapper gère automatiquement la transition
+    // via le Consumer qui écoute les changements d'état
   }
 }

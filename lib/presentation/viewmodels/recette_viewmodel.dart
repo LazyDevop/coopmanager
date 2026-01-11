@@ -93,13 +93,24 @@ class RecetteViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
+      print('🔄 Chargement des recettes...');
+      // Charger à la fois les recettes complètes (pour les statistiques) et les résumés (pour l'affichage)
+      _recettes = await _recetteService.getRecettes(
+        startDate: startDate,
+        endDate: endDate,
+      );
+      print('✅ ${_recettes.length} recettes chargées');
+      
       _recettesSummary = await _recetteService.getRecettesSummary(
         startDate: startDate,
         endDate: endDate,
       );
+      print('✅ ${_recettesSummary.length} résumés chargés');
+      
       _isLoading = false;
       notifyListeners();
     } catch (e) {
+      print('❌ Erreur lors du chargement: $e');
       _errorMessage = 'Erreur lors du chargement du résumé: ${e.toString()}';
       _isLoading = false;
       notifyListeners();

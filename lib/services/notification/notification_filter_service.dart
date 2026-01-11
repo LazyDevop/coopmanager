@@ -19,9 +19,17 @@ class NotificationFilterService {
     NotificationModel notification,
     UserModel user,
   ) {
-    // Admin voit toutes les notifications
-    if (user.role == AppConfig.roleAdmin) {
+    // SuperAdmin et Admin voient toutes les notifications
+    if (user.role == AppConfig.roleSuperAdmin || user.role == AppConfig.roleAdmin) {
       return true;
+    }
+
+    // Caissier et Magasinier voient uniquement leurs propres notifications
+    if (user.role == AppConfig.roleCaissier || 
+        user.role == AppConfig.roleMagasinier ||
+        user.role == AppConfig.roleGestionnaireStock) {
+      // Seulement les notifications qui leur sont destinées
+      return notification.userId != null && notification.userId == user.id;
     }
 
     // Notifications spécifiques à l'utilisateur
@@ -29,7 +37,7 @@ class NotificationFilterService {
       return true;
     }
 
-    // Notifications globales filtrées par module et type
+    // Notifications globales filtrées par module et type (pour autres rôles)
     if (notification.userId == null) {
       return _isNotificationRelevantForRole(notification, user.role);
     }
@@ -44,16 +52,26 @@ class NotificationFilterService {
   ) {
     switch (role) {
       case AppConfig.roleCaissier:
-        // Caisse voit : Ventes, Recettes, Facturation
+        // Caissier voit : Ventes, Recettes, Facturation, Paiements
         return _isRelevantForCaissier(notification);
 
-      case AppConfig.roleGestionnaireStock:
-        // Magasinier voit : Stock, Adhérents (lecture seule)
+      case AppConfig.roleMagasinier:
+      case AppConfig.roleGestionnaireStock: // Compatibilité
+        // Magasinier voit : Stock, Dépôts, Adhérents (lecture seule)
         return _isRelevantForMagasinier(notification);
+      
+      case AppConfig.roleComptable:
+        // Comptable voit : Ventes, Recettes, Factures, Comptabilité
+        return _isRelevantForComptable(notification);
 
       default:
         return false;
     }
+  }
+  
+  /// Vérifier si une notification est pertinente pour le Comptable
+  static bool _isRelevantForComptable(NotificationModel notification) {
+    return ['ventes', 'recettes', 'factures', 'comptabilite', 'paiements'].contains(notification.module);
   }
 
   /// Vérifier si une notification est pertinente pour le Caissier

@@ -5,7 +5,6 @@ import 'dart:io';
 import '../../viewmodels/parametres_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../../data/models/parametres_cooperative_model.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 class ParametresInfoScreen extends StatefulWidget {
   const ParametresInfoScreen({super.key});
@@ -14,7 +13,10 @@ class ParametresInfoScreen extends StatefulWidget {
   State<ParametresInfoScreen> createState() => _ParametresInfoScreenState();
 }
 
-class _ParametresInfoScreenState extends State<ParametresInfoScreen> {
+class _ParametresInfoScreenState extends State<ParametresInfoScreen> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => false; // Ne pas garder l'état, recharger à chaque fois
+  
   final _formKey = GlobalKey<FormState>();
   final _nomController = TextEditingController();
   final _adresseController = TextEditingController();
@@ -22,6 +24,7 @@ class _ParametresInfoScreenState extends State<ParametresInfoScreen> {
   final _emailController = TextEditingController();
   
   bool _hasChanges = false;
+  String? _lastLoadedNom;
 
   @override
   void initState() {
@@ -42,10 +45,14 @@ class _ParametresInfoScreenState extends State<ParametresInfoScreen> {
     
     final parametres = viewModel.parametres;
     if (parametres != null) {
-      _nomController.text = parametres.nomCooperative;
-      _adresseController.text = parametres.adresse ?? '';
-      _telephoneController.text = parametres.telephone ?? '';
-      _emailController.text = parametres.email ?? '';
+      setState(() {
+        _nomController.text = parametres.nomCooperative;
+        _adresseController.text = parametres.adresse ?? '';
+        _telephoneController.text = parametres.telephone ?? '';
+        _emailController.text = parametres.email ?? '';
+        _lastLoadedNom = parametres.nomCooperative;
+        _hasChanges = false;
+      });
     }
   }
 
@@ -86,29 +93,62 @@ class _ParametresInfoScreenState extends State<ParametresInfoScreen> {
     );
 
     if (success && mounted) {
-      Fluttertoast.showToast(
-        msg: 'Paramètres sauvegardés avec succès',
-        toastLength: Toast.LENGTH_SHORT,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
+      // Recharger les paramètres après sauvegarde
+      await viewModel.loadParametres();
+      
+      // Réinitialiser le flag pour permettre le rechargement au retour sur l'onglet
+      _lastLoadedNom = null;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Paramètres sauvegardés avec succès'),
+          duration: Duration(seconds: 3),
+          backgroundColor: Colors.green,
+        ),
       );
       setState(() {
         _hasChanges = false;
       });
     } else if (mounted) {
-      Fluttertoast.showToast(
-        msg: viewModel.errorMessage ?? 'Erreur lors de la sauvegarde',
-        toastLength: Toast.LENGTH_LONG,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(viewModel.errorMessage ?? 'Erreur lors de la sauvegarde'),
+          duration: const Duration(seconds: 4),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Nécessaire pour AutomaticKeepAliveClientMixin
+    
     final viewModel = context.watch<ParametresViewModel>();
     final parametres = viewModel.parametres;
+    
+    // Mettre à jour automatiquement les contrôleurs quand les paramètres changent dans le ViewModel
+    // (seulement si pas de modifications en cours par l'utilisateur)
+    if (parametres != null && !_hasChanges && _lastLoadedNom != parametres.nomCooperative) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && parametres != null && !_hasChanges) {
+          _nomController.text = parametres.nomCooperative;
+          _adresseController.text = parametres.adresse ?? '';
+          _telephoneController.text = parametres.telephone ?? '';
+          _emailController.text = parametres.email ?? '';
+          _lastLoadedNom = parametres.nomCooperative;
+        }
+      });
+    }
+    
+    // Recharger automatiquement si les paramètres sont chargés mais les champs sont vides
+    if (parametres != null && _nomController.text.isEmpty && !viewModel.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && parametres != null && !_hasChanges) {
+          _loadParametres();
+        }
+      });
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -150,15 +190,8 @@ class _ParametresInfoScreenState extends State<ParametresInfoScreen> {
                                     fit: BoxFit.cover,
                                   ),
                                 )
-                              : parametres?.logoPath != null &&
-                                      File(parametres!.logoPath!).existsSync()
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.file(
-                                        File(parametres.logoPath!),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    )
+                              : parametres?.logoPath != null
+                                  ? _buildLogoWidget(parametres!.logoPath!)
                                   : Icon(
                                       Icons.business,
                                       size: 80,
@@ -336,6 +369,40 @@ class _ParametresInfoScreenState extends State<ParametresInfoScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildLogoWidget(String logoPath) {
+    try {
+      final file = File(logoPath);
+      if (file.existsSync()) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.file(
+            file,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                Icons.broken_image,
+                size: 80,
+                color: Colors.grey.shade400,
+              );
+            },
+          ),
+        );
+      } else {
+        return Icon(
+          Icons.business,
+          size: 80,
+          color: Colors.grey.shade400,
+        );
+      }
+    } catch (e) {
+      return Icon(
+        Icons.broken_image,
+        size: 80,
+        color: Colors.grey.shade400,
+      );
+    }
   }
 }
 

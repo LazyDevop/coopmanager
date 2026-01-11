@@ -11,6 +11,7 @@ class StockDepotModel {
   final DateTime dateDepot;
   final String? qualite; // standard, premium, bio, etc.
   final double? humidite; // Taux d'humidité en pourcentage
+  final double? densiteArbresAssocies; // Densité des arbres associés (arbres/hectare)
   final String? photoPath; // Chemin vers la photo du dépôt
   final String? observations;
   final int? createdBy;
@@ -29,6 +30,7 @@ class StockDepotModel {
     required this.dateDepot,
     this.qualite,
     this.humidite,
+    this.densiteArbresAssocies,
     this.photoPath,
     this.observations,
     this.createdBy,
@@ -63,6 +65,7 @@ class StockDepotModel {
       dateDepot: DateTime.parse(map['date_depot'] as String),
       qualite: map['qualite'] as String?,
       humidite: map['humidite'] != null ? (map['humidite'] as num).toDouble() : null,
+      densiteArbresAssocies: map['densite_arbres_associes'] != null ? (map['densite_arbres_associes'] as num).toDouble() : null,
       photoPath: map['photo_path'] as String?,
       observations: map['notes'] as String?,
       createdBy: map['created_by'] as int?,
@@ -85,6 +88,7 @@ class StockDepotModel {
       'date_depot': dateDepot.toIso8601String(),
       if (qualite != null) 'qualite': qualite,
       if (humidite != null) 'humidite': humidite,
+      if (densiteArbresAssocies != null) 'densite_arbres_associes': densiteArbresAssocies,
       if (photoPath != null) 'photo_path': photoPath,
       if (observations != null) 'notes': observations,
       if (createdBy != null) 'created_by': createdBy,
@@ -106,6 +110,7 @@ class StockDepotModel {
     DateTime? dateDepot,
     String? qualite,
     double? humidite,
+    double? densiteArbresAssocies,
     String? photoPath,
     String? observations,
     int? createdBy,
@@ -124,6 +129,7 @@ class StockDepotModel {
       dateDepot: dateDepot ?? this.dateDepot,
       qualite: qualite ?? this.qualite,
       humidite: humidite ?? this.humidite,
+      densiteArbresAssocies: densiteArbresAssocies ?? this.densiteArbresAssocies,
       photoPath: photoPath ?? this.photoPath,
       observations: observations ?? this.observations,
       createdBy: createdBy ?? this.createdBy,

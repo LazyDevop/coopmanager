@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import '../../viewmodels/facture_viewmodel.dart';
 import '../../viewmodels/adherent_viewmodel.dart';
 import '../../../data/models/facture_model.dart';

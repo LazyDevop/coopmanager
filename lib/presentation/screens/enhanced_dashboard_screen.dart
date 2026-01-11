@@ -37,51 +37,55 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
   Future<void> _loadData() async {
     if (!mounted) return;
     
-    final context = this.context;
     // Charger les données nécessaires selon le rôle
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final authViewModel = context.read<AuthViewModel>();
     final user = authViewModel.currentUser;
 
-    if (user == null) return;
+    if (user == null || !mounted) return;
 
     // Charger les données communes
-    await Provider.of<NotificationViewModel>(context, listen: false)
-        .loadNotifications(user: user);
+    if (!mounted) return;
+    await context.read<NotificationViewModel>().loadNotifications(user: user);
+
+    if (!mounted) return;
 
     // Charger les données selon le rôle
     switch (user.role) {
       case AppConfig.roleAdmin:
-        await _loadAdminData(context);
+        await _loadAdminData();
         break;
       case AppConfig.roleCaissier:
-        await _loadCaissierData(context);
+        await _loadCaissierData();
         break;
       case AppConfig.roleGestionnaireStock:
-        await _loadMagasinierData(context);
+        await _loadMagasinierData();
         break;
     }
   }
 
-  Future<void> _loadAdminData(BuildContext context) async {
+  Future<void> _loadAdminData() async {
+    if (!mounted) return;
     await Future.wait<void>([
-      Provider.of<AdherentViewModel>(context, listen: false).loadAdherents(),
-      Provider.of<StockViewModel>(context, listen: false).loadStock(),
-      Provider.of<VenteViewModel>(context, listen: false).loadVentes(),
-      Provider.of<RecetteViewModel>(context, listen: false).loadRecettes(),
+      if (mounted) context.read<AdherentViewModel>().loadAdherents(),
+      if (mounted) context.read<StockViewModel>().loadStock(),
+      if (mounted) context.read<VenteViewModel>().loadVentes(),
+      if (mounted) context.read<RecetteViewModel>().loadRecettes(),
     ]);
   }
 
-  Future<void> _loadCaissierData(BuildContext context) async {
+  Future<void> _loadCaissierData() async {
+    if (!mounted) return;
     await Future.wait<void>([
-      Provider.of<VenteViewModel>(context, listen: false).loadVentes(),
-      Provider.of<RecetteViewModel>(context, listen: false).loadRecettes(),
+      if (mounted) context.read<VenteViewModel>().loadVentes(),
+      if (mounted) context.read<RecetteViewModel>().loadRecettes(),
     ]);
   }
 
-  Future<void> _loadMagasinierData(BuildContext context) async {
+  Future<void> _loadMagasinierData() async {
+    if (!mounted) return;
     await Future.wait<void>([
-      Provider.of<AdherentViewModel>(context, listen: false).loadAdherents(),
-      Provider.of<StockViewModel>(context, listen: false).loadStock(),
+      if (mounted) context.read<AdherentViewModel>().loadAdherents(),
+      if (mounted) context.read<StockViewModel>().loadStock(),
     ]);
   }
 

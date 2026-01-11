@@ -26,6 +26,8 @@ class ParametresViewModel extends ChangeNotifier {
   
   /// Charger les paramètres
   Future<void> loadParametres() async {
+    if (_isLoading) return; // Éviter les chargements multiples
+    
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -35,9 +37,10 @@ class ParametresViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Erreur lors du chargement: ${e.toString()}';
+      _errorMessage = 'Erreur lors du chargement des paramètres: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
+      rethrow; // Permettre à l'appelant de gérer l'erreur
     }
   }
   
@@ -55,6 +58,7 @@ class ParametresViewModel extends ChangeNotifier {
       _errorMessage = 'Erreur lors du chargement des campagnes: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
+      rethrow;
     }
   }
   
@@ -72,12 +76,14 @@ class ParametresViewModel extends ChangeNotifier {
       _errorMessage = 'Erreur lors du chargement des barèmes: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
+      rethrow;
     }
   }
   
   /// Sélectionner un fichier logo
   Future<void> pickLogo() async {
     try {
+      _errorMessage = null;
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(
         source: ImageSource.gallery,
@@ -87,8 +93,14 @@ class ParametresViewModel extends ChangeNotifier {
       );
       
       if (pickedFile != null) {
-        _selectedLogoFile = File(pickedFile.path);
-        notifyListeners();
+        final file = File(pickedFile.path);
+        if (await file.exists()) {
+          _selectedLogoFile = file;
+          notifyListeners();
+        } else {
+          _errorMessage = 'Le fichier sélectionné n\'existe plus';
+          notifyListeners();
+        }
       }
     } catch (e) {
       _errorMessage = 'Erreur lors de la sélection du logo: ${e.toString()}';

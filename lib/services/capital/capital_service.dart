@@ -1,164 +1,137 @@
-import '../../data/models/part_sociale_model.dart';
-import '../../services/database/db_initializer.dart';
+import '../database/db_initializer.dart';
+import '../../data/models/capital_social_model.dart';
 import '../auth/audit_service.dart';
 
-/// Service pour la gestion du capital social
+/// Service principal pour la gestion du capital social
 class CapitalService {
   final AuditService _auditService = AuditService();
 
-  /// Créer des parts sociales pour un adhérent
-  Future<PartSocialeModel> createPartsSociales({
-    required int adherentId,
-    required int nombreParts,
-    required double valeurUnitaire,
-    required DateTime dateAcquisition,
+  /// Obtenir la valeur actuelle d'une part sociale
+  Future<double> getValeurPartActuelle() async {
+    final db = await DatabaseInitializer.database;
+    
+    final result = await db.query(
+      'parts_sociales',
+      where: 'active = 1',
+      orderBy: 'date_effet DESC',
+      limit: 1,
+    );
+    
+    if (result.isEmpty) {
+      // Valeur par défaut si aucune part n'est définie
+      return 5000.0;
+    }
+    
+    return (result.first['valeur_part'] as num).toDouble();
+  }
+
+  /// Définir une nouvelle valeur de part
+  Future<PartSocialeModel> definirValeurPart({
+    required double valeurPart,
+    required DateTime dateEffet,
     required int createdBy,
   }) async {
     final db = await DatabaseInitializer.database;
     
-    final partSociale = PartSocialeModel(
-      adherentId: adherentId,
-      nombreParts: nombreParts,
-      valeurUnitaire: valeurUnitaire,
-      dateAcquisition: dateAcquisition,
-      statut: 'actif',
-      createdBy: createdBy,
-      createdAt: DateTime.now(),
-    );
-
-    final id = await db.insert('parts_sociales', partSociale.toMap());
-    
-    // Audit
-    await _auditService.logAction(
-      userId: createdBy,
-      action: 'create_parts_sociales',
-      entityType: 'part_sociale',
-      entityId: id,
-      details: 'Création de $nombreParts parts pour adhérent ID: $adherentId',
-    );
-
-    return partSociale.copyWith(id: id);
+    try {
+      // Désactiver toutes les parts précédentes
+      await db.update(
+        'parts_sociales',
+        {'active': 0},
+        where: 'active = 1',
+      );
+      
+      // Créer la nouvelle valeur
+      final part = PartSocialeModel(
+        valeurPart: valeurPart,
+        devise: 'FCFA',
+        dateEffet: dateEffet,
+        active: true,
+        createdAt: DateTime.now(),
+        createdBy: createdBy,
+      );
+      
+      final id = await db.insert('parts_sociales', part.toMap());
+      
+      await _auditService.logAction(
+        userId: createdBy,
+        action: 'DEFINE_PART_VALUE',
+        entityType: 'parts_sociales',
+        entityId: id,
+        details: 'Nouvelle valeur de part définie: $valeurPart FCFA',
+      );
+      
+      return part.copyWith(id: id);
+    } catch (e) {
+      throw Exception('Erreur lors de la définition de la valeur: $e');
+    }
   }
 
-  /// Récupérer toutes les parts d'un adhérent
-  Future<List<PartSocialeModel>> getPartsByAdherent(int adherentId) async {
+  /// Calculer le capital social total (souscrit)
+  Future<double> getCapitalSocialTotal() async {
     final db = await DatabaseInitializer.database;
-    final result = await db.query(
-      'parts_sociales',
-      where: 'adherent_id = ?',
-      whereArgs: [adherentId],
-      orderBy: 'date_acquisition DESC',
-    );
     
-    return result.map((map) => PartSocialeModel.fromMap(map)).toList();
+    final result = await db.rawQuery('''
+      SELECT COALESCE(SUM(montant_souscrit), 0) as total
+      FROM souscriptions_capital
+      WHERE statut != ?
+    ''', [SouscriptionCapitalModel.statutAnnule]);
+    
+    return (result.first['total'] as num?)?.toDouble() ?? 0.0;
   }
 
-  /// Récupérer les parts actives d'un adhérent
-  Future<List<PartSocialeModel>> getActivePartsByAdherent(int adherentId) async {
-    final db = await DatabaseInitializer.database;
-    final result = await db.query(
-      'parts_sociales',
-      where: 'adherent_id = ? AND statut = ?',
-      whereArgs: [adherentId, 'actif'],
-      orderBy: 'date_acquisition DESC',
-    );
-    
-    return result.map((map) => PartSocialeModel.fromMap(map)).toList();
-  }
-
-  /// Céder des parts sociales
-  Future<PartSocialeModel> cederParts({
-    required int partSocialeId,
-    required DateTime dateCession,
-    required int updatedBy,
-  }) async {
+  /// Calculer le capital libéré total
+  Future<double> getCapitalLibereTotal() async {
     final db = await DatabaseInitializer.database;
     
-    await db.update(
-      'parts_sociales',
-      {
-        'statut': 'cede',
-        'date_cession': dateCession.toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      where: 'id = ?',
-      whereArgs: [partSocialeId],
-    );
-    
-    // Audit
-    await _auditService.logAction(
-      userId: updatedBy,
-      action: 'cede_parts_sociales',
-      entityType: 'part_sociale',
-      entityId: partSocialeId,
-      details: 'Cession de parts sociales ID: $partSocialeId',
-    );
-    
-    final result = await db.query(
-      'parts_sociales',
-      where: 'id = ?',
-      whereArgs: [partSocialeId],
-      limit: 1,
-    );
-    
-    return PartSocialeModel.fromMap(result.first);
-  }
-
-  /// Obtenir le résumé du capital social
-  Future<CapitalSocialSummary> getCapitalSocialSummary() async {
-    final db = await DatabaseInitializer.database;
-    
-    // Total des parts actives
-    final partsResult = await db.rawQuery('''
-      SELECT 
-        SUM(nombre_parts) as total_parts,
-        AVG(valeur_unitaire) as valeur_moyenne,
-        COUNT(DISTINCT adherent_id) as nombre_actionnaires
-      FROM parts_sociales
-      WHERE statut = 'actif'
+    final result = await db.rawQuery('''
+      SELECT COALESCE(SUM(montant_libere), 0) as total
+      FROM liberations_capital
     ''');
     
-    final totalParts = (partsResult.first['total_parts'] as num?)?.toInt() ?? 0;
-    final valeurMoyenne = (partsResult.first['valeur_moyenne'] as num?)?.toDouble() ?? 0.0;
-    final nombreActionnaires = partsResult.first['nombre_actionnaires'] as int? ?? 0;
-    
-    // Calculer le capital total
-    final capitalResult = await db.rawQuery('''
-      SELECT SUM(nombre_parts * valeur_unitaire) as capital_total
-      FROM parts_sociales
-      WHERE statut = 'actif'
-    ''');
-    
-    final capitalTotal = (capitalResult.first['capital_total'] as num?)?.toDouble() ?? 0.0;
-    
-    // Nombre de parts actives
-    final partsActivesResult = await db.rawQuery('''
-      SELECT SUM(nombre_parts) as parts_actives
-      FROM parts_sociales
-      WHERE statut = 'actif'
-    ''');
-    
-    final nombrePartsActives = (partsActivesResult.first['parts_actives'] as num?)?.toInt() ?? 0;
-    
-    return CapitalSocialSummary(
-      totalParts: totalParts,
-      valeurUnitaire: valeurMoyenne,
-      capitalTotal: capitalTotal,
-      nombreActionnaires: nombreActionnaires,
-      nombrePartsActives: nombrePartsActives,
-    );
+    return (result.first['total'] as num?)?.toDouble() ?? 0.0;
   }
 
-  /// Obtenir le nombre de parts d'un adhérent
-  Future<int> getNombrePartsAdherent(int adherentId) async {
-    final parts = await getActivePartsByAdherent(adherentId);
-    return parts.fold<int>(0, (sum, part) => sum + part.nombreParts);
+  /// Calculer le capital restant à libérer
+  Future<double> getCapitalRestantTotal() async {
+    final capitalSouscrit = await getCapitalSocialTotal();
+    final capitalLibere = await getCapitalLibereTotal();
+    return capitalSouscrit - capitalLibere;
   }
 
-  /// Obtenir la valeur totale des parts d'un adhérent
-  Future<double> getValeurTotalePartsAdherent(int adherentId) async {
-    final parts = await getActivePartsByAdherent(adherentId);
-    return parts.fold<double>(0.0, (sum, part) => sum + part.valeurTotale);
+  /// Obtenir le nombre total d'actionnaires actifs
+  Future<int> getNombreActionnaires() async {
+    final db = await DatabaseInitializer.database;
+    
+    final result = await db.rawQuery('''
+      SELECT COUNT(DISTINCT actionnaire_id) as total
+      FROM souscriptions_capital
+      WHERE statut != ?
+    ''', [SouscriptionCapitalModel.statutAnnule]);
+    
+    return result.first['total'] as int? ?? 0;
+  }
+
+  /// Obtenir les statistiques complètes du capital social
+  Future<Map<String, dynamic>> getStatistiquesCapital() async {
+    final capitalSouscrit = await getCapitalSocialTotal();
+    final capitalLibere = await getCapitalLibereTotal();
+    final capitalRestant = capitalSouscrit - capitalLibere;
+    final nombreActionnaires = await getNombreActionnaires();
+    final valeurPart = await getValeurPartActuelle();
+    
+    double pourcentageLiberation = 0.0;
+    if (capitalSouscrit > 0) {
+      pourcentageLiberation = (capitalLibere / capitalSouscrit) * 100;
+    }
+    
+    return {
+      'capital_souscrit': capitalSouscrit,
+      'capital_libere': capitalLibere,
+      'capital_restant': capitalRestant,
+      'nombre_actionnaires': nombreActionnaires,
+      'valeur_part': valeurPart,
+      'pourcentage_liberation': pourcentageLiberation,
+    };
   }
 }
-

@@ -1,6 +1,6 @@
 class AdherentModel {
   final int? id;
-  final String code;
+  final String code; // Format: [2 lettres][2 chiffres][4 alphanumériques] (ex: CE25A9F2)
   final String nom;
   final String prenom;
   final String? telephone;
@@ -42,6 +42,9 @@ class AdherentModel {
   final double? rendementMoyenHa; // en tonnes/hectare
   final double? tonnageTotalProduit; // en tonnes
   final double? tonnageTotalVendu; // en tonnes
+  
+  // Photo de profil
+  final String? photoPath;
 
   AdherentModel({
     this.id,
@@ -82,6 +85,8 @@ class AdherentModel {
     this.rendementMoyenHa,
     this.tonnageTotalProduit,
     this.tonnageTotalVendu,
+    // Photo de profil
+    this.photoPath,
   });
 
   String get fullName => '$prenom $nom';
@@ -96,9 +101,14 @@ class AdherentModel {
 
   // Convertir depuis Map (base de données)
   factory AdherentModel.fromMap(Map<String, dynamic> map) {
+    final code = map['code'] as String;
+    
+    // Valider le format du code (optionnel, pour compatibilité avec anciens codes)
+    // Les anciens codes (ADH001) seront acceptés mais les nouveaux doivent respecter le format
+    
     return AdherentModel(
       id: map['id'] as int?,
-      code: map['code'] as String,
+      code: code,
       nom: map['nom'] as String,
       prenom: map['prenom'] as String,
       telephone: map['telephone'] as String?,
@@ -149,6 +159,8 @@ class AdherentModel {
       tonnageTotalVendu: map['tonnage_total_vendu'] != null
           ? (map['tonnage_total_vendu'] as num).toDouble()
           : null,
+      // Photo de profil
+      photoPath: map['photo_path'] as String?,
     );
   }
 
@@ -193,6 +205,8 @@ class AdherentModel {
       'rendement_moyen_ha': rendementMoyenHa,
       'tonnage_total_produit': tonnageTotalProduit,
       'tonnage_total_vendu': tonnageTotalVendu,
+      // Photo de profil
+      'photo_path': photoPath,
     };
   }
 
@@ -231,6 +245,7 @@ class AdherentModel {
     double? rendementMoyenHa,
     double? tonnageTotalProduit,
     double? tonnageTotalVendu,
+    String? photoPath,
   }) {
     return AdherentModel(
       id: id ?? this.id,
@@ -271,6 +286,8 @@ class AdherentModel {
       rendementMoyenHa: rendementMoyenHa ?? this.rendementMoyenHa,
       tonnageTotalProduit: tonnageTotalProduit ?? this.tonnageTotalProduit,
       tonnageTotalVendu: tonnageTotalVendu ?? this.tonnageTotalVendu,
+      // Photo de profil
+      photoPath: photoPath ?? this.photoPath,
     );
   }
 }

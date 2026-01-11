@@ -18,12 +18,24 @@ class StockListScreen extends StatefulWidget {
 }
 
 class _StockListScreenState extends State<StockListScreen> {
+  bool _hasLoaded = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<StockViewModel>().loadStocks();
+      if (mounted && !_hasLoaded) {
+        _hasLoaded = true;
+        context.read<StockViewModel>().loadStocks();
+      }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Ne pas recharger ici pour éviter les clignotements
+    // Le rechargement se fera via RefreshIndicator ou après navigation
   }
 
   @override

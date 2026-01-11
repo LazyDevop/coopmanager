@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 import '../../data/models/user_model.dart';
 import '../../services/auth/auth_service.dart';
+import '../providers/permission_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
+  PermissionProvider? _permissionProvider;
   
   UserModel? _currentUser;
   bool _isLoading = false;
@@ -16,6 +18,11 @@ class AuthViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _isAuthenticated;
+
+  /// Définir le PermissionProvider (injection de dépendance)
+  void setPermissionProvider(PermissionProvider provider) {
+    _permissionProvider = provider;
+  }
 
   AuthViewModel() {
     loadSession();
@@ -72,6 +79,12 @@ class AuthViewModel extends ChangeNotifier {
         _currentUser = user;
         _isAuthenticated = true;
         await _saveSession(user);
+        
+        // Charger les permissions de l'utilisateur
+        if (_permissionProvider != null && user.id != null) {
+          await _permissionProvider!.loadUserPermissions(user.id!);
+        }
+        
         _isLoading = false;
         notifyListeners();
         return true;
@@ -91,14 +104,24 @@ class AuthViewModel extends ChangeNotifier {
 
   /// Déconnexion
   Future<void> logout() async {
+    _isLoading = false;
+    
     if (_currentUser != null) {
       final username = _currentUser!.username;
       await _authService.logout(_currentUser!.id, username);
     }
     
+    // Réinitialiser les permissions
+    if (_permissionProvider != null) {
+      _permissionProvider!.clearPermissions();
+    }
+    
+    // Réinitialiser complètement l'état
     _currentUser = null;
     _isAuthenticated = false;
     _errorMessage = null;
+    _isLoading = false;
+    
     await _clearSession();
     notifyListeners();
   }

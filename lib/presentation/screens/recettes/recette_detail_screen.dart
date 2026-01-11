@@ -6,6 +6,7 @@ import '../../viewmodels/auth_viewmodel.dart';
 import '../../../data/models/recette_model.dart';
 import '../../../services/auth/permission_service.dart';
 import 'recette_bordereau_screen.dart';
+import '../../../config/routes/routes.dart';
 
 class RecetteDetailScreen extends StatefulWidget {
   final int adherentId;
@@ -50,6 +51,16 @@ class _RecetteDetailScreenState extends State<RecetteDetailScreen> {
         backgroundColor: Colors.brown.shade700,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.account_balance_wallet),
+            tooltip: 'Voir le compte financier',
+            onPressed: () {
+              Navigator.of(context, rootNavigator: false).pushNamed(
+                AppRoutes.compteFinancierAdherent,
+                arguments: widget.adherentId,
+              );
+            },
+          ),
           if (currentUser != null &&
               (PermissionService.hasPermission(currentUser, 'manage_recettes') ||
                   PermissionService.hasPermission(currentUser, 'manage_users')))

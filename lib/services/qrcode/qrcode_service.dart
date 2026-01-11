@@ -49,6 +49,28 @@ class QRCodeService {
     return hash == calculatedHash;
   }
 
+  /// Générer une image QR Code et la sauvegarder
+  /// 
+  /// TODO: Implémenter avec le package qr_flutter ou qr_code_tools
+  /// Pour l'instant, retourner un chemin placeholder
+  static Future<String> generateQRCodeImage({
+    required String data,
+    required String filename,
+  }) async {
+    // TODO: Utiliser un package QR Code pour générer l'image
+    // Exemple avec qr_flutter:
+    // final qrImage = QrImage(
+    //   data: data,
+    //   version: QrVersions.auto,
+    //   size: 200.0,
+    // );
+    // 
+    // Sauvegarder l'image dans le répertoire documents/qrcodes/
+    
+    // Pour l'instant, retourner un chemin placeholder
+    return 'qrcodes/$filename';
+  }
+
   /// Encoder les données QR Code en JSON string
   static String encodeQRCodeData(QRCodeData data) {
     return data.toJsonString();
