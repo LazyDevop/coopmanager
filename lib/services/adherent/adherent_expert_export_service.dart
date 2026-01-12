@@ -16,6 +16,8 @@ import '../../data/models/stock_model.dart';
 import '../../data/models/vente_model.dart';
 import '../../data/models/recette_model.dart';
 import '../database/db_initializer.dart';
+import '../document/pdf_template_engine.dart';
+import '../document/pdf_utils.dart';
 
 /// Service d'export complet du dossier expert d'un adhérent
 class AdherentExpertExportService {
@@ -45,16 +47,45 @@ class AdherentExpertExportService {
   }) async {
     try {
       final pdf = pw.Document();
-      final coopSettings = await _getCoopSettings();
+      final baseFont = await PdfUtils.loadBaseFont();
+      final boldFont = await PdfUtils.loadBoldFont();
+      final italicFont = await PdfUtils.loadItalicFont();
+
+      final coopSettings = await PdfUtils.loadCooperativeSettings();
+      final meta = await PdfUtils.loadDocumentMeta(
+        'dossier_${adherent.code}_${DateTime.now().millisecondsSinceEpoch}',
+        '',
+      );
+      const templateEngine = PdfTemplateEngine();
 
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(40),
+          theme: pw.ThemeData.withFont(
+            base: baseFont,
+            bold: boldFont,
+            italic: italicFont,
+          ),
+          header: templateEngine.buildHeader(
+            coopSettings,
+            documentTitle: 'DOSSIER ADHÉRENT (EXPERT)',
+            logoBytes: meta.logoBytes,
+          ),
+          footer: templateEngine.buildFooter(
+            coopSettings,
+            documentSettings: meta.documentSettings,
+            documentReference: meta.referenceDocument,
+            qrData: meta.qrData,
+            generatedAt: meta.generatedAt,
+          ),
           build: (pw.Context context) {
             return [
-              _buildHeader(adherent, coopSettings),
-              pw.SizedBox(height: 20),
+              pw.Text(
+                'Adhérent: ${adherent.fullName} (${adherent.code})',
+                style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.SizedBox(height: 12),
               _buildIndicateursSection(expertModel),
               pw.SizedBox(height: 20),
               _buildInformationsPersonnellesSection(adherent),
@@ -86,8 +117,6 @@ class AdherentExpertExportService {
                 pw.SizedBox(height: 20),
                 _buildCreditsSociauxSection(creditsSociaux),
               ],
-              pw.SizedBox(height: 20),
-              _buildFooter(coopSettings),
             ];
           },
         ),
@@ -187,7 +216,7 @@ class AdherentExpertExportService {
                 ),
                 pw.Text(
                   'Date: ${_dateFormat.format(DateTime.now())}',
-                  style: pw.TextStyle(
+                  style: const pw.TextStyle(
                     fontSize: 10,
                     color: PdfColors.grey700,
                   ),
@@ -257,7 +286,7 @@ class AdherentExpertExportService {
         children: [
           pw.Text(
             label,
-            style: pw.TextStyle(
+            style: const pw.TextStyle(
               fontSize: 9,
               color: PdfColors.grey700,
             ),
@@ -922,14 +951,14 @@ class AdherentExpertExportService {
           pw.SizedBox(height: 8),
           pw.Text(
             'Document généré le ${_dateFormat.format(DateTime.now())}',
-            style: pw.TextStyle(
+            style: const pw.TextStyle(
               fontSize: 8,
               color: PdfColors.grey700,
             ),
           ),
           pw.Text(
             coopSettings['nom_cooperative'] ?? 'Coopérative de Cacaoculteurs',
-            style: pw.TextStyle(
+            style: const pw.TextStyle(
               fontSize: 8,
               color: PdfColors.grey700,
             ),

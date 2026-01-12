@@ -19,7 +19,7 @@ class ClientsListContent extends StatefulWidget {
 class _ClientsListContentState extends State<ClientsListContent> {
   final ClientService _clientService = ClientService();
   final TextEditingController _searchController = TextEditingController();
-  
+
   List<ClientModel> _clients = [];
   bool _isLoading = false;
   String? _errorMessage;
@@ -44,7 +44,9 @@ class _ClientsListContentState extends State<ClientsListContent> {
     });
 
     try {
-      final clients = await _clientService.getClients(statut: ClientModel.statutActif);
+      final clients = await _clientService.getClients(
+        statut: ClientModel.statutActif,
+      );
       setState(() {
         _clients = clients;
         _isLoading = false;
@@ -59,21 +61,21 @@ class _ClientsListContentState extends State<ClientsListContent> {
 
   List<ClientModel> get _filteredClients {
     var filtered = _clients;
-    
+
     if (_filterType != null) {
       filtered = filtered.where((c) => c.typeClient == _filterType).toList();
     }
-    
+
     if (_searchController.text.isNotEmpty) {
       final query = _searchController.text.toLowerCase();
       filtered = filtered.where((c) {
         return c.raisonSociale.toLowerCase().contains(query) ||
-               c.codeClient.toLowerCase().contains(query) ||
-               (c.telephone?.toLowerCase().contains(query) ?? false) ||
-               (c.email?.toLowerCase().contains(query) ?? false);
+            c.codeClient.toLowerCase().contains(query) ||
+            (c.telephone?.toLowerCase().contains(query) ?? false) ||
+            (c.email?.toLowerCase().contains(query) ?? false);
       }).toList();
     }
-    
+
     return filtered;
   }
 
@@ -91,9 +93,7 @@ class _ClientsListContentState extends State<ClientsListContent> {
           _buildFilters(context),
           const SizedBox(height: 16),
           // Liste
-          Expanded(
-            child: _buildContent(context),
-          ),
+          Expanded(child: _buildContent(context)),
         ],
       ),
     );
@@ -109,22 +109,25 @@ class _ClientsListContentState extends State<ClientsListContent> {
             Text(
               'Gestion des Clients',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.brown.shade700,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Colors.brown.shade700,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               'Gérer les clients et acheteurs',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
             ),
           ],
         ),
         ElevatedButton.icon(
           onPressed: () {
-            Navigator.of(context, rootNavigator: false).pushNamed(AppRoutes.clientAdd);
+            Navigator.of(
+              context,
+              rootNavigator: false,
+            ).pushNamed(AppRoutes.clientAdd);
           },
           icon: const Icon(Icons.add),
           label: const Text('Nouveau Client'),
@@ -169,7 +172,7 @@ class _ClientsListContentState extends State<ClientsListContent> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  value: _filterType,
+                  initialValue: _filterType,
                   decoration: InputDecoration(
                     labelText: 'Type de client',
                     border: OutlineInputBorder(
@@ -224,10 +227,7 @@ class _ClientsListContentState extends State<ClientsListContent> {
     }
 
     if (_errorMessage != null) {
-      return ErrorState(
-        message: _errorMessage!,
-        onRetry: _loadClients,
-      );
+      return ErrorState(message: _errorMessage!, onRetry: _loadClients);
     }
 
     if (_filteredClients.isEmpty) {
@@ -251,10 +251,7 @@ class _ClientsListContentState extends State<ClientsListContent> {
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: _getTypeColor(client.typeClient),
-              child: Icon(
-                _getTypeIcon(client.typeClient),
-                color: Colors.white,
-              ),
+              child: Icon(_getTypeIcon(client.typeClient), color: Colors.white),
             ),
             title: Text(
               client.raisonSociale,
@@ -265,10 +262,8 @@ class _ClientsListContentState extends State<ClientsListContent> {
               children: [
                 const SizedBox(height: 4),
                 Text('Code: ${client.codeClient}'),
-                if (client.telephone != null)
-                  Text('Tél: ${client.telephone}'),
-                if (client.ville != null)
-                  Text('Ville: ${client.ville}'),
+                if (client.telephone != null) Text('Tél: ${client.telephone}'),
+                if (client.ville != null) Text('Ville: ${client.ville}'),
               ],
             ),
             trailing: PopupMenuButton<String>(
@@ -298,10 +293,19 @@ class _ClientsListContentState extends State<ClientsListContent> {
               ],
             ),
             onTap: () {
-              Navigator.of(context, rootNavigator: false).pushNamed(
-                AppRoutes.clientDetail,
-                arguments: client.id,
-              );
+              final id = client.id;
+              if (id == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Client invalide (id manquant)'),
+                  ),
+                );
+                return;
+              }
+              Navigator.of(
+                context,
+                rootNavigator: false,
+              ).pushNamed(AppRoutes.clientDetail, arguments: id);
             },
           ),
         );
@@ -335,21 +339,37 @@ class _ClientsListContentState extends State<ClientsListContent> {
     }
   }
 
-  void _handleMenuAction(BuildContext context, String action, ClientModel client) {
+  void _handleMenuAction(
+    BuildContext context,
+    String action,
+    ClientModel client,
+  ) {
+    final id = client.id;
     switch (action) {
       case 'view':
-        Navigator.of(context, rootNavigator: false).pushNamed(
-          AppRoutes.clientDetail,
-          arguments: client.id,
-        );
+        if (id == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Client invalide (id manquant)')),
+          );
+          return;
+        }
+        Navigator.of(
+          context,
+          rootNavigator: false,
+        ).pushNamed(AppRoutes.clientDetail, arguments: id);
         break;
       case 'edit':
-        Navigator.of(context, rootNavigator: false).pushNamed(
-          AppRoutes.clientEdit,
-          arguments: client,
-        );
+        if (id == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Client invalide (id manquant)')),
+          );
+          return;
+        }
+        Navigator.of(
+          context,
+          rootNavigator: false,
+        ).pushNamed(AppRoutes.clientEdit, arguments: id);
         break;
     }
   }
 }
-

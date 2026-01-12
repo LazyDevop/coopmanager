@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../config/routes/routes.dart';
 
 /// Helper pour la navigation qui utilise toujours le Navigator interne du MainAppShell
 class NavigationHelper {

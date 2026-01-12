@@ -150,7 +150,7 @@ class _AdherentsListScreenState extends State<AdherentsListScreen> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<bool?>(
-                  value: viewModel.filterActive,
+                  initialValue: viewModel.filterActive,
                   decoration: InputDecoration(
                     labelText: 'Statut',
                     border: OutlineInputBorder(
@@ -172,7 +172,7 @@ class _AdherentsListScreenState extends State<AdherentsListScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  value: viewModel.filterVillage,
+                  initialValue: viewModel.filterVillage,
                   decoration: InputDecoration(
                     labelText: 'Village',
                     border: OutlineInputBorder(

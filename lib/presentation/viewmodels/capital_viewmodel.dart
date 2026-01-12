@@ -10,23 +10,23 @@ class CapitalViewModel extends ChangeNotifier {
   final ActionnaireService _actionnaireService = ActionnaireService();
   final SouscriptionService _souscriptionService = SouscriptionService();
   final LiberationService _liberationService = LiberationService();
-  
+
   List<ActionnaireModel> _actionnaires = [];
   ActionnaireModel? _selectedActionnaire;
   List<SouscriptionCapitalModel> _souscriptions = [];
   List<LiberationCapitalModel> _liberations = [];
   List<MouvementCapitalModel> _mouvements = [];
-  
+
   Map<String, dynamic>? _statistiquesCapital;
   double _valeurPartActuelle = 0.0;
-  
+
   bool _isLoading = false;
   String? _errorMessage;
-  
+
   // Filtres
   String? _filterStatut;
   String _searchQuery = '';
-  
+
   // Getters
   List<ActionnaireModel> get actionnaires => _actionnaires;
   ActionnaireModel? get selectedActionnaire => _selectedActionnaire;
@@ -37,34 +37,40 @@ class CapitalViewModel extends ChangeNotifier {
   double get valeurPartActuelle => _valeurPartActuelle;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  
+
   // Actionnaires filtrés
   List<ActionnaireModel> get filteredActionnaires {
     List<ActionnaireModel> filtered = _actionnaires;
-    
+
     if (_filterStatut != null) {
       filtered = filtered.where((a) => a.statut == _filterStatut).toList();
     }
-    
+
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
       filtered = filtered.where((a) {
         return a.codeActionnaire.toLowerCase().contains(query);
       }).toList();
     }
-    
+
     return filtered;
   }
-  
+
   /// Charger tous les actionnaires
-  Future<void> loadActionnaires({String? statut}) async {
+  ///
+  /// `ignoreFilters=true` force un chargement sans réutiliser les filtres UI
+  /// (utile pour les sélecteurs/modals).
+  Future<void> loadActionnaires({
+    String? statut,
+    bool ignoreFilters = false,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
-    
+
     try {
       _actionnaires = await _actionnaireService.getAllActionnaires(
-        statut: statut ?? _filterStatut,
+        statut: ignoreFilters ? statut : (statut ?? _filterStatut),
       );
       _isLoading = false;
       notifyListeners();
@@ -74,28 +80,31 @@ class CapitalViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   /// Charger un actionnaire par ID avec détails
   Future<void> loadActionnaireById(int id) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
-    
+
     try {
       _selectedActionnaire = await _actionnaireService.getActionnaireById(id);
-      
+
       if (_selectedActionnaire != null) {
-        _souscriptions = await _souscriptionService.getSouscriptionsByActionnaire(id);
+        _souscriptions = await _souscriptionService
+            .getSouscriptionsByActionnaire(id);
         _mouvements = await _liberationService.getMouvementsByActionnaire(id);
-        
+
         // Charger les libérations pour chaque souscription
         _liberations = [];
         for (final souscription in _souscriptions) {
-          final libs = await _liberationService.getLiberationsBySouscription(souscription.id!);
+          final libs = await _liberationService.getLiberationsBySouscription(
+            souscription.id!,
+          );
           _liberations.addAll(libs);
         }
       }
-      
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -104,7 +113,7 @@ class CapitalViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   /// Charger les statistiques du capital social
   Future<void> loadStatistiquesCapital() async {
     try {
@@ -112,11 +121,12 @@ class CapitalViewModel extends ChangeNotifier {
       _valeurPartActuelle = await _capitalService.getValeurPartActuelle();
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Erreur lors du chargement des statistiques: ${e.toString()}';
+      _errorMessage =
+          'Erreur lors du chargement des statistiques: ${e.toString()}';
       notifyListeners();
     }
   }
-  
+
   /// Créer un actionnaire
   Future<bool> createActionnaire({
     required int adherentId,
@@ -128,7 +138,7 @@ class CapitalViewModel extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
-    
+
     try {
       await _actionnaireService.createActionnaire(
         adherentId: adherentId,
@@ -137,8 +147,8 @@ class CapitalViewModel extends ChangeNotifier {
         droitsVote: droitsVote,
         createdBy: createdBy,
       );
-      
-      await loadActionnaires();
+
+      await loadActionnaires(ignoreFilters: true);
       _isLoading = false;
       notifyListeners();
       return true;
@@ -149,7 +159,7 @@ class CapitalViewModel extends ChangeNotifier {
       return false;
     }
   }
-  
+
   /// Créer une souscription
   Future<bool> createSouscription({
     required int actionnaireId,
@@ -162,7 +172,7 @@ class CapitalViewModel extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
-    
+
     try {
       await _souscriptionService.createSouscription(
         actionnaireId: actionnaireId,
@@ -172,7 +182,7 @@ class CapitalViewModel extends ChangeNotifier {
         notes: notes,
         createdBy: createdBy,
       );
-      
+
       await loadActionnaireById(actionnaireId);
       await loadStatistiquesCapital();
       _isLoading = false;
@@ -185,7 +195,7 @@ class CapitalViewModel extends ChangeNotifier {
       return false;
     }
   }
-  
+
   /// Créer une libération
   Future<bool> createLiberation({
     required int souscriptionId,
@@ -199,7 +209,7 @@ class CapitalViewModel extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
-    
+
     try {
       final liberation = await _liberationService.createLiberation(
         souscriptionId: souscriptionId,
@@ -210,13 +220,15 @@ class CapitalViewModel extends ChangeNotifier {
         notes: notes,
         createdBy: createdBy,
       );
-      
+
       // Recharger les données de l'actionnaire
-      final souscription = await _souscriptionService.getSouscriptionById(souscriptionId);
+      final souscription = await _souscriptionService.getSouscriptionById(
+        souscriptionId,
+      );
       if (souscription != null) {
         await loadActionnaireById(souscription.actionnaireId);
       }
-      
+
       await loadStatistiquesCapital();
       _isLoading = false;
       notifyListeners();
@@ -228,7 +240,7 @@ class CapitalViewModel extends ChangeNotifier {
       return false;
     }
   }
-  
+
   /// Définir la valeur d'une part
   Future<bool> definirValeurPart({
     required double valeurPart,
@@ -249,30 +261,29 @@ class CapitalViewModel extends ChangeNotifier {
       return false;
     }
   }
-  
+
   /// Rechercher des actionnaires
   void searchActionnaires(String query) {
     _searchQuery = query;
     notifyListeners();
   }
-  
+
   /// Définir le filtre de statut
   void setFilterStatut(String? statut) {
     _filterStatut = statut;
     loadActionnaires();
   }
-  
+
   /// Réinitialiser les filtres
   void resetFilters() {
     _filterStatut = null;
     _searchQuery = '';
     loadActionnaires();
   }
-  
+
   /// Effacer le message d'erreur
   void clearError() {
     _errorMessage = null;
     notifyListeners();
   }
 }
-

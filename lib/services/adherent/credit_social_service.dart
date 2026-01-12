@@ -1,4 +1,3 @@
-import 'package:sqflite_common/sqlite_api.dart';
 import '../database/db_initializer.dart';
 import '../database/migrations/adherent_expert_migrations.dart';
 import '../../data/models/adherent_expert/credit_social_model.dart';

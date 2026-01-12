@@ -167,7 +167,7 @@ class _ExamplePageContentState extends State<ExamplePageContent> {
           ),
         ),
         const SizedBox(width: 16),
-        Expanded(
+        const Expanded(
           child: StatCard(
             title: 'En attente',
             value: '0',

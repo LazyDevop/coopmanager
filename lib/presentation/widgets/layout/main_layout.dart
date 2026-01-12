@@ -27,8 +27,8 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  bool _isMenuCollapsed = false;
-  String _searchQuery = '';
+  final bool _isMenuCollapsed = false;
+  final String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -396,7 +396,7 @@ class _MainLayoutState extends State<MainLayout> {
                     ),
                     Text(
                       PermissionService.getRoleDisplayName(user.role),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         color: AppTheme.textSecondary,
                       ),
@@ -427,7 +427,7 @@ class _MainLayoutState extends State<MainLayout> {
                         Text('${user.prenom} ${user.nom}'),
                         Text(
                           PermissionService.getRoleDisplayName(user.role),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
                             color: AppTheme.textSecondary,
                           ),

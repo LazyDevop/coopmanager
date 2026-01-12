@@ -20,7 +20,7 @@ class ModuleSettingsModel {
 
   factory ModuleSettingsModel.fromMap(Map<String, dynamic> map) {
     // Helper functions for safe type conversion
-    int? _parseInt(dynamic value) {
+    int? parseInt(dynamic value) {
       if (value == null) return null;
       if (value is int) return value;
       if (value is String) return int.tryParse(value);
@@ -28,7 +28,7 @@ class ModuleSettingsModel {
       return null;
     }
 
-    bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    bool parseBool(dynamic value, {bool defaultValue = false}) {
       if (value == null) return defaultValue;
       if (value is bool) return value;
       if (value is int) return value == 1;
@@ -44,20 +44,20 @@ class ModuleSettingsModel {
     if (map['modules_actives'] != null && map['modules_actives'] is Map) {
       final modulesMap = map['modules_actives'] as Map<String, dynamic>;
       modulesMap.forEach((key, value) {
-        modules[key] = _parseBool(value);
+        modules[key] = parseBool(value);
       });
     }
 
     return ModuleSettingsModel(
       modulesActives: modules,
-      verrouillageParametrage: _parseBool(map['verrouillage_parametrage']),
-      auditLogsActif: _parseBool(map['audit_logs_actif'], defaultValue: true),
-      dureeConservationLogsJours: _parseInt(map['duree_conservation_logs_jours']) ?? 365,
+      verrouillageParametrage: parseBool(map['verrouillage_parametrage']),
+      auditLogsActif: parseBool(map['audit_logs_actif'], defaultValue: true),
+      dureeConservationLogsJours: parseInt(map['duree_conservation_logs_jours']) ?? 365,
       ipAutorisees: map['ip_autorisees'] != null
           ? List<String>.from(map['ip_autorisees'])
           : null,
-      authentificationDoubleFacteur: _parseBool(map['authentification_double_facteur']),
-      dureeSessionMinutes: _parseInt(map['duree_session_minutes']) ?? 30,
+      authentificationDoubleFacteur: parseBool(map['authentification_double_facteur']),
+      dureeSessionMinutes: parseInt(map['duree_session_minutes']) ?? 30,
     );
   }
 

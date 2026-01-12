@@ -1,4 +1,3 @@
-import 'package:sqflite_common/sqlite_api.dart';
 import '../database/db_initializer.dart';
 import '../../data/models/adherent_expert/traitement_agricole_model.dart';
 import '../auth/audit_service.dart';

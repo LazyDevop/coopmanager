@@ -1,5 +1,5 @@
 import 'dart:convert';
-import '../../data/models/document/document_model.dart';
+import '../../../data/models/document/document_model.dart';
 import '../../services/database/db_initializer.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -9,7 +9,7 @@ class DocumentRepository {
   Future<DocumentModel> create(DocumentModel document) async {
     try {
       final db = await DatabaseInitializer.database;
-      
+
       // Adapter le map pour correspondre à la structure de la table existante
       final map = {
         'numero': document.reference,
@@ -29,11 +29,8 @@ class DocumentRepository {
         if (document.isVerified && document.verifiedAt != null)
           'derniere_verification': document.verifiedAt!.toIso8601String(),
       };
-      
-      final id = await db.insert(
-        'documents',
-        map,
-      );
+
+      final id = await db.insert('documents', map);
 
       return document.copyWith(id: id);
     } catch (e) {
@@ -45,7 +42,7 @@ class DocumentRepository {
   Future<DocumentModel?> getById(int id) async {
     try {
       final db = await DatabaseInitializer.database;
-      
+
       final results = await db.query(
         'documents',
         where: 'id = ?',
@@ -65,7 +62,7 @@ class DocumentRepository {
   Future<DocumentModel?> getByReference(String reference) async {
     try {
       final db = await DatabaseInitializer.database;
-      
+
       final results = await db.query(
         'documents',
         where: 'numero = ?',
@@ -106,13 +103,16 @@ class DocumentRepository {
   }
 
   /// Récupérer tous les documents d'un type donné
-  Future<List<DocumentModel>> getByType(String type, {int? cooperativeId}) async {
+  Future<List<DocumentModel>> getByType(
+    String type, {
+    int? cooperativeId,
+  }) async {
     try {
       final db = await DatabaseInitializer.database;
-      
+
       String where = 'type = ?';
       List<dynamic> whereArgs = [type];
-      
+
       if (cooperativeId != null) {
         where += ' AND cooperative_id = ?';
         whereArgs.add(cooperativeId);
@@ -135,13 +135,13 @@ class DocumentRepository {
   Future<void> markAsVerified(int documentId, int verifiedBy) async {
     try {
       final db = await DatabaseInitializer.database;
-      
+
       // Récupérer le document actuel
       final doc = await getById(documentId);
       if (doc == null) throw Exception('Document non trouvé');
-      
+
       final currentVerifications = doc.isVerified ? 1 : 0;
-      
+
       await db.update(
         'documents',
         {
@@ -163,10 +163,10 @@ class DocumentRepository {
   }) async {
     try {
       final db = await DatabaseInitializer.database;
-      
+
       String where = '1=1';
       List<dynamic> whereArgs = [];
-      
+
       if (cooperativeId != null) {
         where += ' AND cooperative_id = ?';
         whereArgs.add(cooperativeId);
@@ -182,8 +182,9 @@ class DocumentRepository {
 
       return results.map((map) => _mapToDocumentModel(map)).toList();
     } catch (e) {
-      throw Exception('Erreur lors de la récupération des documents récents: $e');
+      throw Exception(
+        'Erreur lors de la récupération des documents récents: $e',
+      );
     }
   }
 }
-

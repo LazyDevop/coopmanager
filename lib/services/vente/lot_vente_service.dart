@@ -397,7 +397,7 @@ class LotVenteService {
   /// Générer un code de lot unique
   String _genererCodeLot(int? campagneId, {String? qualite, String? categorieProducteur}) {
     final now = DateTime.now();
-    final prefix = 'LOT';
+    const prefix = 'LOT';
     final annee = now.year.toString().substring(2);
     final mois = now.month.toString().padLeft(2, '0');
     final jour = now.day.toString().padLeft(2, '0');

@@ -65,11 +65,11 @@ class AppHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: TextField(
-        decoration: InputDecoration(
+        decoration: const InputDecoration(
           hintText: 'Rechercher...',
-          prefixIcon: const Icon(Icons.search, size: 20),
+          prefixIcon: Icon(Icons.search, size: 20),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16),
         ),
         onSubmitted: (value) {
           // TODO: Implémenter la recherche globale

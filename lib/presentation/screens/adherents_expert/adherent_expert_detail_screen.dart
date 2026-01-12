@@ -1,5 +1,5 @@
 /// ÉCRAN DÉTAIL ADHÉRENT EXPERT
-/// 
+///
 /// Fiche complète d'un adhérent avec tous les onglets :
 /// - Identité & Filiation
 /// - Champs & Superficies
@@ -50,21 +50,20 @@ import 'credit_social_form_screen.dart';
 
 class AdherentExpertDetailScreen extends StatefulWidget {
   final int adherentId;
-  
-  const AdherentExpertDetailScreen({
-    super.key,
-    required this.adherentId,
-  });
-  
+
+  const AdherentExpertDetailScreen({super.key, required this.adherentId});
+
   @override
-  State<AdherentExpertDetailScreen> createState() => _AdherentExpertDetailScreenState();
+  State<AdherentExpertDetailScreen> createState() =>
+      _AdherentExpertDetailScreenState();
 }
 
-class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen> 
+class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   AdherentModel? _adherent;
   bool _isLoading = true;
+  bool _isExporting = false;
   List<AyantDroitModel> _ayantsDroit = [];
   List<ChampParcelleModel> _champs = [];
   List<TraitementAgricoleModel> _traitements = [];
@@ -76,15 +75,17 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   List<CreditSocialModel> _creditsSociaux = [];
   final AyantDroitService _ayantDroitService = AyantDroitService();
   final ChampParcelleService _champParcelleService = ChampParcelleService();
-  final TraitementAgricoleService _traitementService = TraitementAgricoleService();
+  final TraitementAgricoleService _traitementService =
+      TraitementAgricoleService();
   final ProductionService _productionService = ProductionService();
   final StockService _stockService = StockService();
   final VenteService _venteService = VenteService();
   final RecetteService _recetteService = RecetteService();
   final CapitalSocialService _capitalSocialService = CapitalSocialService();
   final CreditSocialService _creditSocialService = CreditSocialService();
-  final AdherentExpertExportService _exportService = AdherentExpertExportService();
-  
+  final AdherentExpertExportService _exportService =
+      AdherentExpertExportService();
+
   @override
   void initState() {
     super.initState();
@@ -93,62 +94,86 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       _loadAdherent();
     });
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  
+
   AdherentExpertModel? _expertModel;
-  
+
   Future<void> _loadAdherent() async {
     final viewModel = context.read<AdherentViewModel>();
     await viewModel.loadAdherentDetails(widget.adherentId);
-    
+
     if (mounted && viewModel.selectedAdherent != null) {
-      final expertModel = await _convertToExpertModel(viewModel.selectedAdherent!, viewModel);
-      
+      final expertModel = await _convertToExpertModel(
+        viewModel.selectedAdherent!,
+        viewModel,
+      );
+
       // Charger les ayants droit
-      final ayantsDroit = await _ayantDroitService.getAyantsDroitByAdherent(widget.adherentId);
-      
+      final ayantsDroit = await _ayantDroitService.getAyantsDroitByAdherent(
+        widget.adherentId,
+      );
+
       // Charger les champs
-      final champs = await _champParcelleService.getChampsByAdherent(widget.adherentId);
-      
+      final champs = await _champParcelleService.getChampsByAdherent(
+        widget.adherentId,
+      );
+
       // Debug: vérifier les coordonnées récupérées
       for (final champ in champs) {
-        print('🔍 _loadAdherent - Champ ${champ.codeChamp}: lat=${champ.latitude}, lng=${champ.longitude}');
+        print(
+          '🔍 _loadAdherent - Champ ${champ.codeChamp}: lat=${champ.latitude}, lng=${champ.longitude}',
+        );
       }
-      
+
       // Charger les traitements
-      final traitements = await _traitementService.getTraitementsByAdherent(widget.adherentId);
-      
+      final traitements = await _traitementService.getTraitementsByAdherent(
+        widget.adherentId,
+      );
+
       // Charger les dépôts de stock
-      final depotsStock = await _stockService.getDepotsByAdherent(widget.adherentId);
-      
+      final depotsStock = await _stockService.getDepotsByAdherent(
+        widget.adherentId,
+      );
+
       // Charger les productions
-      final productions = await _productionService.getProductionsByAdherent(widget.adherentId);
-      
+      final productions = await _productionService.getProductionsByAdherent(
+        widget.adherentId,
+      );
+
       // Charger les ventes
-      final ventes = await _venteService.getAllVentes(
+      final ventes = await _venteService.getVentesForAdherentExpert(
         adherentId: widget.adherentId,
         statut: 'valide',
       );
-      
+
       // Charger les recettes (paiements)
-      print('🔍 Chargement des recettes pour adhérent ID: ${widget.adherentId}');
-      final recettes = await _recetteService.getRecettesByAdherent(widget.adherentId);
+      print(
+        '🔍 Chargement des recettes pour adhérent ID: ${widget.adherentId}',
+      );
+      final recettes = await _recetteService.getRecettesByAdherent(
+        widget.adherentId,
+      );
       print('🔍 Recettes récupérées: ${recettes.length}');
       for (final recette in recettes) {
-        print('  - Recette ID ${recette.id}: ${recette.montantNet} FCFA le ${recette.dateRecette}');
+        print(
+          '  - Recette ID ${recette.id}: ${recette.montantNet} FCFA le ${recette.dateRecette}',
+        );
       }
-      
+
       // Charger les souscriptions au capital social
-      final souscriptionsCapital = await _capitalSocialService.getSouscriptionsByAdherent(widget.adherentId);
-      
+      final souscriptionsCapital = await _capitalSocialService
+          .getSouscriptionsByAdherent(widget.adherentId);
+
       // Charger les crédits sociaux
-      final creditsSociaux = await _creditSocialService.getCreditsByAdherent(widget.adherentId);
-      
+      final creditsSociaux = await _creditSocialService.getCreditsByAdherent(
+        widget.adherentId,
+      );
+
       setState(() {
         _adherent = viewModel.selectedAdherent;
         _expertModel = expertModel;
@@ -167,7 +192,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   }
 
   Future<void> _refreshAyantsDroit() async {
-    final ayantsDroit = await _ayantDroitService.getAyantsDroitByAdherent(widget.adherentId);
+    final ayantsDroit = await _ayantDroitService.getAyantsDroitByAdherent(
+      widget.adherentId,
+    );
     if (mounted) {
       setState(() {
         _ayantsDroit = ayantsDroit;
@@ -176,13 +203,17 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   }
 
   Future<void> _refreshChamps() async {
-    final champs = await _champParcelleService.getChampsByAdherent(widget.adherentId);
-    
+    final champs = await _champParcelleService.getChampsByAdherent(
+      widget.adherentId,
+    );
+
     // Debug: vérifier les coordonnées récupérées
     for (final champ in champs) {
-      print('🔍 _refreshChamps - Champ ${champ.codeChamp}: lat=${champ.latitude}, lng=${champ.longitude}');
+      print(
+        '🔍 _refreshChamps - Champ ${champ.codeChamp}: lat=${champ.latitude}, lng=${champ.longitude}',
+      );
     }
-    
+
     if (mounted) {
       setState(() {
         _champs = champs;
@@ -191,7 +222,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   }
 
   Future<void> _refreshTraitements() async {
-    final traitements = await _traitementService.getTraitementsByAdherent(widget.adherentId);
+    final traitements = await _traitementService.getTraitementsByAdherent(
+      widget.adherentId,
+    );
     if (mounted) {
       setState(() {
         _traitements = traitements;
@@ -200,7 +233,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   }
 
   Future<void> _refreshDepotsStock() async {
-    final depotsStock = await _stockService.getDepotsByAdherent(widget.adherentId);
+    final depotsStock = await _stockService.getDepotsByAdherent(
+      widget.adherentId,
+    );
     if (mounted) {
       setState(() {
         _depotsStock = depotsStock;
@@ -209,7 +244,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   }
 
   Future<void> _refreshProductions() async {
-    final productions = await _productionService.getProductionsByAdherent(widget.adherentId);
+    final productions = await _productionService.getProductionsByAdherent(
+      widget.adherentId,
+    );
     if (mounted) {
       setState(() {
         _productions = productions;
@@ -218,7 +255,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   }
 
   Future<void> _refreshVentes() async {
-    final ventes = await _venteService.getAllVentes(
+    final ventes = await _venteService.getVentesForAdherentExpert(
       adherentId: widget.adherentId,
       statut: 'valide',
     );
@@ -230,10 +267,16 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   }
 
   Future<void> _refreshRecettes() async {
-    print('🔍 Rafraîchissement des recettes pour adhérent ID: ${widget.adherentId}');
+    print(
+      '🔍 Rafraîchissement des recettes pour adhérent ID: ${widget.adherentId}',
+    );
     try {
-      final recettes = await _recetteService.getRecettesByAdherent(widget.adherentId);
-      print('🔍 Recettes récupérées lors du rafraîchissement: ${recettes.length}');
+      final recettes = await _recetteService.getRecettesByAdherent(
+        widget.adherentId,
+      );
+      print(
+        '🔍 Recettes récupérées lors du rafraîchissement: ${recettes.length}',
+      );
       if (mounted) {
         setState(() {
           _recettes = recettes;
@@ -253,31 +296,39 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   Future<void> _createMissingRecettes() async {
     try {
       // Récupérer toutes les ventes valides de cet adhérent
-      final ventes = await _venteService.getAllVentes(
+      final ventes = await _venteService.getVentesForAdherentExpert(
         adherentId: widget.adherentId,
         statut: 'valide',
       );
 
       if (ventes.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Aucune vente trouvée pour cet adhérent')),
+          const SnackBar(
+            content: Text('Aucune vente trouvée pour cet adhérent'),
+          ),
         );
         return;
       }
 
       // Récupérer toutes les recettes existantes
-      final recettesExistantes = await _recetteService.getRecettesByAdherent(widget.adherentId);
+      final recettesExistantes = await _recetteService.getRecettesByAdherent(
+        widget.adherentId,
+      );
       final ventesAvecRecette = recettesExistantes
           .where((r) => r.venteId != null)
           .map((r) => r.venteId!)
           .toSet();
 
       // Identifier les ventes sans recette
-      final ventesSansRecette = ventes.where((v) => !ventesAvecRecette.contains(v.id)).toList();
+      final ventesSansRecette = ventes
+          .where((v) => !ventesAvecRecette.contains(v.id))
+          .toList();
 
       if (ventesSansRecette.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Toutes les recettes sont déjà générées')),
+          const SnackBar(
+            content: Text('Toutes les recettes sont déjà générées'),
+          ),
         );
         return;
       }
@@ -331,7 +382,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       for (final vente in ventesSansRecette) {
         try {
           print('💰 Création de recette pour vente #${vente.id}');
-          
+
           // Pour les ventes individuelles
           if (vente.isIndividuelle && vente.adherentId != null) {
             await _recetteService.createRecetteFromVente(
@@ -352,14 +403,15 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               where: 'vente_id = ? AND adherent_id = ?',
               whereArgs: [vente.id, widget.adherentId],
             );
-            
+
             for (final detailMap in detailsResult) {
               final detail = VenteDetailModel.fromMap(detailMap);
               await _recetteService.createRecetteFromVente(
                 adherentId: detail.adherentId,
                 venteId: vente.id!,
                 montantBrut: detail.montant,
-                notes: 'Recette générée rétroactivement pour vente groupée #${vente.id}',
+                notes:
+                    'Recette générée rétroactivement pour vente groupée #${vente.id}',
                 createdBy: currentUser.id!,
                 generateEcritureComptable: false,
               );
@@ -367,7 +419,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             }
           }
         } catch (e) {
-          print('❌ Erreur lors de la création de la recette pour vente #${vente.id}: $e');
+          print(
+            '❌ Erreur lors de la création de la recette pour vente #${vente.id}: $e',
+          );
           erreurs++;
         }
       }
@@ -389,16 +443,14 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
     } catch (e) {
       print('❌ Erreur lors de la création des recettes manquantes: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
       );
     }
   }
 
   Future<void> _refreshCapitalSocial() async {
-    final souscriptions = await _capitalSocialService.getSouscriptionsByAdherent(widget.adherentId);
+    final souscriptions = await _capitalSocialService
+        .getSouscriptionsByAdherent(widget.adherentId);
     if (mounted) {
       setState(() {
         _souscriptionsCapital = souscriptions;
@@ -409,7 +461,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   }
 
   Future<void> _refreshCreditsSociaux() async {
-    final credits = await _creditSocialService.getCreditsByAdherent(widget.adherentId);
+    final credits = await _creditSocialService.getCreditsByAdherent(
+      widget.adherentId,
+    );
     if (mounted) {
       setState(() {
         _creditsSociaux = credits;
@@ -418,12 +472,15 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       await _loadAdherent();
     }
   }
-  
+
   /// Convertir AdherentModel en AdherentExpertModel pour l'affichage
-  Future<AdherentExpertModel> _convertToExpertModel(AdherentModel adherent, AdherentViewModel viewModel) async {
+  Future<AdherentExpertModel> _convertToExpertModel(
+    AdherentModel adherent,
+    AdherentViewModel viewModel,
+  ) async {
     // Calculer les indicateurs
     final indicators = await viewModel.calculateExpertIndicators(adherent.id!);
-    
+
     return AdherentExpertModel(
       id: adherent.id,
       codeAdherent: adherent.code,
@@ -465,7 +522,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       createdAt: adherent.createdAt,
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -487,7 +544,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
             tooltip: 'Exporter le dossier',
-            onPressed: _adherent != null && _expertModel != null ? _exportDossier : null,
+            onPressed: _adherent != null && _expertModel != null
+                ? _exportDossier
+                : null,
           ),
         ],
       ),
@@ -496,7 +555,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
           if (_isLoading || (viewModel.isLoading && _adherent == null)) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           final adherent = viewModel.selectedAdherent;
           if (adherent == null || _expertModel == null) {
             return Center(
@@ -515,63 +574,85 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             );
           }
-          
+
           final expertModel = _expertModel!;
-          
-          return Column(
+
+          return Stack(
             children: [
-              // Header Résumé
-              _buildHeader(expertModel),
-        
-              // Onglets
-              TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                labelColor: Colors.brown.shade700,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: Colors.brown.shade700,
-                tabs: const [
-                  Tab(text: 'Identité & Filiation'),
-                  Tab(text: 'Champs & Superficies'),
-                  Tab(text: 'Traitements'),
-                  Tab(text: 'Production & Stock'),
-                  Tab(text: 'Ventes & Paiements'),
-                  Tab(text: 'Capital Social'),
-                  Tab(text: 'Social & Crédits'),
+              Column(
+                children: [
+                  // Header Résumé
+                  _buildHeader(expertModel),
+
+                  // Onglets
+                  TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    labelColor: Colors.brown.shade700,
+                    unselectedLabelColor: Colors.grey,
+                    indicatorColor: Colors.brown.shade700,
+                    tabs: const [
+                      Tab(text: 'Identité & Filiation'),
+                      Tab(text: 'Champs & Superficies'),
+                      Tab(text: 'Traitements'),
+                      Tab(text: 'Production & Stock'),
+                      Tab(text: 'Ventes & Paiements'),
+                      Tab(text: 'Capital Social'),
+                      Tab(text: 'Social & Crédits'),
+                    ],
+                  ),
+
+                  // Contenu des onglets
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildIdentiteTab(expertModel),
+                        _buildChampsTab(expertModel),
+                        _buildTraitementsTab(expertModel),
+                        _buildProductionTab(expertModel),
+                        _buildVentesTab(expertModel),
+                        _buildCapitalTab(expertModel),
+                        _buildSocialTab(expertModel),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-        
-              // Contenu des onglets
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildIdentiteTab(expertModel),
-                    _buildChampsTab(expertModel),
-                    _buildTraitementsTab(expertModel),
-                    _buildProductionTab(expertModel),
-                    _buildVentesTab(expertModel),
-                    _buildCapitalTab(expertModel),
-                    _buildSocialTab(expertModel),
-                  ],
+              if (_isExporting)
+                Positioned.fill(
+                  child: ColoredBox(
+                    color: Colors.black45,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Génération / impression du dossier…',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
             ],
           );
         },
       ),
     );
   }
-  
+
   /// Header avec résumé des indicateurs
   Widget _buildHeader(AdherentExpertModel adherent) {
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: Colors.brown.shade50,
-        border: Border(
-          bottom: BorderSide(color: Colors.brown.shade200),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.brown.shade200)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -590,7 +671,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                       ),
               ),
               const SizedBox(width: 16),
-              
+
               // Informations principales
               Expanded(
                 child: Column(
@@ -598,9 +679,8 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                   children: [
                     Text(
                       adherent.fullName,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       adherent.codeAdherent,
@@ -611,7 +691,10 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                     const SizedBox(height: 8),
                     // Badge statut
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: adherent.isActif ? Colors.green : Colors.red,
                         borderRadius: BorderRadius.circular(12),
@@ -630,17 +713,19 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Indicateurs en cartes
           Row(
             children: [
               Expanded(
                 child: StatCard(
                   title: 'Capital Social',
-                  value: '${adherent.capitalSocialSouscrit.toStringAsFixed(0)} FCFA',
-                  subtitle: 'Libéré: ${adherent.capitalSocialLibere.toStringAsFixed(0)}',
+                  value:
+                      '${adherent.capitalSocialSouscrit.toStringAsFixed(0)} FCFA',
+                  subtitle:
+                      'Libéré: ${adherent.capitalSocialLibere.toStringAsFixed(0)}',
                   icon: Icons.account_balance,
                   color: Colors.blue,
                 ),
@@ -650,7 +735,8 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 child: StatCard(
                   title: 'Tonnage',
                   value: '${adherent.tonnageTotalProduit.toStringAsFixed(2)} t',
-                  subtitle: 'Disponible: ${adherent.tonnageDisponibleStock.toStringAsFixed(2)}',
+                  subtitle:
+                      'Disponible: ${adherent.tonnageDisponibleStock.toStringAsFixed(2)}',
                   icon: Icons.inventory,
                   color: Colors.orange,
                 ),
@@ -660,11 +746,13 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 child: StatCard(
                   title: 'Solde',
                   value: '${adherent.soldeCrediteur.toStringAsFixed(0)} FCFA',
-                  subtitle: adherent.soldeDebiteur > 0 
+                  subtitle: adherent.soldeDebiteur > 0
                       ? 'Dû: ${adherent.soldeDebiteur.toStringAsFixed(0)}'
                       : 'Créditeur',
                   icon: Icons.account_balance_wallet,
-                  color: adherent.soldeCrediteur >= 0 ? Colors.green : Colors.red,
+                  color: adherent.soldeCrediteur >= 0
+                      ? Colors.green
+                      : Colors.red,
                 ),
               ),
             ],
@@ -673,7 +761,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       ),
     );
   }
-  
+
   /// Onglet Identité & Filiation
   Widget _buildIdentiteTab(AdherentExpertModel adherent) {
     return SingleChildScrollView(
@@ -685,46 +773,49 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
           _buildInfoRow('Nom', adherent.nom),
           _buildInfoRow('Prénom', adherent.prenom),
           _buildInfoRow('Sexe', adherent.sexe ?? 'Non renseigné'),
-          _buildInfoRow('Date de naissance', 
-              adherent.dateNaissance != null 
-                  ? '${adherent.dateNaissance!.day}/${adherent.dateNaissance!.month}/${adherent.dateNaissance!.year}'
-                  : 'Non renseigné'),
+          _buildInfoRow(
+            'Date de naissance',
+            adherent.dateNaissance != null
+                ? '${adherent.dateNaissance!.day}/${adherent.dateNaissance!.month}/${adherent.dateNaissance!.year}'
+                : 'Non renseigné',
+          ),
           _buildInfoRow('Âge', adherent.age?.toString() ?? 'Non renseigné'),
           _buildInfoRow('Nationalité', adherent.nationalite),
           _buildInfoRow('Téléphone', adherent.telephone ?? 'Non renseigné'),
           _buildInfoRow('Email', adherent.email ?? 'Non renseigné'),
           _buildInfoRow('Adresse', adherent.adresse ?? 'Non renseigné'),
           _buildInfoRow('Village', adherent.village ?? 'Non renseigné'),
-          
+
           const SizedBox(height: 24),
           _buildSectionTitle('Situation Familiale'),
           _buildInfoRow('Père', adherent.nomPere ?? 'Non renseigné'),
           _buildInfoRow('Mère', adherent.nomMere ?? 'Non renseigné'),
           _buildInfoRow('Conjoint', adherent.conjoint ?? 'Non renseigné'),
           _buildInfoRow('Nombre d\'enfants', adherent.nombreEnfants.toString()),
-          _buildInfoRow('Situation matrimoniale', 
-              adherent.situationMatrimoniale ?? 'Non renseigné'),
-          
+          _buildInfoRow(
+            'Situation matrimoniale',
+            adherent.situationMatrimoniale ?? 'Non renseigné',
+          ),
+
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-          _buildSectionTitle('Ayants Droit'),
-          ElevatedButton.icon(
+              _buildSectionTitle('Ayants Droit'),
+              ElevatedButton.icon(
                 onPressed: () async {
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => AyantDroitFormScreen(
-                        adherentId: widget.adherentId,
-                      ),
+                      builder: (context) =>
+                          AyantDroitFormScreen(adherentId: widget.adherentId),
                     ),
                   );
                   if (result == true) {
                     await _refreshAyantsDroit();
                   }
-            },
-            icon: const Icon(Icons.person_add),
+                },
+                icon: const Icon(Icons.person_add),
                 label: const Text('Ajouter'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.brown.shade700,
@@ -741,7 +832,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.people_outline, size: 48, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.people_outline,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Aucun ayant droit enregistré',
@@ -753,12 +848,14 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             )
           else
-            ..._ayantsDroit.map((ayantDroit) => _buildAyantDroitCard(ayantDroit)),
+            ..._ayantsDroit.map(
+              (ayantDroit) => _buildAyantDroitCard(ayantDroit),
+            ),
         ],
       ),
     );
   }
-  
+
   /// Onglet Champs & Superficies
   Widget _buildChampsTab(AdherentExpertModel adherent) {
     return SingleChildScrollView(
@@ -778,9 +875,8 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ChampsMapScreen(
-                            adherentId: widget.adherentId,
-                          ),
+                          builder: (context) =>
+                              ChampsMapScreen(adherentId: widget.adherentId),
                         ),
                       );
                     },
@@ -818,7 +914,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             ],
           ),
-          
+
           // Statistiques champs
           Row(
             children: [
@@ -830,10 +926,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                       children: [
                         Text(
                           _champs.length.toString(),
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.brown.shade700,
-                          ),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.brown.shade700,
+                              ),
                         ),
                         const Text('Champs totaux'),
                       ],
@@ -850,10 +947,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                       children: [
                         Text(
                           '${_champs.fold<double>(0.0, (sum, champ) => sum + champ.superficie).toStringAsFixed(2)} ha',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.brown.shade700,
-                          ),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.brown.shade700,
+                              ),
                         ),
                         const Text('Superficie totale'),
                       ],
@@ -863,9 +961,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Liste des champs
           if (_champs.isEmpty)
             Card(
@@ -874,7 +972,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.agriculture_outlined, size: 48, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.agriculture_outlined,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Aucun champ enregistré',
@@ -891,7 +993,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       ),
     );
   }
-  
+
   /// Onglet Traitements
   Widget _buildTraitementsTab(AdherentExpertModel adherent) {
     return SingleChildScrollView(
@@ -910,7 +1012,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                   if (_champs.length == 1) {
                     champIdPreselectionne = _champs.first.id;
                   }
-                  
+
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -933,9 +1035,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Statistiques traitements
           if (_traitements.isNotEmpty)
             Row(
@@ -948,10 +1050,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                         children: [
                           Text(
                             _traitements.length.toString(),
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.brown.shade700,
-                            ),
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.brown.shade700,
+                                ),
                           ),
                           const Text('Traitements totaux'),
                         ],
@@ -968,10 +1071,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                         children: [
                           Text(
                             '${_traitements.fold<double>(0.0, (sum, t) => sum + t.coutTraitement).toStringAsFixed(0)} FCFA',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green.shade700,
-                            ),
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green.shade700,
+                                ),
                           ),
                           const Text('Coût total'),
                         ],
@@ -981,15 +1085,14 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 ),
               ],
             ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Graphique d'évolution des traitements par type
-          if (_traitements.isNotEmpty)
-            _buildTraitementsEvolutionChart(),
-          
+          if (_traitements.isNotEmpty) _buildTraitementsEvolutionChart(),
+
           const SizedBox(height: 16),
-          
+
           // Liste des traitements
           if (_traitements.isEmpty)
             Card(
@@ -998,7 +1101,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.science_outlined, size: 48, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.science_outlined,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Aucun traitement enregistré',
@@ -1010,7 +1117,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             )
           else
-            ..._traitements.map((traitement) => _buildTraitementCard(traitement)),
+            ..._traitements.map(
+              (traitement) => _buildTraitementCard(traitement),
+            ),
         ],
       ),
     );
@@ -1066,12 +1175,12 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ExpansionTile(
         leading: CircleAvatar(
-          backgroundColor: getTypeColor(traitement.typeTraitement).withOpacity(0.2),
+          backgroundColor: getTypeColor(
+            traitement.typeTraitement,
+          ).withOpacity(0.2),
           child: Icon(
             Icons.science,
             color: getTypeColor(traitement.typeTraitement),
@@ -1098,7 +1207,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 Text('Champ: $champNom'),
               ],
             ),
-            Text('Quantité: ${numberFormat.format(traitement.quantite)} ${traitement.uniteQuantite}'),
+            Text(
+              'Quantité: ${numberFormat.format(traitement.quantite)} ${traitement.uniteQuantite}',
+            ),
             Text('Date: ${dateFormat.format(traitement.dateTraitement)}'),
             if (traitement.coutTraitement > 0)
               Text(
@@ -1163,9 +1274,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.red,
-                      ),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
                       child: const Text('Supprimer'),
                     ),
                   ],
@@ -1176,14 +1285,14 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 try {
                   final authViewModel = context.read<AuthViewModel>();
                   final currentUser = authViewModel.currentUser;
-                  
+
                   if (currentUser != null) {
                     await _traitementService.deleteTraitement(
                       traitement.id!,
                       currentUser.id!,
                     );
                     await _refreshTraitements();
-                    
+
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -1215,7 +1324,8 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               children: [
                 if (traitement.operateur != null)
                   _buildInfoRow('Opérateur', traitement.operateur!),
-                if (traitement.observation != null && traitement.observation!.isNotEmpty)
+                if (traitement.observation != null &&
+                    traitement.observation!.isNotEmpty)
                   _buildInfoRow('Observations', traitement.observation!),
               ],
             ),
@@ -1224,7 +1334,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       ),
     );
   }
-  
+
   /// Onglet Production & Stock
   Widget _buildProductionTab(AdherentExpertModel adherent) {
     return SingleChildScrollView(
@@ -1243,10 +1353,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                       children: [
                         Text(
                           '${adherent.tonnageTotalProduit.toStringAsFixed(2)} t',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
-                          ),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green.shade700,
+                              ),
                         ),
                         const Text('Tonnage total produit'),
                       ],
@@ -1263,10 +1374,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                       children: [
                         Text(
                           '${adherent.tonnageTotalVendu.toStringAsFixed(2)} t',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red.shade700,
-                          ),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red.shade700,
+                              ),
                         ),
                         const Text('Stock réfracté'),
                       ],
@@ -1283,10 +1395,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                       children: [
                         Text(
                           '${adherent.tonnageDisponibleStock.toStringAsFixed(2)} t',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange.shade700,
-                          ),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange.shade700,
+                              ),
                         ),
                         const Text('Stock disponible'),
                       ],
@@ -1296,13 +1409,13 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Section Productions
           _buildSectionTitle('Productions'),
           const SizedBox(height: 8),
-          
+
           if (_productions.isEmpty)
             Card(
               child: Padding(
@@ -1310,8 +1423,12 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.agriculture_outlined, size: 48, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
+                      Icon(
+                        Icons.agriculture_outlined,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 16),
                       Text(
                         'Aucune production enregistrée',
                         style: TextStyle(color: Colors.grey.shade600),
@@ -1322,14 +1439,16 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             )
           else
-            ..._productions.map((production) => _buildProductionCard(production)),
-          
+            ..._productions.map(
+              (production) => _buildProductionCard(production),
+            ),
+
           const SizedBox(height: 24),
-          
+
           // Section Dépôts de Stock
           _buildSectionTitle('Dépôts de Stock'),
           const SizedBox(height: 8),
-          
+
           if (_depotsStock.isEmpty)
             Card(
               child: Padding(
@@ -1337,7 +1456,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Aucun dépôt de stock enregistré',
@@ -1402,9 +1525,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ExpansionTile(
         leading: CircleAvatar(
           backgroundColor: getQualiteColor(production.qualite).withOpacity(0.2),
@@ -1435,8 +1556,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ],
             ),
             Text('Date: ${dateFormat.format(production.dateRecolte)}'),
-            if (champNom != 'Non spécifié')
-              Text('Champ: $champNom'),
+            if (champNom != 'Non spécifié') Text('Champ: $champNom'),
           ],
         ),
         children: [
@@ -1445,11 +1565,21 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Tonnage brut', '${numberFormat.format(production.tonnageBrut)} t'),
-                _buildInfoRow('Tonnage net', '${numberFormat.format(production.tonnageNet)} t'),
+                _buildInfoRow(
+                  'Tonnage brut',
+                  '${numberFormat.format(production.tonnageBrut)} t',
+                ),
+                _buildInfoRow(
+                  'Tonnage net',
+                  '${numberFormat.format(production.tonnageNet)} t',
+                ),
                 if (production.tauxHumidite > 0)
-                  _buildInfoRow('Taux d\'humidité', '${production.tauxHumidite.toStringAsFixed(1)}%'),
-                if (production.observation != null && production.observation!.isNotEmpty)
+                  _buildInfoRow(
+                    'Taux d\'humidité',
+                    '${production.tauxHumidite.toStringAsFixed(1)}%',
+                  ),
+                if (production.observation != null &&
+                    production.observation!.isNotEmpty)
                   _buildInfoRow('Observations', production.observation!),
               ],
             ),
@@ -1466,9 +1596,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ExpansionTile(
         leading: CircleAvatar(
           backgroundColor: Colors.orange.shade100,
@@ -1483,8 +1611,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
           children: [
             const SizedBox(height: 4),
             Text('Date: ${dateFormat.format(depot.dateDepot)}'),
-            if (depot.qualite != null)
-              Text('Qualité: ${depot.qualite}'),
+            if (depot.qualite != null) Text('Qualité: ${depot.qualite}'),
             if (depot.humidite != null)
               Text('Humidité: ${depot.humidite!.toStringAsFixed(1)}%'),
           ],
@@ -1495,17 +1622,36 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Stock brut', '${numberFormat.format(depot.stockBrut)} kg'),
+                _buildInfoRow(
+                  'Stock brut',
+                  '${numberFormat.format(depot.stockBrut)} kg',
+                ),
                 if (depot.poidsSac != null && depot.poidsSac! > 0)
-                  _buildInfoRow('Poids sac', '${numberFormat.format(depot.poidsSac!)} kg'),
+                  _buildInfoRow(
+                    'Poids sac',
+                    '${numberFormat.format(depot.poidsSac!)} kg',
+                  ),
                 if (depot.poidsDechets != null && depot.poidsDechets! > 0)
-                  _buildInfoRow('Poids déchets', '${numberFormat.format(depot.poidsDechets!)} kg'),
+                  _buildInfoRow(
+                    'Poids déchets',
+                    '${numberFormat.format(depot.poidsDechets!)} kg',
+                  ),
                 if (depot.autres != null && depot.autres! > 0)
-                  _buildInfoRow('Autres', '${numberFormat.format(depot.autres!)} kg'),
-                _buildInfoRow('Poids net', '${numberFormat.format(depot.poidsNet)} kg'),
+                  _buildInfoRow(
+                    'Autres',
+                    '${numberFormat.format(depot.autres!)} kg',
+                  ),
+                _buildInfoRow(
+                  'Poids net',
+                  '${numberFormat.format(depot.poidsNet)} kg',
+                ),
                 if (depot.prixUnitaire != null)
-                  _buildInfoRow('Prix unitaire', '${numberFormat.format(depot.prixUnitaire!)} FCFA/kg'),
-                if (depot.observations != null && depot.observations!.isNotEmpty)
+                  _buildInfoRow(
+                    'Prix unitaire',
+                    '${numberFormat.format(depot.prixUnitaire!)} FCFA/kg',
+                  ),
+                if (depot.observations != null &&
+                    depot.observations!.isNotEmpty)
                   _buildInfoRow('Observations', depot.observations!),
               ],
             ),
@@ -1514,7 +1660,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       ),
     );
   }
-  
+
   /// Onglet Ventes & Journal de paie
   Widget _buildVentesTab(AdherentExpertModel adherent) {
     return SingleChildScrollView(
@@ -1533,10 +1679,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                       children: [
                         Text(
                           '${NumberFormat('#,##0').format(adherent.montantTotalVentes)} FCFA',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade700,
-                          ),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
                         ),
                         const Text('Montant total ventes'),
                       ],
@@ -1553,10 +1700,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                       children: [
                         Text(
                           '${NumberFormat('#,##0').format(adherent.montantTotalPaye)} FCFA',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
-                          ),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green.shade700,
+                              ),
                         ),
                         const Text('Montant total payé'),
                       ],
@@ -1573,10 +1721,13 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                       children: [
                         Text(
                           '${NumberFormat('#,##0').format(adherent.soldeCrediteur)} FCFA',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: adherent.soldeCrediteur > 0 ? Colors.orange.shade700 : Colors.grey.shade700,
-                          ),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: adherent.soldeCrediteur > 0
+                                    ? Colors.orange.shade700
+                                    : Colors.grey.shade700,
+                              ),
                         ),
                         const Text('Solde créditeur'),
                       ],
@@ -1586,18 +1737,18 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Graphique d'évolution Ventes vs Paiements
           _buildVentesPaiementsEvolutionChart(),
-          
+
           const SizedBox(height: 24),
-          
+
           // Section Ventes
           _buildSectionTitle('Ventes'),
           const SizedBox(height: 8),
-          
+
           if (_ventes.isEmpty)
             Card(
               child: Padding(
@@ -1605,7 +1756,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.shopping_cart_outlined, size: 48, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.shopping_cart_outlined,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Aucune vente enregistrée',
@@ -1618,9 +1773,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             )
           else
             ..._ventes.map((vente) => _buildVenteCard(vente)),
-          
+
           const SizedBox(height: 24),
-          
+
           // Section Paiements (Recettes)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1640,7 +1795,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             ],
           ),
           const SizedBox(height: 8),
-          
+
           if (_recettes.isEmpty)
             Card(
               child: Padding(
@@ -1648,7 +1803,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.payment_outlined, size: 48, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.payment_outlined,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Aucun paiement enregistré',
@@ -1658,7 +1817,10 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                         const SizedBox(height: 16),
                         Text(
                           'Des ventes existent mais aucune recette n\'a été générée.',
-                          style: TextStyle(color: Colors.orange.shade700, fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.orange.shade700,
+                            fontSize: 12,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
@@ -1707,9 +1869,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ExpansionTile(
         leading: CircleAvatar(
           backgroundColor: Colors.blue.shade100,
@@ -1725,7 +1885,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             const SizedBox(height: 4),
             Text('Date: ${dateFormat.format(vente.dateVente)}'),
             Text('Quantité: ${numberFormat.format(vente.quantiteTotal)} kg'),
-            Text('Prix unitaire: ${numberFormat.format(vente.prixUnitaire)} FCFA/kg'),
+            Text(
+              'Prix unitaire: ${numberFormat.format(vente.prixUnitaire)} FCFA/kg',
+            ),
           ],
         ),
         children: [
@@ -1734,10 +1896,16 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Type', vente.isIndividuelle ? 'Individuelle' : 'Groupée'),
+                _buildInfoRow(
+                  'Type',
+                  vente.isIndividuelle ? 'Individuelle' : 'Groupée',
+                ),
                 if (vente.acheteur != null)
                   _buildInfoRow('Acheteur', vente.acheteur!),
-                _buildInfoRow('Mode de paiement', getModePaiementLabel(vente.modePaiement)),
+                _buildInfoRow(
+                  'Mode de paiement',
+                  getModePaiementLabel(vente.modePaiement),
+                ),
                 if (vente.notes != null && vente.notes!.isNotEmpty)
                   _buildInfoRow('Notes', vente.notes!),
               ],
@@ -1755,9 +1923,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ExpansionTile(
         leading: CircleAvatar(
           backgroundColor: Colors.green.shade100,
@@ -1772,7 +1938,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
           children: [
             const SizedBox(height: 4),
             Text('Date: ${dateFormat.format(recette.dateRecette)}'),
-            Text('Montant brut: ${numberFormat.format(recette.montantBrut)} FCFA'),
+            Text(
+              'Montant brut: ${numberFormat.format(recette.montantBrut)} FCFA',
+            ),
           ],
         ),
         children: [
@@ -1781,10 +1949,22 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Montant brut', '${numberFormat.format(recette.montantBrut)} FCFA'),
-                _buildInfoRow('Taux commission', '${(recette.commissionRate * 100).toStringAsFixed(1)}%'),
-                _buildInfoRow('Commission', '${numberFormat.format(recette.commissionAmount)} FCFA'),
-                _buildInfoRow('Montant net', '${numberFormat.format(recette.montantNet)} FCFA'),
+                _buildInfoRow(
+                  'Montant brut',
+                  '${numberFormat.format(recette.montantBrut)} FCFA',
+                ),
+                _buildInfoRow(
+                  'Taux commission',
+                  '${(recette.commissionRate * 100).toStringAsFixed(1)}%',
+                ),
+                _buildInfoRow(
+                  'Commission',
+                  '${numberFormat.format(recette.commissionAmount)} FCFA',
+                ),
+                _buildInfoRow(
+                  'Montant net',
+                  '${numberFormat.format(recette.montantNet)} FCFA',
+                ),
                 if (recette.notes != null && recette.notes!.isNotEmpty)
                   _buildInfoRow('Notes', recette.notes!),
               ],
@@ -1794,7 +1974,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       ),
     );
   }
-  
+
   /// Onglet Capital Social
   Widget _buildCapitalTab(AdherentExpertModel adherent) {
     return SingleChildScrollView(
@@ -1803,26 +1983,35 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionTitle('Capital Social'),
-          
+
           // Résumé capital
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  _buildInfoRow('Capital souscrit', 
-                      '${adherent.capitalSocialSouscrit.toStringAsFixed(0)} FCFA'),
-                  _buildInfoRow('Capital libéré', 
-                      '${adherent.capitalSocialLibere.toStringAsFixed(0)} FCFA'),
-                  _buildInfoRow('Capital restant', 
-                      '${adherent.capitalSocialRestant.toStringAsFixed(0)} FCFA'),
+                  _buildInfoRow(
+                    'Capital souscrit',
+                    '${adherent.capitalSocialSouscrit.toStringAsFixed(0)} FCFA',
+                  ),
+                  _buildInfoRow(
+                    'Capital libéré',
+                    '${adherent.capitalSocialLibere.toStringAsFixed(0)} FCFA',
+                  ),
+                  _buildInfoRow(
+                    'Capital restant',
+                    '${adherent.capitalSocialRestant.toStringAsFixed(0)} FCFA',
+                  ),
                   const Divider(),
                   LinearProgressIndicator(
                     value: adherent.capitalSocialSouscrit > 0
-                        ? adherent.capitalSocialLibere / adherent.capitalSocialSouscrit
+                        ? adherent.capitalSocialLibere /
+                              adherent.capitalSocialSouscrit
                         : 0,
                     backgroundColor: Colors.grey.shade200,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Colors.green,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -1833,9 +2022,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Section Souscriptions
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1864,9 +2053,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Liste des souscriptions
           if (_souscriptionsCapital.isEmpty)
             Card(
@@ -1875,7 +2064,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.account_balance_outlined, size: 48, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.account_balance_outlined,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Aucune souscription enregistrée',
@@ -1887,7 +2080,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             )
           else
-            ..._souscriptionsCapital.map((souscription) => _buildSouscriptionCard(souscription)),
+            ..._souscriptionsCapital.map(
+              (souscription) => _buildSouscriptionCard(souscription),
+            ),
         ],
       ),
     );
@@ -1927,15 +2122,15 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       }
     }
 
-    final capitalLibere = souscription.nombrePartsLiberees * souscription.valeurPart;
-    final capitalRestant = souscription.nombrePartsRestantes * souscription.valeurPart;
+    final capitalLibere =
+        souscription.nombrePartsLiberees * souscription.valeurPart;
+    final capitalRestant =
+        souscription.nombrePartsRestantes * souscription.valeurPart;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ExpansionTile(
         leading: CircleAvatar(
           backgroundColor: getStatutColor(souscription.statut).withOpacity(0.2),
@@ -1962,10 +2157,14 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                   backgroundColor: getStatutColor(souscription.statut),
                 ),
                 const SizedBox(width: 8),
-                Text('Date: ${dateFormat.format(souscription.dateSouscription)}'),
+                Text(
+                  'Date: ${dateFormat.format(souscription.dateSouscription)}',
+                ),
               ],
             ),
-            Text('Parts: ${souscription.nombrePartsSouscrites} (${souscription.nombrePartsLiberees} libérées)'),
+            Text(
+              'Parts: ${souscription.nombrePartsSouscrites} (${souscription.nombrePartsLiberees} libérées)',
+            ),
           ],
         ),
         children: [
@@ -1974,18 +2173,43 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Nombre de parts souscrites', souscription.nombrePartsSouscrites.toString()),
-                _buildInfoRow('Valeur d\'une part', '${numberFormat.format(souscription.valeurPart)} FCFA'),
-                _buildInfoRow('Capital total souscrit', '${numberFormat.format(souscription.capitalTotal)} FCFA'),
+                _buildInfoRow(
+                  'Nombre de parts souscrites',
+                  souscription.nombrePartsSouscrites.toString(),
+                ),
+                _buildInfoRow(
+                  'Valeur d\'une part',
+                  '${numberFormat.format(souscription.valeurPart)} FCFA',
+                ),
+                _buildInfoRow(
+                  'Capital total souscrit',
+                  '${numberFormat.format(souscription.capitalTotal)} FCFA',
+                ),
                 const Divider(),
-                _buildInfoRow('Parts libérées', souscription.nombrePartsLiberees.toString()),
-                _buildInfoRow('Capital libéré', '${numberFormat.format(capitalLibere)} FCFA'),
+                _buildInfoRow(
+                  'Parts libérées',
+                  souscription.nombrePartsLiberees.toString(),
+                ),
+                _buildInfoRow(
+                  'Capital libéré',
+                  '${numberFormat.format(capitalLibere)} FCFA',
+                ),
                 const Divider(),
-                _buildInfoRow('Parts restantes', souscription.nombrePartsRestantes.toString()),
-                _buildInfoRow('Capital restant', '${numberFormat.format(capitalRestant)} FCFA'),
+                _buildInfoRow(
+                  'Parts restantes',
+                  souscription.nombrePartsRestantes.toString(),
+                ),
+                _buildInfoRow(
+                  'Capital restant',
+                  '${numberFormat.format(capitalRestant)} FCFA',
+                ),
                 if (souscription.dateLiberation != null)
-                  _buildInfoRow('Date de libération', dateFormat.format(souscription.dateLiberation!)),
-                if (souscription.notes != null && souscription.notes!.isNotEmpty)
+                  _buildInfoRow(
+                    'Date de libération',
+                    dateFormat.format(souscription.dateLiberation!),
+                  ),
+                if (souscription.notes != null &&
+                    souscription.notes!.isNotEmpty)
                   _buildInfoRow('Notes', souscription.notes!),
                 const SizedBox(height: 8),
                 Row(
@@ -2028,7 +2252,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                           context: context,
                           builder: (context) => AlertDialog(
                             title: const Text('Confirmer l\'annulation'),
-                            content: Text(
+                            content: const Text(
                               'Êtes-vous sûr de vouloir annuler cette souscription ?',
                             ),
                             actions: [
@@ -2051,18 +2275,20 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                           try {
                             final authViewModel = context.read<AuthViewModel>();
                             final currentUser = authViewModel.currentUser;
-                            
+
                             if (currentUser != null) {
                               await _capitalSocialService.annulerSouscription(
                                 souscription.id!,
                                 currentUser.id!,
                               );
                               await _refreshCapitalSocial();
-                              
+
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Souscription annulée avec succès'),
+                                    content: Text(
+                                      'Souscription annulée avec succès',
+                                    ),
                                     backgroundColor: Colors.green,
                                   ),
                                 );
@@ -2080,8 +2306,15 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                           }
                         }
                       },
-                      icon: const Icon(Icons.cancel, size: 18, color: Colors.red),
-                      label: const Text('Annuler', style: TextStyle(color: Colors.red)),
+                      icon: const Icon(
+                        Icons.cancel,
+                        size: 18,
+                        color: Colors.red,
+                      ),
+                      label: const Text(
+                        'Annuler',
+                        style: TextStyle(color: Colors.red),
+                      ),
                     ),
                   ],
                 ),
@@ -2160,22 +2393,34 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             ),
             ElevatedButton(
               onPressed: () {
-                final nombreParts = int.tryParse(nombrePartsController.text.trim());
+                final nombreParts = int.tryParse(
+                  nombrePartsController.text.trim(),
+                );
                 if (nombreParts == null || nombreParts <= 0) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(content: Text('Veuillez entrer un nombre de parts valide')),
+                    const SnackBar(
+                      content: Text(
+                        'Veuillez entrer un nombre de parts valide',
+                      ),
+                    ),
                   );
                   return;
                 }
                 if (nombreParts > souscription.nombrePartsRestantes) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(content: Text('Le nombre de parts ne peut pas dépasser ${souscription.nombrePartsRestantes}')),
+                    SnackBar(
+                      content: Text(
+                        'Le nombre de parts ne peut pas dépasser ${souscription.nombrePartsRestantes}',
+                      ),
+                    ),
                   );
                   return;
                 }
                 if (dateLiberation == null) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(content: Text('Veuillez sélectionner une date')),
+                    const SnackBar(
+                      content: Text('Veuillez sélectionner une date'),
+                    ),
                   );
                   return;
                 }
@@ -2199,7 +2444,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       try {
         final authViewModel = context.read<AuthViewModel>();
         final currentUser = authViewModel.currentUser;
-        
+
         if (currentUser != null) {
           await _capitalSocialService.libererParts(
             id: souscription.id!,
@@ -2208,7 +2453,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             updatedBy: currentUser.id!,
           );
           await _refreshCapitalSocial();
-          
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -2230,7 +2475,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       }
     }
   }
-  
+
   /// Onglet Social & Crédits
   Widget _buildSocialTab(AdherentExpertModel adherent) {
     // Calculer les statistiques des crédits
@@ -2252,10 +2497,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                       children: [
                         Text(
                           '${NumberFormat('#,##0').format(stats['montantTotalOctroye'])} FCFA',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade700,
-                          ),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
                         ),
                         const Text('Montant total octroyé'),
                       ],
@@ -2272,10 +2518,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                       children: [
                         Text(
                           '${NumberFormat('#,##0').format(stats['soldeTotalRestant'])} FCFA',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange.shade700,
-                          ),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange.shade700,
+                              ),
                         ),
                         const Text('Solde restant'),
                       ],
@@ -2292,10 +2539,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                       children: [
                         Text(
                           stats['nombreCredits'].toString(),
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.purple.shade700,
-                          ),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.purple.shade700,
+                              ),
                         ),
                         const Text('Nombre de crédits'),
                       ],
@@ -2305,9 +2553,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Section Crédits
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2318,9 +2566,8 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CreditSocialFormScreen(
-                        adherentId: widget.adherentId,
-                      ),
+                      builder: (context) =>
+                          CreditSocialFormScreen(adherentId: widget.adherentId),
                     ),
                   );
                   if (result == true) {
@@ -2336,9 +2583,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Liste des crédits
           if (_creditsSociaux.isEmpty)
             Card(
@@ -2347,7 +2594,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.account_balance_wallet_outlined, size: 48, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.account_balance_wallet_outlined,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Aucun crédit enregistré',
@@ -2376,12 +2627,12 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
     }
 
     final montantTotalOctroye = _creditsSociaux.fold<double>(
-      0.0, 
+      0.0,
       (sum, credit) => sum + credit.montant,
     );
-    
+
     final soldeTotalRestant = _creditsSociaux.fold<double>(
-      0.0, 
+      0.0,
       (sum, credit) => sum + credit.soldeRestant,
     );
 
@@ -2452,14 +2703,16 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ExpansionTile(
         leading: CircleAvatar(
-          backgroundColor: getTypeCreditColor(credit.typeCredit).withOpacity(0.2),
+          backgroundColor: getTypeCreditColor(
+            credit.typeCredit,
+          ).withOpacity(0.2),
           child: Icon(
-            credit.isCreditProduit ? Icons.agriculture : Icons.account_balance_wallet,
+            credit.isCreditProduit
+                ? Icons.agriculture
+                : Icons.account_balance_wallet,
             color: getTypeCreditColor(credit.typeCredit),
           ),
         ),
@@ -2507,21 +2760,43 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Type de crédit', getTypeCreditLabel(credit.typeCredit)),
+                _buildInfoRow(
+                  'Type de crédit',
+                  getTypeCreditLabel(credit.typeCredit),
+                ),
                 if (credit.isCreditProduit) ...[
                   if (credit.quantiteProduit != null)
-                    _buildInfoRow('Quantité de produit', '${numberFormat.format(credit.quantiteProduit!)} kg'),
+                    _buildInfoRow(
+                      'Quantité de produit',
+                      '${numberFormat.format(credit.quantiteProduit!)} kg',
+                    ),
                   if (credit.typeProduit != null)
                     _buildInfoRow('Type de produit', credit.typeProduit!),
                 ],
-                _buildInfoRow('Montant octroyé', '${numberFormat.format(credit.montant)} FCFA'),
-                _buildInfoRow('Montant remboursé', '${numberFormat.format(credit.montantRembourse)} FCFA'),
-                _buildInfoRow('Solde restant', '${numberFormat.format(credit.soldeRestant)} FCFA'),
-                _buildInfoRow('Pourcentage remboursé', '${credit.pourcentageRembourse.toStringAsFixed(1)}%'),
+                _buildInfoRow(
+                  'Montant octroyé',
+                  '${numberFormat.format(credit.montant)} FCFA',
+                ),
+                _buildInfoRow(
+                  'Montant remboursé',
+                  '${numberFormat.format(credit.montantRembourse)} FCFA',
+                ),
+                _buildInfoRow(
+                  'Solde restant',
+                  '${numberFormat.format(credit.soldeRestant)} FCFA',
+                ),
+                _buildInfoRow(
+                  'Pourcentage remboursé',
+                  '${credit.pourcentageRembourse.toStringAsFixed(1)}%',
+                ),
                 _buildInfoRow('Motif', credit.motif),
                 if (credit.echeanceRemboursement != null)
-                  _buildInfoRow('Date d\'échéance', dateFormat.format(credit.echeanceRemboursement!)),
-                if (credit.observation != null && credit.observation!.isNotEmpty)
+                  _buildInfoRow(
+                    'Date d\'échéance',
+                    dateFormat.format(credit.echeanceRemboursement!),
+                  ),
+                if (credit.observation != null &&
+                    credit.observation!.isNotEmpty)
                   _buildInfoRow('Observations', credit.observation!),
                 const SizedBox(height: 8),
                 Row(
@@ -2564,7 +2839,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                           context: context,
                           builder: (context) => AlertDialog(
                             title: const Text('Confirmer l\'annulation'),
-                            content: Text(
+                            content: const Text(
                               'Êtes-vous sûr de vouloir annuler ce crédit ?',
                             ),
                             actions: [
@@ -2587,14 +2862,14 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                           try {
                             final authViewModel = context.read<AuthViewModel>();
                             final currentUser = authViewModel.currentUser;
-                            
+
                             if (currentUser != null) {
                               await _creditSocialService.annulerCredit(
                                 credit.id!,
                                 currentUser.id!,
                               );
                               await _refreshCreditsSociaux();
-                              
+
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -2616,8 +2891,15 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                           }
                         }
                       },
-                      icon: const Icon(Icons.cancel, size: 18, color: Colors.red),
-                      label: const Text('Annuler', style: TextStyle(color: Colors.red)),
+                      icon: const Icon(
+                        Icons.cancel,
+                        size: 18,
+                        color: Colors.red,
+                      ),
+                      label: const Text(
+                        'Annuler',
+                        style: TextStyle(color: Colors.red),
+                      ),
                     ),
                   ],
                 ),
@@ -2699,19 +2981,27 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 final montant = double.tryParse(montantController.text.trim());
                 if (montant == null || montant <= 0) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(content: Text('Veuillez entrer un montant valide')),
+                    const SnackBar(
+                      content: Text('Veuillez entrer un montant valide'),
+                    ),
                   );
                   return;
                 }
                 if (montant > credit.soldeRestant) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(content: Text('Le montant ne peut pas dépasser ${credit.soldeRestant.toStringAsFixed(0)} FCFA')),
+                    SnackBar(
+                      content: Text(
+                        'Le montant ne peut pas dépasser ${credit.soldeRestant.toStringAsFixed(0)} FCFA',
+                      ),
+                    ),
                   );
                   return;
                 }
                 if (dateRemboursement == null) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(content: Text('Veuillez sélectionner une date')),
+                    const SnackBar(
+                      content: Text('Veuillez sélectionner une date'),
+                    ),
                   );
                   return;
                 }
@@ -2735,7 +3025,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       try {
         final authViewModel = context.read<AuthViewModel>();
         final currentUser = authViewModel.currentUser;
-        
+
         if (currentUser != null) {
           await _creditSocialService.enregistrerRemboursement(
             id: credit.id!,
@@ -2744,7 +3034,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             updatedBy: currentUser.id!,
           );
           await _refreshCreditsSociaux();
-          
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -2766,7 +3056,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       }
     }
   }
-  
+
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -2779,7 +3069,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
       ),
     );
   }
-  
+
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -2828,9 +3118,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
         leading: CircleAvatar(
@@ -2914,9 +3202,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.red,
-                      ),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
                       child: const Text('Supprimer'),
                     ),
                   ],
@@ -2927,14 +3213,14 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 try {
                   final authViewModel = context.read<AuthViewModel>();
                   final currentUser = authViewModel.currentUser;
-                  
+
                   if (currentUser != null) {
                     await _ayantDroitService.deleteAyantDroit(
                       ayantDroit.id!,
                       currentUser.id!,
                     );
                     await _refreshAyantsDroit();
-                    
+
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -2995,17 +3281,21 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
 
     String getTypeSolLabel(String? typeSol) {
       if (typeSol == null) return 'Non renseigné';
-      return typeSol.replaceAll('_', ' ').split(' ').map((word) {
-        return word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1);
-      }).join(' ');
+      return typeSol
+          .replaceAll('_', ' ')
+          .split(' ')
+          .map((word) {
+            return word.isEmpty
+                ? ''
+                : word[0].toUpperCase() + word.substring(1);
+          })
+          .join(' ');
     }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ExpansionTile(
         leading: CircleAvatar(
           backgroundColor: Colors.brown.shade100,
@@ -3022,7 +3312,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             Text('Code: ${champ.codeChamp}'),
             Text('Superficie: ${champ.superficie.toStringAsFixed(2)} ha'),
             if (champ.rendementEstime > 0)
-              Text('Rendement: ${champ.rendementEstime.toStringAsFixed(2)} t/ha'),
+              Text(
+                'Rendement: ${champ.rendementEstime.toStringAsFixed(2)} t/ha',
+              ),
           ],
         ),
         trailing: Chip(
@@ -3043,12 +3335,15 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 Builder(
                   builder: (context) {
                     // Debug: vérifier les valeurs dans le widget
-                    final hasCoords = champ.latitude != null && 
-                                     champ.longitude != null && 
-                                     champ.latitude != 0.0 && 
-                                     champ.longitude != 0.0;
-                    print('🔍 _buildChampCard - Champ ${champ.codeChamp}: lat=${champ.latitude}, lng=${champ.longitude}, hasCoords=$hasCoords');
-                    
+                    final hasCoords =
+                        champ.latitude != null &&
+                        champ.longitude != null &&
+                        champ.latitude != 0.0 &&
+                        champ.longitude != 0.0;
+                    print(
+                      '🔍 _buildChampCard - Champ ${champ.codeChamp}: lat=${champ.latitude}, lng=${champ.longitude}, hasCoords=$hasCoords',
+                    );
+
                     return _buildInfoRow(
                       'Coordonnées GPS',
                       hasCoords
@@ -3060,24 +3355,45 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 if (champ.typeSol != null)
                   _buildInfoRow('Type de sol', getTypeSolLabel(champ.typeSol)),
                 if (champ.anneeMiseEnCulture != null)
-                  _buildInfoRow('Année mise en culture', champ.anneeMiseEnCulture.toString()),
+                  _buildInfoRow(
+                    'Année mise en culture',
+                    champ.anneeMiseEnCulture.toString(),
+                  ),
                 if (champ.varieteCacao != null)
                   _buildInfoRow(
                     'Variété',
-                    champ.varieteCacao!.replaceAll('_', ' ').split(' ').map((word) {
-                      return word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1);
-                    }).join(' '),
+                    champ.varieteCacao!
+                        .replaceAll('_', ' ')
+                        .split(' ')
+                        .map((word) {
+                          return word.isEmpty
+                              ? ''
+                              : word[0].toUpperCase() + word.substring(1);
+                        })
+                        .join(' '),
                   ),
                 if (champ.nombreArbres != null)
-                  _buildInfoRow('Nombre d\'arbres', champ.nombreArbres.toString()),
+                  _buildInfoRow(
+                    'Nombre d\'arbres',
+                    champ.nombreArbres.toString(),
+                  ),
                 if (champ.ageMoyenArbres != null)
-                  _buildInfoRow('Âge moyen des arbres', '${champ.ageMoyenArbres} ans'),
+                  _buildInfoRow(
+                    'Âge moyen des arbres',
+                    '${champ.ageMoyenArbres} ans',
+                  ),
                 if (champ.systemeIrrigation != null)
                   _buildInfoRow(
                     'Système d\'irrigation',
-                    champ.systemeIrrigation!.replaceAll('_', ' ').split(' ').map((word) {
-                      return word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1);
-                    }).join(' '),
+                    champ.systemeIrrigation!
+                        .replaceAll('_', ' ')
+                        .split(' ')
+                        .map((word) {
+                          return word.isEmpty
+                              ? ''
+                              : word[0].toUpperCase() + word.substring(1);
+                        })
+                        .join(' '),
                   ),
                 if (champ.campagneAgricole != null)
                   _buildInfoRow('Campagne agricole', champ.campagneAgricole!),
@@ -3135,14 +3451,14 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                           try {
                             final authViewModel = context.read<AuthViewModel>();
                             final currentUser = authViewModel.currentUser;
-                            
+
                             if (currentUser != null) {
                               await _champParcelleService.deleteChamp(
                                 champ.id!,
                                 currentUser.id!,
                               );
                               await _refreshChamps();
-                              
+
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -3164,8 +3480,15 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                           }
                         }
                       },
-                      icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                      label: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+                      icon: const Icon(
+                        Icons.delete,
+                        size: 18,
+                        color: Colors.red,
+                      ),
+                      label: const Text(
+                        'Supprimer',
+                        style: TextStyle(color: Colors.red),
+                      ),
                     ),
                   ],
                 ),
@@ -3180,7 +3503,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   Widget _buildTraitementsEvolutionChart() {
     // Préparer les données pour le graphique
     final chartData = _prepareTraitementsChartData();
-    
+
     if (chartData.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -3195,25 +3518,25 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
 
     // Types de traitement présents dans les données
     final types = chartData.keys.toList();
-    
+
     // Obtenir les mois uniques (tous les mois présents dans toutes les séries)
     final allMonths = <String>{};
     chartData.forEach((type, data) {
       allMonths.addAll(data.keys);
     });
     final sortedMonths = allMonths.toList()..sort();
-    
+
     // Créer les lignes pour chaque type
     final lineBarsData = types.map((type) {
       final color = colors[type] ?? Colors.grey;
       final spots = <FlSpot>[];
-      
+
       for (int i = 0; i < sortedMonths.length; i++) {
         final month = sortedMonths[i];
         final count = chartData[type]![month] ?? 0.0;
         spots.add(FlSpot(i.toDouble(), count));
       }
-      
+
       return LineChartBarData(
         spots: spots,
         isCurved: true,
@@ -3230,10 +3553,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
             );
           },
         ),
-        belowBarData: BarAreaData(
-          show: true,
-          color: color.withOpacity(0.1),
-        ),
+        belowBarData: BarAreaData(show: true, color: color.withOpacity(0.1)),
       );
     }).toList();
 
@@ -3245,9 +3565,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -3261,7 +3579,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             ),
             const SizedBox(height: 8),
-            
+
             // Légende
             Wrap(
               spacing: 16,
@@ -3291,9 +3609,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 );
               }).toList(),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             SizedBox(
               height: 250,
               child: LineChart(
@@ -3347,8 +3665,18 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                                 final year = parts[0];
                                 final monthNum = int.parse(parts[1]);
                                 final monthNames = [
-                                  'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
-                                  'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
+                                  'Jan',
+                                  'Fév',
+                                  'Mar',
+                                  'Avr',
+                                  'Mai',
+                                  'Jun',
+                                  'Jul',
+                                  'Aoû',
+                                  'Sep',
+                                  'Oct',
+                                  'Nov',
+                                  'Déc',
                                 ];
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 8.0),
@@ -3389,10 +3717,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                   ),
                   borderData: FlBorderData(
                     show: true,
-                    border: Border.all(
-                      color: Colors.grey.shade300,
-                      width: 1,
-                    ),
+                    border: Border.all(color: Colors.grey.shade300, width: 1),
                   ),
                   minX: 0,
                   maxX: (sortedMonths.length - 1).toDouble(),
@@ -3412,23 +3737,23 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   /// Retourne une Map<type_traitement, Map<mois, nombre>>
   Map<String, Map<String, double>> _prepareTraitementsChartData() {
     final Map<String, Map<String, double>> data = {};
-    
+
     for (final traitement in _traitements) {
       final type = traitement.typeTraitement;
       final date = traitement.dateTraitement;
-      
+
       // Formater le mois comme "YYYY-MM"
       final monthKey = '${date.year}-${date.month.toString().padLeft(2, '0')}';
-      
+
       // Initialiser la structure si nécessaire
       if (!data.containsKey(type)) {
         data[type] = {};
       }
-      
+
       // Compter les traitements par mois et par type
       data[type]![monthKey] = (data[type]![monthKey] ?? 0.0) + 1.0;
     }
-    
+
     return data;
   }
 
@@ -3450,23 +3775,25 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   Widget _buildVentesPaiementsEvolutionChart() {
     // Préparer les données pour le graphique
     final chartData = _prepareVentesPaiementsChartData();
-    
+
     // Vérifier s'il y a des données
     final hasVentes = chartData['ventes']!.isNotEmpty;
     final hasPaiements = chartData['paiements']!.isNotEmpty;
-    
+
     if (!hasVentes && !hasPaiements) {
       return Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Center(
             child: Column(
               children: [
-                Icon(Icons.show_chart_outlined, size: 48, color: Colors.grey.shade400),
+                Icon(
+                  Icons.show_chart_outlined,
+                  size: 48,
+                  color: Colors.grey.shade400,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'Aucune donnée disponible pour le graphique',
@@ -3491,7 +3818,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
     allMonths.addAll(chartData['ventes']!.keys);
     allMonths.addAll(chartData['paiements']!.keys);
     final sortedMonths = allMonths.toList()..sort();
-    
+
     if (sortedMonths.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -3499,27 +3826,31 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
     // Créer les lignes pour ventes et paiements
     final ventesSpots = <FlSpot>[];
     final paiementsSpots = <FlSpot>[];
-    
+
     for (int i = 0; i < sortedMonths.length; i++) {
       final month = sortedMonths[i];
       final ventesMontant = chartData['ventes']![month] ?? 0.0;
       final paiementsMontant = chartData['paiements']![month] ?? 0.0;
-      
+
       ventesSpots.add(FlSpot(i.toDouble(), ventesMontant));
       paiementsSpots.add(FlSpot(i.toDouble(), paiementsMontant));
     }
 
     // Trouver la valeur maximale pour l'échelle Y
-    final maxVentes = chartData['ventes']!.values.fold<double>(0.0, (max, value) => value > max ? value : max);
-    final maxPaiements = chartData['paiements']!.values.fold<double>(0.0, (max, value) => value > max ? value : max);
+    final maxVentes = chartData['ventes']!.values.fold<double>(
+      0.0,
+      (max, value) => value > max ? value : max,
+    );
+    final maxPaiements = chartData['paiements']!.values.fold<double>(
+      0.0,
+      (max, value) => value > max ? value : max,
+    );
     final maxValue = maxVentes > maxPaiements ? maxVentes : maxPaiements;
     final maxY = maxValue > 0 ? (maxValue * 1.2).ceil().toDouble() : 100000.0;
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -3533,7 +3864,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
               ),
             ),
             const SizedBox(height: 8),
-            
+
             // Légende
             Row(
               children: [
@@ -3543,7 +3874,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                     Container(
                       width: 16,
                       height: 16,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Colors.blue,
                         shape: BoxShape.circle,
                       ),
@@ -3565,7 +3896,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                     Container(
                       width: 16,
                       height: 16,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Colors.green,
                         shape: BoxShape.circle,
                       ),
@@ -3582,9 +3913,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             SizedBox(
               height: 250,
               child: LineChart(
@@ -3638,8 +3969,18 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                                 final year = parts[0];
                                 final monthNum = int.parse(parts[1]);
                                 final monthNames = [
-                                  'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
-                                  'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
+                                  'Jan',
+                                  'Fév',
+                                  'Mar',
+                                  'Avr',
+                                  'Mai',
+                                  'Jun',
+                                  'Jul',
+                                  'Aoû',
+                                  'Sep',
+                                  'Oct',
+                                  'Nov',
+                                  'Déc',
                                 ];
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 8.0),
@@ -3680,10 +4021,7 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
                   ),
                   borderData: FlBorderData(
                     show: true,
-                    border: Border.all(
-                      color: Colors.grey.shade300,
-                      width: 1,
-                    ),
+                    border: Border.all(color: Colors.grey.shade300, width: 1),
                   ),
                   minX: 0,
                   maxX: (sortedMonths.length - 1).toDouble(),
@@ -3749,25 +4087,23 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
   Map<String, Map<String, double>> _prepareVentesPaiementsChartData() {
     final Map<String, double> ventesData = {};
     final Map<String, double> paiementsData = {};
-    
+
     // Grouper les ventes par mois
     for (final vente in _ventes) {
       final date = vente.dateVente;
       final monthKey = '${date.year}-${date.month.toString().padLeft(2, '0')}';
       ventesData[monthKey] = (ventesData[monthKey] ?? 0.0) + vente.montantTotal;
     }
-    
+
     // Grouper les paiements par mois
     for (final recette in _recettes) {
       final date = recette.dateRecette;
       final monthKey = '${date.year}-${date.month.toString().padLeft(2, '0')}';
-      paiementsData[monthKey] = (paiementsData[monthKey] ?? 0.0) + recette.montantNet;
+      paiementsData[monthKey] =
+          (paiementsData[monthKey] ?? 0.0) + recette.montantNet;
     }
-    
-    return {
-      'ventes': ventesData,
-      'paiements': paiementsData,
-    };
+
+    return {'ventes': ventesData, 'paiements': paiementsData};
   }
 
   String _formatMontant(double value) {
@@ -3786,14 +4122,9 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
 
     if (!mounted) return;
 
-    // Afficher un indicateur de chargement
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    setState(() {
+      _isExporting = true;
+    });
 
     try {
       final success = await _exportService.exportDossierExpert(
@@ -3837,11 +4168,11 @@ class _AdherentExpertDetailScreenState extends State<AdherentExpertDetailScreen>
         );
       }
     } finally {
-      // Toujours fermer le loader, même en cas d'erreur
       if (mounted) {
-        Navigator.pop(context);
+        setState(() {
+          _isExporting = false;
+        });
       }
     }
   }
 }
-

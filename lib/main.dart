@@ -11,6 +11,7 @@ import 'presentation/viewmodels/notification_viewmodel.dart';
 import 'presentation/viewmodels/document_viewmodel.dart';
 import 'presentation/viewmodels/client_viewmodel.dart';
 import 'presentation/viewmodels/capital_viewmodel.dart';
+import 'presentation/viewmodels/dashboard_viewmodel.dart';
 import 'presentation/viewmodels/user_viewmodel.dart';
 import 'presentation/viewmodels/commission_viewmodel.dart';
 import 'presentation/providers/settings_provider.dart';
@@ -19,30 +20,6 @@ import 'presentation/widgets/auth_wrapper.dart';
 import 'services/notification/notification_service.dart';
 import 'config/routes/routes.dart';
 import 'presentation/screens/login_screen.dart';
-import 'presentation/screens/dashboard_screen.dart';
-import 'presentation/screens/adherents/adherents_list_screen.dart';
-import 'presentation/screens/adherents/adherent_form_screen.dart';
-import 'presentation/screens/adherents/adherent_detail_screen.dart';
-import 'presentation/screens/stock_list_screen.dart';
-import 'presentation/screens/stock_depot_form_screen.dart';
-import 'presentation/screens/stock_movements_history_screen.dart';
-import 'presentation/screens/stock_adjustment_screen.dart';
-import 'presentation/screens/stock_export_screen.dart';
-import 'presentation/screens/ventes/ventes_list_screen.dart';
-import 'presentation/screens/ventes/vente_form_screen.dart';
-import 'presentation/screens/ventes/vente_form_v1_screen.dart';
-import 'presentation/screens/ventes/vente_detail_screen.dart';
-import 'presentation/screens/recettes/recettes_list_screen.dart';
-import 'presentation/screens/recettes/recette_detail_screen.dart';
-import 'presentation/screens/recettes/recette_bordereau_screen.dart';
-import 'presentation/screens/recettes/recette_export_screen.dart';
-import 'presentation/screens/parametres/parametres_main_screen.dart';
-import 'presentation/screens/parametres/campagne_form_screen.dart';
-import 'presentation/screens/factures/factures_list_screen.dart';
-import 'presentation/screens/factures/facture_detail_screen.dart';
-import 'presentation/screens/notifications/notifications_history_screen.dart';
-import 'data/models/adherent_model.dart';
-import 'data/models/parametres_cooperative_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,6 +55,7 @@ class CoopManagerApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DocumentViewModel()),
         ChangeNotifierProvider(create: (_) => ClientViewModel()),
         ChangeNotifierProvider(create: (_) => CapitalViewModel()),
+        ChangeNotifierProvider(create: (_) => DashboardViewModel()),
         ChangeNotifierProvider(create: (_) => UserViewModel()),
         ChangeNotifierProvider(create: (_) => CommissionViewModel()),
       ],

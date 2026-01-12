@@ -88,7 +88,7 @@ class SouscriptionService {
           action: 'CREATE_SOUSCRIPTION',
           entityType: 'souscriptions_capital',
           entityId: id,
-          details: 'Souscription de $nombreParts parts pour ${montantSouscrit} FCFA',
+          details: 'Souscription de $nombreParts parts pour $montantSouscrit FCFA',
         );
         
         await db.execute('COMMIT');

@@ -251,7 +251,7 @@ class _CreditSocialFormScreenState extends State<CreditSocialFormScreen> {
             children: [
               // Type de crédit
               DropdownButtonFormField<String>(
-                value: _typeCredit,
+                initialValue: _typeCredit,
                 decoration: InputDecoration(
                   labelText: 'Type de crédit *',
                   prefixIcon: const Icon(Icons.category),
@@ -279,7 +279,7 @@ class _CreditSocialFormScreenState extends State<CreditSocialFormScreen> {
 
               // Type d'aide
               DropdownButtonFormField<String>(
-                value: _typeAide,
+                initialValue: _typeAide,
                 decoration: InputDecoration(
                   labelText: 'Type d\'aide',
                   prefixIcon: const Icon(Icons.help_outline),
@@ -360,7 +360,7 @@ class _CreditSocialFormScreenState extends State<CreditSocialFormScreen> {
 
                 // Type de produit
                 DropdownButtonFormField<String>(
-                  value: _typeProduitController.text.isEmpty ? null : _typeProduitController.text,
+                  initialValue: _typeProduitController.text.isEmpty ? null : _typeProduitController.text,
                   decoration: InputDecoration(
                     labelText: 'Type de produit',
                     prefixIcon: const Icon(Icons.eco),

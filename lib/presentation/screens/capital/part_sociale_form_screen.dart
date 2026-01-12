@@ -192,7 +192,7 @@ class _PartSocialeFormScreenState extends State<PartSocialeFormScreen> {
             children: [
               // Sélection de l'adhérent
               DropdownButtonFormField<AdherentModel>(
-                value: _selectedAdherent,
+                initialValue: _selectedAdherent,
                 decoration: InputDecoration(
                   labelText: 'Adhérent *',
                   prefixIcon: const Icon(Icons.person),

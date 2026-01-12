@@ -22,7 +22,7 @@ class SalesSettingsModel {
 
   factory SalesSettingsModel.fromMap(Map<String, dynamic> map) {
     // Helper functions for safe type conversion
-    double _parseDouble(dynamic value, {double defaultValue = 0.0}) {
+    double parseDouble(dynamic value, {double defaultValue = 0.0}) {
       if (value == null) return defaultValue;
       if (value is double) return value;
       if (value is int) return value.toDouble();
@@ -31,13 +31,13 @@ class SalesSettingsModel {
       return defaultValue;
     }
 
-    String _parseStringRequired(dynamic value, String defaultValue) {
+    String parseStringRequired(dynamic value, String defaultValue) {
       if (value == null) return defaultValue;
       if (value is String) return value.isEmpty ? defaultValue : value;
       return value.toString();
     }
 
-    bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    bool parseBool(dynamic value, {bool defaultValue = false}) {
       if (value == null) return defaultValue;
       if (value is bool) return value;
       if (value is int) return value == 1;
@@ -50,18 +50,18 @@ class SalesSettingsModel {
     }
 
     return SalesSettingsModel(
-      prixMinimumCacao: _parseDouble(map['prix_minimum_cacao']),
-      prixMaximumCacao: _parseDouble(map['prix_maximum_cacao']),
+      prixMinimumCacao: parseDouble(map['prix_minimum_cacao']),
+      prixMaximumCacao: parseDouble(map['prix_maximum_cacao']),
       prixDuJour: map['prix_du_jour'] != null
-          ? _parseDouble(map['prix_du_jour'])
+          ? parseDouble(map['prix_du_jour'])
           : null,
-      modeValidationPrix: _parseStringRequired(map['mode_validation_prix'], 'auto'),
-      commissionCooperative: _parseDouble(map['commission_cooperative'], defaultValue: 0.05),
+      modeValidationPrix: parseStringRequired(map['mode_validation_prix'], 'auto'),
+      commissionCooperative: parseDouble(map['commission_cooperative'], defaultValue: 0.05),
       retenuesAutomatiques: map['retenues_automatiques'] != null && map['retenues_automatiques'] is List
           ? List<String>.from(map['retenues_automatiques'])
           : [],
-      alertePrixHorsPlage: _parseBool(map['alerte_prix_hors_plage'], defaultValue: true),
-      historiquePrixActif: _parseBool(map['historique_prix_actif'], defaultValue: true),
+      alertePrixHorsPlage: parseBool(map['alerte_prix_hors_plage'], defaultValue: true),
+      historiquePrixActif: parseBool(map['historique_prix_actif'], defaultValue: true),
     );
   }
 

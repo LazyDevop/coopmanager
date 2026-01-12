@@ -434,10 +434,10 @@ class _ValidationWorkflowScreenState extends State<ValidationWorkflowScreen> {
                 Navigator.pop(context);
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Workflow initialisé'),
+                    const SnackBar(
+                      content: Text('Workflow initialisé'),
                       backgroundColor: AppTheme.successColor,
-                      duration: const Duration(seconds: 3),
+                      duration: Duration(seconds: 3),
                     ),
                   );
                 } else {

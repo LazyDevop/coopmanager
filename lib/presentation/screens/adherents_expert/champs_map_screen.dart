@@ -21,13 +21,13 @@ class _ChampsMapScreenState extends State<ChampsMapScreen> {
   final AdherentService _adherentService = AdherentService();
   
   List<ChampParcelleModel> _champs = [];
-  Map<int, AdherentModel> _adherentsMap = {};
+  final Map<int, AdherentModel> _adherentsMap = {};
   bool _isLoading = true;
   String? _errorMessage;
   
   final MapController _mapController = MapController();
-  LatLng _center = LatLng(4.0, 11.0); // Centre par défaut (Cameroun approximatif)
-  double _zoom = 10.0;
+  LatLng _center = const LatLng(4.0, 11.0); // Centre par défaut (Cameroun approximatif)
+  final double _zoom = 10.0;
 
   @override
   void initState() {
@@ -434,7 +434,7 @@ class _ChampsMapScreenState extends State<ChampsMapScreen> {
   String _buildTooltipText(ChampParcelleModel champ, String adherentName) {
     final buffer = StringBuffer();
     
-    buffer.writeln('${champ.nomChamp ?? champ.codeChamp}');
+    buffer.writeln(champ.nomChamp ?? champ.codeChamp);
     buffer.writeln('Code: ${champ.codeChamp}');
     buffer.writeln('Adhérent: $adherentName');
     

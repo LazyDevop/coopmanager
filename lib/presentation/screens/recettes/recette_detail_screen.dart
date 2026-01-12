@@ -171,9 +171,9 @@ class _RecetteDetailScreenState extends State<RecetteDetailScreen> {
                     ...recetteViewModel.recettes.map((recette) => Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
-                            leading: SizedBox(
+                            leading: const SizedBox(
                               width: 24,
-                              child: const Icon(Icons.receipt_long, color: Colors.teal),
+                              child: Icon(Icons.receipt_long, color: Colors.teal),
                             ),
                             title: Text(
                               '${NumberFormat('#,##0').format(recette.montantNet)} FCFA',

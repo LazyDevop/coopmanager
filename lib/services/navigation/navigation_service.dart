@@ -90,74 +90,74 @@ class NavigationService {
   /// Obtenir tous les modules disponibles
   static List<NavigationItem> _getAllModules() {
     return [
-      NavigationItem(
+      const NavigationItem(
         title: 'Tableau de bord',
         icon: Icons.dashboard,
         route: AppRoutes.dashboard,
         module: 'dashboard',
       ),
-      NavigationItem(
+      const NavigationItem(
         title: 'Adhérents',
         icon: Icons.people,
         route: AppRoutes.adherents,
         module: 'adherents',
       ),
-      NavigationItem(
+      const NavigationItem(
         title: 'Stock',
         icon: Icons.inventory,
         route: AppRoutes.stock,
         module: 'stock',
       ),
-      NavigationItem(
+      const NavigationItem(
         title: 'Ventes',
         icon: Icons.shopping_cart,
         route: AppRoutes.ventes,
         module: 'ventes',
       ),
-      NavigationItem(
+      const NavigationItem(
         title: 'Recettes',
         icon: Icons.attach_money,
         route: AppRoutes.recettes,
         module: 'recettes',
       ),
-      NavigationItem(
+      const NavigationItem(
         title: 'Facturation',
         icon: Icons.receipt_long,
         route: AppRoutes.factures,
         module: 'factures',
       ),
-      NavigationItem(
+      const NavigationItem(
         title: 'Notifications',
         icon: Icons.notifications,
         route: AppRoutes.notifications,
         module: 'notifications',
       ),
-      NavigationItem(
+      const NavigationItem(
         title: 'Paramétrage',
         icon: Icons.settings,
         route: AppRoutes.settingsMain,
         module: 'settings',
       ),
       // V2: Nouveaux modules
-      NavigationItem(
+      const NavigationItem(
         title: 'Clients',
         icon: Icons.business,
         route: AppRoutes.clients,
         module: 'clients',
       ),
-      NavigationItem(
+      const NavigationItem(
         title: 'Capital Social',
         icon: Icons.account_balance,
         route: AppRoutes.capital,
         module: 'capital',
       ),
-      NavigationItem(
+      const NavigationItem(
         title: 'Comptabilité',
         icon: Icons.calculate,
         route: AppRoutes.comptabilite,
         module: 'comptabilite',
       ),
-      NavigationItem(
+      const NavigationItem(
         title: 'Social',
         icon: Icons.favorite,
         route: AppRoutes.social,

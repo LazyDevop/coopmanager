@@ -259,11 +259,11 @@ class _CreancesClientsScreenState extends State<CreancesClientsScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.warning, size: 16, color: AppTheme.errorColor),
+                          const Icon(Icons.warning, size: 16, color: AppTheme.errorColor),
                           const SizedBox(width: 4),
                           Text(
                             '${creance.joursRetard ?? 0} jours',
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppTheme.errorColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
@@ -465,10 +465,10 @@ class _CreancesClientsScreenState extends State<CreancesClientsScreen> {
                     color: AppTheme.errorColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Row(
+                  child: const Row(
                     children: [
                       Icon(Icons.block, color: AppTheme.errorColor),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Text(
                         'Client bloqué',
                         style: TextStyle(color: AppTheme.errorColor, fontWeight: FontWeight.bold),
@@ -542,10 +542,10 @@ class _CreancesClientsScreenState extends State<CreancesClientsScreen> {
             onPressed: () async {
               if (montantController.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Montant requis'),
+                  const SnackBar(
+                    content: Text('Montant requis'),
                     backgroundColor: AppTheme.errorColor,
-                    duration: const Duration(seconds: 3),
+                    duration: Duration(seconds: 3),
                   ),
                 );
                 return;
@@ -554,10 +554,10 @@ class _CreancesClientsScreenState extends State<CreancesClientsScreen> {
               final montant = double.parse(montantController.text);
               if (montant <= 0 || montant > creance.montantRestant) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Montant invalide'),
+                  const SnackBar(
+                    content: Text('Montant invalide'),
                     backgroundColor: AppTheme.errorColor,
-                    duration: const Duration(seconds: 3),
+                    duration: Duration(seconds: 3),
                   ),
                 );
                 return;
@@ -576,10 +576,10 @@ class _CreancesClientsScreenState extends State<CreancesClientsScreen> {
                 Navigator.pop(context);
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Paiement enregistré avec succès'),
+                    const SnackBar(
+                      content: Text('Paiement enregistré avec succès'),
                       backgroundColor: AppTheme.successColor,
-                      duration: const Duration(seconds: 3),
+                      duration: Duration(seconds: 3),
                     ),
                   );
                 } else {

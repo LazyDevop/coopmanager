@@ -24,7 +24,7 @@ class SettingHistoryModel {
 
   factory SettingHistoryModel.fromMap(Map<String, dynamic> map) {
     // Helper functions for safe type conversion
-    int? _parseInt(dynamic value) {
+    int? parseInt(dynamic value) {
       if (value == null) return null;
       if (value is int) return value;
       if (value is String) return int.tryParse(value);
@@ -32,7 +32,7 @@ class SettingHistoryModel {
       return null;
     }
 
-    int _parseIntRequired(dynamic value, {int defaultValue = 0}) {
+    int parseIntRequired(dynamic value, {int defaultValue = 0}) {
       if (value == null) return defaultValue;
       if (value is int) return value;
       if (value is String) return int.tryParse(value) ?? defaultValue;
@@ -40,39 +40,39 @@ class SettingHistoryModel {
       return defaultValue;
     }
 
-    String _parseStringRequired(dynamic value, String defaultValue) {
+    String parseStringRequired(dynamic value, String defaultValue) {
       if (value == null) return defaultValue;
       if (value is String) return value.isEmpty ? defaultValue : value;
       return value.toString();
     }
 
-    String? _parseString(dynamic value) {
+    String? parseString(dynamic value) {
       if (value == null) return null;
       if (value is String) return value.isEmpty ? null : value;
       return value.toString();
     }
 
-    DateTime? _parseDateTime(dynamic value) {
+    DateTime? parseDateTime(dynamic value) {
       if (value == null) return null;
       if (value is DateTime) return value;
       if (value is String) return DateTime.tryParse(value);
       return null;
     }
 
-    final changedAtValue = _parseDateTime(map['changed_at']);
+    final changedAtValue = parseDateTime(map['changed_at']);
     if (changedAtValue == null) {
-      throw FormatException('changed_at is required and must be a valid date');
+      throw const FormatException('changed_at is required and must be a valid date');
     }
 
     return SettingHistoryModel(
-      id: _parseInt(map['id']),
-      category: _parseStringRequired(map['category'], ''),
-      key: _parseStringRequired(map['key'], ''),
-      oldValue: _parseString(map['old_value']),
-      newValue: _parseString(map['new_value']),
-      userId: _parseIntRequired(map['user_id']),
-      userName: _parseString(map['user_name']),
-      reason: _parseString(map['reason']),
+      id: parseInt(map['id']),
+      category: parseStringRequired(map['category'], ''),
+      key: parseStringRequired(map['key'], ''),
+      oldValue: parseString(map['old_value']),
+      newValue: parseString(map['new_value']),
+      userId: parseIntRequired(map['user_id']),
+      userName: parseString(map['user_name']),
+      reason: parseString(map['reason']),
       changedAt: changedAtValue,
     );
   }

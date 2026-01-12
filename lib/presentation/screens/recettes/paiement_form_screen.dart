@@ -180,7 +180,7 @@ class _PaiementFormScreenState extends State<PaiementFormScreen> {
               
               // Mode de paiement
               DropdownButtonFormField<String>(
-                value: _modePaiement,
+                initialValue: _modePaiement,
                 decoration: InputDecoration(
                   labelText: 'Mode de paiement *',
                   prefixIcon: const Icon(Icons.payment),

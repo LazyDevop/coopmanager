@@ -16,7 +16,7 @@ class ReceiptSettingsModel {
 
   factory ReceiptSettingsModel.fromMap(Map<String, dynamic> map) {
     // Helper functions for safe type conversion
-    double _parseDouble(dynamic value, {double defaultValue = 0.0}) {
+    double parseDouble(dynamic value, {double defaultValue = 0.0}) {
       if (value == null) return defaultValue;
       if (value is double) return value;
       if (value is int) return value.toDouble();
@@ -25,7 +25,7 @@ class ReceiptSettingsModel {
       return defaultValue;
     }
 
-    bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    bool parseBool(dynamic value, {bool defaultValue = false}) {
       if (value == null) return defaultValue;
       if (value is bool) return value;
       if (value is int) return value == 1;
@@ -46,12 +46,12 @@ class ReceiptSettingsModel {
               .whereType<CommissionTypeModel>()
               .toList()
           : [],
-      tauxRetenueSociale: _parseDouble(map['taux_retenue_sociale']),
-      tauxRetenueCapital: _parseDouble(map['taux_retenue_capital']),
+      tauxRetenueSociale: parseDouble(map['taux_retenue_sociale']),
+      tauxRetenueCapital: parseDouble(map['taux_retenue_capital']),
       ordreCalcul: map['ordre_calcul'] != null && map['ordre_calcul'] is List
           ? List<String>.from(map['ordre_calcul'])
           : [],
-      calculAutomatique: _parseBool(map['calcul_automatique'], defaultValue: true),
+      calculAutomatique: parseBool(map['calcul_automatique'], defaultValue: true),
     );
   }
 
@@ -98,19 +98,19 @@ class CommissionTypeModel {
 
   factory CommissionTypeModel.fromMap(Map<String, dynamic> map) {
     // Helper functions for safe type conversion
-    String _parseStringRequired(dynamic value, String defaultValue) {
+    String parseStringRequired(dynamic value, String defaultValue) {
       if (value == null) return defaultValue;
       if (value is String) return value.isEmpty ? defaultValue : value;
       return value.toString();
     }
 
-    String? _parseString(dynamic value) {
+    String? parseString(dynamic value) {
       if (value == null) return null;
       if (value is String) return value.isEmpty ? null : value;
       return value.toString();
     }
 
-    double _parseDouble(dynamic value, {double defaultValue = 0.0}) {
+    double parseDouble(dynamic value, {double defaultValue = 0.0}) {
       if (value == null) return defaultValue;
       if (value is double) return value;
       if (value is int) return value.toDouble();
@@ -120,10 +120,10 @@ class CommissionTypeModel {
     }
 
     return CommissionTypeModel(
-      code: _parseStringRequired(map['code'], ''),
-      libelle: _parseStringRequired(map['libelle'], ''),
-      taux: _parseDouble(map['taux']),
-      categorieAdherent: _parseString(map['categorie_adherent']),
+      code: parseStringRequired(map['code'], ''),
+      libelle: parseStringRequired(map['libelle'], ''),
+      taux: parseDouble(map['taux']),
+      categorieAdherent: parseString(map['categorie_adherent']),
     );
   }
 

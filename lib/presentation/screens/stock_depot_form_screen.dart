@@ -345,7 +345,7 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
               else
                 // Afficher le dropdown de sélection si pas d'adhérent présélectionné
                 DropdownButtonFormField<AdherentModel>(
-                  value: _selectedAdherent,
+                  initialValue: _selectedAdherent,
                   decoration: InputDecoration(
                     labelText: 'Adhérent *',
                     prefixIcon: const Icon(Icons.person),
@@ -569,7 +569,7 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
 
               // Qualité
               DropdownButtonFormField<String>(
-                value: _selectedQualite,
+                initialValue: _selectedQualite,
                 decoration: InputDecoration(
                   labelText: 'Qualité',
                   prefixIcon: const Icon(Icons.star),
@@ -621,32 +621,7 @@ class _StockDepotFormScreenState extends State<StockDepotFormScreen> {
               ),
               const SizedBox(height: 16),
               
-              // Densité des arbres associés
-              TextFormField(
-                controller: _densiteArbresAssociesController,
-                decoration: InputDecoration(
-                  labelText: 'Densité des arbres associés (arbres/ha)',
-                  hintText: 'Nombre d\'arbres associés par hectare',
-                  prefixIcon: const Icon(Icons.forest),
-                  suffixText: 'arbres/ha',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    final densite = double.tryParse(value);
-                    if (densite == null || densite < 0) {
-                      return 'La densité doit être un nombre positif';
-                    }
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+
               
               // Photo
               Card(

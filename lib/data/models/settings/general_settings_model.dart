@@ -22,7 +22,7 @@ class GeneralSettingsModel {
 
   factory GeneralSettingsModel.fromMap(Map<String, dynamic> map) {
     // Helper functions for safe type conversion
-    int? _parseInt(dynamic value) {
+    int? parseInt(dynamic value) {
       if (value == null) return null;
       if (value is int) return value;
       if (value is String) return int.tryParse(value);
@@ -30,7 +30,7 @@ class GeneralSettingsModel {
       return null;
     }
 
-    bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    bool parseBool(dynamic value, {bool defaultValue = false}) {
       if (value == null) return defaultValue;
       if (value is bool) return value;
       if (value is int) return value == 1;
@@ -42,27 +42,27 @@ class GeneralSettingsModel {
       return defaultValue;
     }
 
-    String? _parseString(dynamic value) {
+    String? parseString(dynamic value) {
       if (value == null) return null;
       if (value is String) return value.isEmpty ? null : value;
       return value.toString();
     }
 
-    String _parseStringRequired(dynamic value, String defaultValue) {
+    String parseStringRequired(dynamic value, String defaultValue) {
       if (value == null) return defaultValue;
       if (value is String) return value.isEmpty ? defaultValue : value;
       return value.toString();
     }
 
     return GeneralSettingsModel(
-      devise: _parseStringRequired(map['devise'], 'XAF'),
-      dateFormat: _parseStringRequired(map['date_format'], 'dd/MM/yyyy'),
-      offlineMode: _parseBool(map['offline_mode'], defaultValue: false),
-      sessionDurationMinutes: _parseInt(map['session_duration_minutes']) ?? 30,
-      notificationsEnabled: _parseBool(map['notifications_enabled'], defaultValue: true),
-      uiTheme: _parseStringRequired(map['ui_theme'], 'light'),
-      autoBackup: _parseBool(map['auto_backup'], defaultValue: true),
-      backupIntervalDays: _parseInt(map['backup_interval_days']) ?? 7,
+      devise: parseStringRequired(map['devise'], 'XAF'),
+      dateFormat: parseStringRequired(map['date_format'], 'dd/MM/yyyy'),
+      offlineMode: parseBool(map['offline_mode'], defaultValue: false),
+      sessionDurationMinutes: parseInt(map['session_duration_minutes']) ?? 30,
+      notificationsEnabled: parseBool(map['notifications_enabled'], defaultValue: true),
+      uiTheme: parseStringRequired(map['ui_theme'], 'light'),
+      autoBackup: parseBool(map['auto_backup'], defaultValue: true),
+      backupIntervalDays: parseInt(map['backup_interval_days']) ?? 7,
     );
   }
 

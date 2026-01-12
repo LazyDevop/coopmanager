@@ -36,8 +36,13 @@ import '../screens/commissions/commissions_list_screen.dart';
 import '../screens/commissions/commission_form_screen.dart';
 import '../screens/documents/documents_list_screen.dart';
 import '../screens/clients/clients_list_screen.dart';
+import '../screens/clients/client_form_screen.dart';
+import '../screens/clients/client_detail_screen.dart';
+import '../screens/clients/clients_impayes_screen.dart';
 import '../screens/capital/actionnaires_list_screen.dart';
 import '../screens/capital/part_sociale_form_screen.dart';
+import '../screens/capital/souscription_form_screen.dart';
+import '../screens/capital/capital_etat_screen.dart';
 import '../screens/parametres/parametres_main_screen.dart';
 import '../screens/parametres/campagne_form_screen.dart';
 import '../screens/settings/settings_main_screen.dart';
@@ -67,11 +72,12 @@ class _MainAppShellState extends State<MainAppShell> {
   // Créer la GlobalKey une seule fois dans initState pour éviter les problèmes de duplication
   late final GlobalKey<NavigatorState> _navigatorKey;
   String _currentRoute = AppRoutes.dashboard;
-  Page<dynamic>? _cachedPage; // Cache la page complète pour éviter les reconstructions
-  
+  Page<dynamic>?
+  _cachedPage; // Cache la page complète pour éviter les reconstructions
+
   // Exposer le Navigator pour qu'il soit accessible depuis les écrans enfants
   NavigatorState? get navigator => _navigatorKey.currentState;
-  
+
   @override
   void initState() {
     super.initState();
@@ -82,7 +88,7 @@ class _MainAppShellState extends State<MainAppShell> {
       _loadNotifications();
     });
   }
-  
+
   @override
   void dispose() {
     // Nettoyer si nécessaire
@@ -97,16 +103,13 @@ class _MainAppShellState extends State<MainAppShell> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final authViewModel = context.watch<AuthViewModel>();
     final user = authViewModel.currentUser;
 
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     // Mémoriser la page complète avec une clé stable pour éviter les reconstructions
@@ -122,7 +125,7 @@ class _MainAppShellState extends State<MainAppShell> {
         ),
       );
     }
-    
+
     return MainLayout(
       key: ValueKey('layout_$_currentRoute'),
       currentRoute: _currentRoute,
@@ -148,7 +151,10 @@ class _MainAppShellState extends State<MainAppShell> {
         },
         onGenerateRoute: (settings) {
           // Handle pushNamed calls dynamically
-          final routeWidget = _buildRoute(settings.name ?? '', settings.arguments);
+          final routeWidget = _buildRoute(
+            settings.name ?? '',
+            settings.arguments,
+          );
           return MaterialPageRoute<dynamic>(
             builder: (context) => routeWidget,
             settings: settings,
@@ -258,7 +264,9 @@ class _MainAppShellState extends State<MainAppShell> {
         screen = const CommissionsListScreen();
         break;
       case AppRoutes.commissionForm:
-        screen = CommissionFormScreen(commission: arguments as CommissionModel?);
+        screen = CommissionFormScreen(
+          commission: arguments as CommissionModel?,
+        );
         break;
       case AppRoutes.settingsMain:
         screen = const SettingsMainScreen();
@@ -284,32 +292,34 @@ class _MainAppShellState extends State<MainAppShell> {
         screen = const ClientsListScreen();
         break;
       case AppRoutes.clientDetail:
-        screen = const ClientsListScreen(); // TODO: Créer ClientDetailScreen
+        screen = ClientDetailScreen(clientId: arguments as int);
         break;
       case AppRoutes.clientAdd:
-        screen = const ClientsListScreen(); // TODO: Créer ClientFormScreen
+        screen = const ClientFormScreen();
         break;
       case AppRoutes.clientEdit:
-        screen = const ClientsListScreen(); // TODO: Créer ClientFormScreen
+        screen = ClientFormScreen(clientId: arguments as int);
         break;
       case AppRoutes.clientsImpayes:
-        screen = const ClientsListScreen(); // TODO: Créer ClientsImpayesScreen
+        screen = const ClientsImpayesScreen();
         break;
       // Module Capital Social
       case AppRoutes.capital:
-        screen = ActionnairesListScreen();
+        screen = const ActionnairesListScreen();
         break;
       case AppRoutes.capitalActionnaireDetail:
-        screen = ActionnairesListScreen(); // TODO: Créer ActionnaireDetailScreen
+        screen =
+            const ActionnairesListScreen(); // TODO: Créer ActionnaireDetailScreen
         break;
       case AppRoutes.capitalSouscription:
-        screen = ActionnairesListScreen(); // TODO: Créer SouscriptionFormScreen
+        screen = const SouscriptionFormScreen();
         break;
       case AppRoutes.capitalLiberation:
-        screen = ActionnairesListScreen(); // TODO: Créer LiberationFormScreen
+        screen =
+            const ActionnairesListScreen(); // TODO: Créer LiberationFormScreen
         break;
       case AppRoutes.capitalEtat:
-        screen = ActionnairesListScreen(); // TODO: Créer CapitalSocialEtatScreen
+        screen = const CapitalSocialEtatScreen();
         break;
       case AppRoutes.partSocialeAdd:
         screen = const PartSocialeFormScreen();
@@ -321,7 +331,8 @@ class _MainAppShellState extends State<MainAppShell> {
         screen = const ComptabiliteContent(); // TODO: Créer GrandLivreContent
         break;
       case AppRoutes.etatsFinanciers:
-        screen = const ComptabiliteContent(); // TODO: Créer EtatsFinanciersContent
+        screen =
+            const ComptabiliteContent(); // TODO: Créer EtatsFinanciersContent
         break;
       case AppRoutes.social:
       case AppRoutes.aidesSociales:
@@ -336,12 +347,10 @@ class _MainAppShellState extends State<MainAppShell> {
       default:
         screen = const DashboardScreen();
     }
-    
+
     // Envelopper chaque écran dans Material pour garantir un contexte Material
     // (nécessaire pour TextField et autres widgets Material)
     // Le DashboardLayout fournit déjà le Scaffold, donc les écrans ne doivent pas en avoir
-    return Material(
-      child: screen,
-    );
+    return Material(child: screen);
   }
 }

@@ -12,7 +12,7 @@ class SocialSettingsModel {
 
   factory SocialSettingsModel.fromMap(Map<String, dynamic> map) {
     // Helper function for safe int parsing
-    int? _parseInt(dynamic value) {
+    int? parseInt(dynamic value) {
       if (value == null) return null;
       if (value is int) return value;
       if (value is String) return int.tryParse(value);
@@ -20,7 +20,7 @@ class SocialSettingsModel {
       return null;
     }
 
-    bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    bool parseBool(dynamic value, {bool defaultValue = false}) {
       if (value == null) return defaultValue;
       if (value is bool) return value;
       if (value is int) return value == 1;
@@ -41,8 +41,8 @@ class SocialSettingsModel {
               .whereType<AideSocialeTypeModel>()
               .toList()
           : [],
-      validationRequise: _parseBool(map['validation_requise'], defaultValue: true),
-      utilisateurValidateurId: _parseInt(map['utilisateur_validateur_id']),
+      validationRequise: parseBool(map['validation_requise'], defaultValue: true),
+      utilisateurValidateurId: parseInt(map['utilisateur_validateur_id']),
     );
   }
 
@@ -85,19 +85,19 @@ class AideSocialeTypeModel {
 
   factory AideSocialeTypeModel.fromMap(Map<String, dynamic> map) {
     // Helper functions for safe type conversion
-    String? _parseString(dynamic value) {
+    String? parseString(dynamic value) {
       if (value == null) return null;
       if (value is String) return value.isEmpty ? null : value;
       return value.toString();
     }
 
-    String _parseStringRequired(dynamic value, String defaultValue) {
+    String parseStringRequired(dynamic value, String defaultValue) {
       if (value == null) return defaultValue;
       if (value is String) return value.isEmpty ? defaultValue : value;
       return value.toString();
     }
 
-    double? _parseDouble(dynamic value) {
+    double? parseDouble(dynamic value) {
       if (value == null) return null;
       if (value is double) return value;
       if (value is int) return value.toDouble();
@@ -106,7 +106,7 @@ class AideSocialeTypeModel {
       return null;
     }
 
-    bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    bool parseBool(dynamic value, {bool defaultValue = false}) {
       if (value == null) return defaultValue;
       if (value is bool) return value;
       if (value is int) return value == 1;
@@ -119,13 +119,13 @@ class AideSocialeTypeModel {
     }
 
     return AideSocialeTypeModel(
-      code: _parseStringRequired(map['code'], ''),
-      libelle: _parseStringRequired(map['libelle'], ''),
-      plafond: _parseDouble(map['plafond']),
+      code: parseStringRequired(map['code'], ''),
+      libelle: parseStringRequired(map['libelle'], ''),
+      plafond: parseDouble(map['plafond']),
       conditionsEligibilite: map['conditions_eligibilite'] is Map<String, dynamic>
           ? map['conditions_eligibilite'] as Map<String, dynamic>
           : null,
-      actif: _parseBool(map['actif'], defaultValue: true),
+      actif: parseBool(map['actif'], defaultValue: true),
     );
   }
 

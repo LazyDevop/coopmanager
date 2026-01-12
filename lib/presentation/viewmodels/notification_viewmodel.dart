@@ -95,7 +95,7 @@ class NotificationViewModel extends ChangeNotifier {
           : await _notificationService.getUnreadCount(
               userId: userId ?? _filterUserId,
             );
-      _unreadCount = filteredUnread is int ? filteredUnread : _notifications.where((n) => !n.isRead).length;
+      _unreadCount = filteredUnread;
 
       _isLoading = false;
       notifyListeners();

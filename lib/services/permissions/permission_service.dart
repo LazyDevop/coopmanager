@@ -145,7 +145,7 @@ class PermissionService {
   Future<void> _createUserRoleAssociation(Database db, int userId, String roleId) async {
     try {
       await db.insert('user_roles', {
-        'id': 'ur-${userId}-$roleId',
+        'id': 'ur-$userId-$roleId',
         'user_id': userId,
         'role_id': roleId,
         'is_primary': 1,

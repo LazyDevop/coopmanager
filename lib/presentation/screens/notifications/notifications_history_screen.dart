@@ -202,7 +202,7 @@ class _NotificationsHistoryScreenState extends State<NotificationsHistoryScreen>
             children: [
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  value: viewModel.filterType,
+                  initialValue: viewModel.filterType,
                   decoration: InputDecoration(
                     labelText: 'Type',
                     border: OutlineInputBorder(
@@ -227,7 +227,7 @@ class _NotificationsHistoryScreenState extends State<NotificationsHistoryScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  value: viewModel.filterModule,
+                  initialValue: viewModel.filterModule,
                   decoration: InputDecoration(
                     labelText: 'Module',
                     border: OutlineInputBorder(
@@ -253,7 +253,7 @@ class _NotificationsHistoryScreenState extends State<NotificationsHistoryScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<bool?>(
-                  value: viewModel.filterIsRead,
+                  initialValue: viewModel.filterIsRead,
                   decoration: InputDecoration(
                     labelText: 'Statut',
                     border: OutlineInputBorder(
@@ -357,7 +357,7 @@ class _NotificationsHistoryScreenState extends State<NotificationsHistoryScreen>
                   Container(
                     width: 8,
                     height: 8,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.blue,
                       shape: BoxShape.circle,
                     ),

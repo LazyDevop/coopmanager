@@ -546,7 +546,7 @@ class _AdherentFormScreenState extends State<AdherentFormScreen> {
   // Nouveaux champs - Identification
   Widget _buildTypePersonneField() {
     return DropdownButtonFormField<String>(
-      value: _categorie,
+      initialValue: _categorie,
       decoration: InputDecoration(
         labelText: 'Type de personne *',
         prefixIcon: const Icon(Icons.person_outline),
@@ -566,7 +566,7 @@ class _AdherentFormScreenState extends State<AdherentFormScreen> {
   
   Widget _buildStatutField() {
     return DropdownButtonFormField<String>(
-      value: _statut ?? 'actif',
+      initialValue: _statut ?? 'actif',
       decoration: InputDecoration(
         labelText: 'Statut *',
         prefixIcon: const Icon(Icons.info_outline),
@@ -602,7 +602,7 @@ class _AdherentFormScreenState extends State<AdherentFormScreen> {
   // Nouveaux champs - Identité personnelle
   Widget _buildSexeField() {
     return DropdownButtonFormField<String>(
-      value: _sexe,
+      initialValue: _sexe,
       decoration: InputDecoration(
         labelText: 'Sexe',
         prefixIcon: const Icon(Icons.person),
@@ -638,7 +638,7 @@ class _AdherentFormScreenState extends State<AdherentFormScreen> {
   
   Widget _buildTypePieceField() {
     return DropdownButtonFormField<String>(
-      value: _typePiece,
+      initialValue: _typePiece,
       decoration: InputDecoration(
         labelText: 'Type de pièce',
         prefixIcon: const Icon(Icons.credit_card),
@@ -713,7 +713,7 @@ class _AdherentFormScreenState extends State<AdherentFormScreen> {
       label: 'Superficie totale cultivée (ha)',
       controller: _superficieTotaleController,
       prefixIcon: Icons.landscape,
-      keyboardType: TextInputType.numberWithOptions(decimal: true),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       validator: (value) {
         if (value != null && value.isNotEmpty) {
           final num = double.tryParse(value);
@@ -749,7 +749,7 @@ class _AdherentFormScreenState extends State<AdherentFormScreen> {
       label: 'Rendement moyen (t/ha)',
       controller: _rendementMoyenController,
       prefixIcon: Icons.trending_up,
-      keyboardType: TextInputType.numberWithOptions(decimal: true),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       validator: (value) {
         if (value != null && value.isNotEmpty) {
           final num = double.tryParse(value);
@@ -767,7 +767,7 @@ class _AdherentFormScreenState extends State<AdherentFormScreen> {
       label: 'Tonnage total produit (t)',
       controller: _tonnageTotalProduitController,
       prefixIcon: Icons.inventory,
-      keyboardType: TextInputType.numberWithOptions(decimal: true),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       validator: (value) {
         if (value != null && value.isNotEmpty) {
           final num = double.tryParse(value);
@@ -785,7 +785,7 @@ class _AdherentFormScreenState extends State<AdherentFormScreen> {
       label: 'Tonnage total vendu (t)',
       controller: _tonnageTotalVenduController,
       prefixIcon: Icons.shopping_cart,
-      keyboardType: TextInputType.numberWithOptions(decimal: true),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       validator: (value) {
         if (value != null && value.isNotEmpty) {
           final num = double.tryParse(value);

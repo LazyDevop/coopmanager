@@ -312,7 +312,7 @@ class _UsersRolesSettingsScreenState extends State<UsersRolesSettingsScreen> {
                 if (confirm == true) {
                   final success = await userViewModel.deleteUser(
                     user.id!,
-                    currentUser!.id!,
+                    currentUser.id!,
                   );
                   if (success && mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(

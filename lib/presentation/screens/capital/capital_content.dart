@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../widgets/common/local_loader.dart';
-import '../../widgets/common/empty_state.dart';
-import '../../widgets/common/error_state.dart';
 import '../../widgets/common/stat_card.dart';
 import '../../../services/capital/capital_service.dart';
-import '../../../data/models/part_sociale_model.dart';
 import '../../../config/routes/routes.dart';
 import 'package:intl/intl.dart';
 

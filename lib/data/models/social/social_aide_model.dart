@@ -46,7 +46,7 @@ class SocialAideModel {
   bool get canBeRembourse => isEnCours && isRemboursable;
 
   factory SocialAideModel.fromMap(Map<String, dynamic> map) {
-    int? _parseInt(dynamic value) {
+    int? parseInt(dynamic value) {
       if (value == null) return null;
       if (value is int) return value;
       if (value is String) return int.tryParse(value);
@@ -54,7 +54,7 @@ class SocialAideModel {
       return null;
     }
 
-    double _parseDouble(dynamic value) {
+    double parseDouble(dynamic value) {
       if (value == null) return 0.0;
       if (value is double) return value;
       if (value is int) return value.toDouble();
@@ -63,13 +63,13 @@ class SocialAideModel {
       return 0.0;
     }
 
-    String _parseStringRequired(dynamic value, String defaultValue) {
+    String parseStringRequired(dynamic value, String defaultValue) {
       if (value == null) return defaultValue;
       if (value is String) return value.isEmpty ? defaultValue : value;
       return value.toString();
     }
 
-    DateTime? _parseDateTime(dynamic value) {
+    DateTime? parseDateTime(dynamic value) {
       if (value == null) return null;
       if (value is DateTime) return value;
       if (value is String) {
@@ -83,18 +83,18 @@ class SocialAideModel {
     }
 
     return SocialAideModel(
-      id: _parseInt(map['id']),
-      aideTypeId: _parseInt(map['aide_type_id']) ?? 0,
-      adherentId: _parseInt(map['adherent_id']) ?? 0,
-      montant: _parseDouble(map['montant']),
-      dateOctroi: _parseDateTime(map['date_octroi']) ?? DateTime.now(),
-      dateDebut: _parseDateTime(map['date_debut']),
-      dateFin: _parseDateTime(map['date_fin']),
-      statut: _parseStringRequired(map['statut'], 'accordee'),
+      id: parseInt(map['id']),
+      aideTypeId: parseInt(map['aide_type_id']) ?? 0,
+      adherentId: parseInt(map['adherent_id']) ?? 0,
+      montant: parseDouble(map['montant']),
+      dateOctroi: parseDateTime(map['date_octroi']) ?? DateTime.now(),
+      dateDebut: parseDateTime(map['date_debut']),
+      dateFin: parseDateTime(map['date_fin']),
+      statut: parseStringRequired(map['statut'], 'accordee'),
       observations: map['observations']?.toString(),
-      createdBy: _parseInt(map['created_by']) ?? 0,
-      createdAt: _parseDateTime(map['created_at']) ?? DateTime.now(),
-      updatedAt: _parseDateTime(map['updated_at']),
+      createdBy: parseInt(map['created_by']) ?? 0,
+      createdAt: parseDateTime(map['created_at']) ?? DateTime.now(),
+      updatedAt: parseDateTime(map['updated_at']),
     );
   }
 

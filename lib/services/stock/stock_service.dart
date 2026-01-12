@@ -123,7 +123,7 @@ class StockService {
       
       final id = await db.insert('stock_mouvements', movementMap);
       
-      if (id == null || id <= 0) {
+      if (id <= 0) {
         throw Exception('Échec de l\'insertion du mouvement: ID invalide ($id)');
       }
       

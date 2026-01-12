@@ -240,7 +240,7 @@ class _AyantDroitFormScreenState extends State<AyantDroitFormScreen> {
 
               // Lien familial
               DropdownButtonFormField<String>(
-                value: _lienFamilial,
+                initialValue: _lienFamilial,
                 decoration: InputDecoration(
                   labelText: 'Lien familial *',
                   prefixIcon: const Icon(Icons.family_restroom),
@@ -339,7 +339,7 @@ class _AyantDroitFormScreenState extends State<AyantDroitFormScreen> {
 
               // Type de pièce
               DropdownButtonFormField<String>(
-                value: _typePiece,
+                initialValue: _typePiece,
                 decoration: InputDecoration(
                   labelText: 'Type de pièce',
                   prefixIcon: const Icon(Icons.badge),

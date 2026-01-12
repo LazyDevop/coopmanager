@@ -299,7 +299,7 @@ class _WorkflowUIIntegrationExampleState extends State<WorkflowUIIntegrationExam
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.info, color: AppTheme.infoColor),
+                          const Icon(Icons.info, color: AppTheme.infoColor),
                           const SizedBox(width: 8),
                           Text(
                             'Guide d\'utilisation',

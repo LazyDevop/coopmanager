@@ -2,10 +2,12 @@ import 'package:flutter/foundation.dart';
 import '../../data/models/client_model.dart';
 import '../../services/client/client_service.dart';
 import '../../services/client/client_payment_service.dart';
+import '../../services/client/client_code_generator.dart';
 
 class ClientViewModel extends ChangeNotifier {
   final ClientService _clientService = ClientService();
   final ClientPaymentService _paymentService = ClientPaymentService();
+  final ClientCodeGenerator _codeGenerator = ClientCodeGenerator();
   
   List<ClientModel> _clients = [];
   ClientModel? _selectedClient;
@@ -73,6 +75,18 @@ class ClientViewModel extends ChangeNotifier {
       _errorMessage = 'Erreur lors du chargement: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Générer un code client automatiquement (ERP)
+  Future<String?> generateNextClientCode() async {
+    try {
+      final code = await _codeGenerator.generateUniqueCode();
+      return code;
+    } catch (e) {
+      _errorMessage = 'Erreur génération code client: ${e.toString()}';
+      notifyListeners();
+      return null;
     }
   }
   
@@ -188,6 +202,8 @@ class ClientViewModel extends ChangeNotifier {
       );
       
       await loadClientById(id);
+      // Rafraîchir aussi la liste pour refléter les modifications
+      await loadClients();
       _isLoading = false;
       notifyListeners();
       return true;
@@ -212,6 +228,7 @@ class ClientViewModel extends ChangeNotifier {
         blockedBy: blockedBy,
       );
       await loadClientById(id);
+      await loadClients();
       return true;
     } catch (e) {
       _errorMessage = e.toString();
@@ -233,6 +250,7 @@ class ClientViewModel extends ChangeNotifier {
         suspendedBy: suspendedBy,
       );
       await loadClientById(id);
+      await loadClients();
       return true;
     } catch (e) {
       _errorMessage = e.toString();
@@ -252,6 +270,7 @@ class ClientViewModel extends ChangeNotifier {
         reactivatedBy: reactivatedBy,
       );
       await loadClientById(id);
+      await loadClients();
       return true;
     } catch (e) {
       _errorMessage = e.toString();
@@ -262,7 +281,9 @@ class ClientViewModel extends ChangeNotifier {
   
   /// Rechercher des clients
   void searchClients(String query) {
-    _searchQuery = query;
+    final normalized = query.trim();
+    if (_searchQuery.trim() == normalized) return;
+    _searchQuery = normalized;
     loadClients();
   }
   

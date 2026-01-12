@@ -229,7 +229,7 @@ class SettingsHelper {
     final tauxCommission = await ventes.getTauxCommission();
     
     // Utiliser les paramètres pour une vente
-    final prixVente = 1500.0;
+    const prixVente = 1500.0;
     if (await ventes.validerPrix(prixVente)) {
       final commission = prixVente * tauxCommission;
       final montantNet = prixVente - commission;

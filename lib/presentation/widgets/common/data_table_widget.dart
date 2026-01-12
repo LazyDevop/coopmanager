@@ -33,7 +33,7 @@ class DataTableWidget<T> extends StatefulWidget {
 class _DataTableWidgetState<T> extends State<DataTableWidget<T>> {
   String _searchQuery = '';
   int? _sortColumnIndex;
-  bool _sortAscending = true;
+  final bool _sortAscending = true;
 
   List<T> get _filteredData {
     var filtered = widget.data;
@@ -125,7 +125,7 @@ class _DataTableWidgetState<T> extends State<DataTableWidget<T>> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.inbox_outlined,
                                 size: 64,
                                 color: AppTheme.textLight,
@@ -133,7 +133,7 @@ class _DataTableWidgetState<T> extends State<DataTableWidget<T>> {
                               const SizedBox(height: 16),
                               Text(
                                 widget.emptyMessage ?? 'Aucune donnée disponible',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 16,
                                   color: AppTheme.textSecondary,
                                 ),
@@ -155,7 +155,7 @@ class _DataTableWidgetState<T> extends State<DataTableWidget<T>> {
                             onSelectAll: (selected) {
                               // TODO: Implémenter la sélection multiple
                             },
-                            headingRowColor: MaterialStateProperty.all(
+                            headingRowColor: WidgetStateProperty.all(
                               Colors.grey.shade50,
                             ),
                             dataRowMinHeight: 48,
@@ -180,7 +180,7 @@ class _DataTableWidgetState<T> extends State<DataTableWidget<T>> {
                 children: [
                   Text(
                     '${_filteredData.length} élément${_filteredData.length > 1 ? 's' : ''}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
                       color: AppTheme.textSecondary,
                     ),

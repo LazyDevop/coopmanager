@@ -1,6 +1,3 @@
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import '../../data/models/journal_comptable_model.dart';
-import '../../data/models/compte_comptable_model.dart';
 import '../database/db_initializer.dart';
 import 'treasury_service.dart';
 import 'capital_accounting_service.dart';

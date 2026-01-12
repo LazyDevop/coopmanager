@@ -1,12 +1,5 @@
-/// Service de Gestion des Créances Clients (V2)
-/// 
-/// Gestion du paiement différé et suivi des créances clients
-/// Blocage automatique si retard
-
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../database/db_initializer.dart';
 import '../../data/models/creance_client_model.dart';
-import '../../data/models/client_model.dart';
 import '../client/client_service.dart';
 
 class CreanceClientService {

@@ -226,7 +226,7 @@ class _StockMovementsHistoryScreenState extends State<StockMovementsHistoryScree
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
-                value: viewModel.filterTypeMouvement,
+                initialValue: viewModel.filterTypeMouvement,
                 decoration: const InputDecoration(
                   labelText: 'Type de mouvement',
                 ),

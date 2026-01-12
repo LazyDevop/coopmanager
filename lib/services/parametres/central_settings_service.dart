@@ -663,19 +663,28 @@ class CentralSettingsService {
   }
 
   Future<DocumentSettingsModel> _getDocumentSettingsFromCache() async {
-    final settings = await _settingsService.getSettingsByCategory(
-      cooperativeId: _currentCooperativeId,
-      category: 'document',
-    );
+    // IMPORTANT: utiliser le chargement unifié pour prendre en compte :
+    // - les settings spécifiques à la coopérative
+    // - les settings globaux (cooperative_id = NULL)
+    // Cela évite que les mentions légales / QR n'apparaissent pas dans les PDFs.
+    final allSettings = await loadAllSettingsUnified();
+    final documentSettings = allSettings['document'] ?? {};
 
     final map = <String, dynamic>{};
-    for (final setting in settings) {
-      if (setting.key == 'types_documents') {
-        if (setting.value != null) {
-          map[setting.key] = json.decode(setting.value!);
+    for (final entry in documentSettings.entries) {
+      if (entry.key == 'types_documents') {
+        final raw = entry.value;
+        if (raw is String && raw.trim().isNotEmpty) {
+          try {
+            map[entry.key] = json.decode(raw);
+          } catch (_) {
+            // ignore invalid json
+          }
+        } else if (raw is Map) {
+          map[entry.key] = raw;
         }
       } else {
-        map[setting.key] = setting.getTypedValue();
+        map[entry.key] = entry.value;
       }
     }
 

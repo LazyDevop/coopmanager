@@ -2,11 +2,72 @@ import '../database/db_initializer.dart';
 import '../../data/models/client_model.dart';
 import '../auth/audit_service.dart';
 import '../notification/notification_service.dart';
+import 'client_code_generator.dart';
 
 /// Service principal pour la gestion des clients (acheteurs)
 class ClientService {
   final AuditService _auditService = AuditService();
   final NotificationService _notificationService = NotificationService();
+  final ClientCodeGenerator _codeGenerator = ClientCodeGenerator();
+
+  Future<Set<String>> _getClientsColumnNames(dynamic db) async {
+    final columns = await db.rawQuery('PRAGMA table_info(clients)');
+    return (columns as List)
+        .map<String>((c) => (c as Map)['name'] as String)
+        .toSet();
+  }
+
+  Map<String, dynamic> _filterAndAdaptMapForClientsTable({
+    required Map<String, dynamic> values,
+    required Set<String> columnNames,
+  }) {
+    final filtered = <String, dynamic>{};
+    for (final entry in values.entries) {
+      if (columnNames.contains(entry.key)) {
+        filtered[entry.key] = entry.value;
+      }
+    }
+
+    // Compat V2: clients.code / clients.nom / clients.type / clients.created_at
+    // Certaines bases ont encore ces colonnes en NOT NULL.
+    if (columnNames.contains('code') && !filtered.containsKey('code')) {
+      final codeClient =
+          (values['code_client'] as String?) ??
+          (values['code'] as String?) ??
+          '';
+      if (codeClient.isNotEmpty) filtered['code'] = codeClient;
+    }
+    if (columnNames.contains('nom') && !filtered.containsKey('nom')) {
+      final nom =
+          (values['raison_sociale'] as String?) ??
+          (values['nom'] as String?) ??
+          '';
+      if (nom.isNotEmpty) filtered['nom'] = nom;
+    }
+    if (columnNames.contains('type') && !filtered.containsKey('type')) {
+      final type =
+          (values['type_client'] as String?) ??
+          (values['type'] as String?) ??
+          '';
+      if (type.isNotEmpty) filtered['type'] = type;
+    }
+    if (columnNames.contains('created_at') &&
+        !filtered.containsKey('created_at')) {
+      final createdAt =
+          (values['date_creation'] as String?) ??
+          (values['created_at'] as String?);
+      if (createdAt != null && createdAt.isNotEmpty)
+        filtered['created_at'] = createdAt;
+    }
+    if (columnNames.contains('is_active') &&
+        !filtered.containsKey('is_active')) {
+      // Map statut -> is_active
+      final statut = (values['statut'] as String?) ?? '';
+      filtered['is_active'] = (statut == ClientModel.statutActif) ? 1 : 0;
+    }
+
+    return filtered;
+  }
 
   /// Créer un nouveau client
   Future<ClientModel> createClient({
@@ -25,22 +86,50 @@ class ClientService {
     required int createdBy,
   }) async {
     final db = await DatabaseInitializer.database;
-    
+
     try {
-      // Vérifier l'unicité du code client
-      final existing = await db.query(
-        'clients',
-        where: 'code_client = ?',
-        whereArgs: [codeClient],
-        limit: 1,
-      );
-      
-      if (existing.isNotEmpty) {
-        throw Exception('Un client avec le code $codeClient existe déjà');
+      final normalizedCode = codeClient.trim().isEmpty
+          ? await _codeGenerator.generateUniqueCode()
+          : (ClientCodeGenerator.validateAndNormalize(codeClient) ??
+                (throw Exception('Code client invalide')));
+
+      final columnNames = await _getClientsColumnNames(db);
+
+      // Vérifier l'unicité du code (nouveau schéma et schéma legacy V2)
+      if (columnNames.contains('code_client') && columnNames.contains('code')) {
+        final existing = await db.query(
+          'clients',
+          where: '(code_client = ? OR code = ?)',
+          whereArgs: [normalizedCode, normalizedCode],
+          limit: 1,
+        );
+        if (existing.isNotEmpty) {
+          throw Exception('Un client avec le code $normalizedCode existe déjà');
+        }
+      } else if (columnNames.contains('code_client')) {
+        final existing = await db.query(
+          'clients',
+          where: 'code_client = ?',
+          whereArgs: [normalizedCode],
+          limit: 1,
+        );
+        if (existing.isNotEmpty) {
+          throw Exception('Un client avec le code $normalizedCode existe déjà');
+        }
+      } else if (columnNames.contains('code')) {
+        final existing = await db.query(
+          'clients',
+          where: 'code = ?',
+          whereArgs: [normalizedCode],
+          limit: 1,
+        );
+        if (existing.isNotEmpty) {
+          throw Exception('Un client avec le code $normalizedCode existe déjà');
+        }
       }
-      
+
       final client = ClientModel(
-        codeClient: codeClient,
+        codeClient: normalizedCode,
         typeClient: typeClient,
         raisonSociale: raisonSociale,
         nomResponsable: nomResponsable,
@@ -57,17 +146,22 @@ class ClientService {
         dateCreation: DateTime.now(),
         createdBy: createdBy,
       );
-      
-      final id = await db.insert('clients', client.toMap());
-      
+
+      final insertValues = _filterAndAdaptMapForClientsTable(
+        values: client.toMap(),
+        columnNames: columnNames,
+      );
+
+      final id = await db.insert('clients', insertValues);
+
       await _auditService.logAction(
         userId: createdBy,
         action: 'CREATE_CLIENT',
         entityType: 'clients',
         entityId: id,
-        details: 'Client créé: $raisonSociale ($codeClient)',
+        details: 'Client créé: $raisonSociale ($normalizedCode)',
       );
-      
+
       return client.copyWith(id: id);
     } catch (e) {
       throw Exception('Erreur lors de la création du client: $e');
@@ -92,34 +186,41 @@ class ClientService {
     required int updatedBy,
   }) async {
     final db = await DatabaseInitializer.database;
-    
+
     try {
       // Récupérer le client actuel
       final current = await getClientById(id);
       if (current == null) {
         throw Exception('Client non trouvé');
       }
-      
+
+      final normalizedCode = codeClient == null
+          ? null
+          : (ClientCodeGenerator.validateAndNormalize(codeClient) ??
+                (throw Exception('Code client invalide')));
+
+      final columnNames = await _getClientsColumnNames(db);
+
       // Vérifier l'unicité du code si modifié
-      if (codeClient != null && codeClient != current.codeClient) {
+      if (normalizedCode != null && normalizedCode != current.codeClient) {
         final existing = await db.query(
           'clients',
           where: 'code_client = ? AND id != ?',
-          whereArgs: [codeClient, id],
+          whereArgs: [normalizedCode, id],
           limit: 1,
         );
-        
+
         if (existing.isNotEmpty) {
-          throw Exception('Un client avec le code $codeClient existe déjà');
+          throw Exception('Un client avec le code $normalizedCode existe déjà');
         }
       }
-      
+
       final updates = <String, dynamic>{
         'updated_at': DateTime.now().toIso8601String(),
         'updated_by': updatedBy,
       };
-      
-      if (codeClient != null) updates['code_client'] = codeClient;
+
+      if (normalizedCode != null) updates['code_client'] = normalizedCode;
       if (typeClient != null) updates['type_client'] = typeClient;
       if (raisonSociale != null) updates['raison_sociale'] = raisonSociale;
       if (nomResponsable != null) updates['nom_responsable'] = nomResponsable;
@@ -131,9 +232,20 @@ class ClientService {
       if (nrc != null) updates['nrc'] = nrc;
       if (ifu != null) updates['ifu'] = ifu;
       if (plafondCredit != null) updates['plafond_credit'] = plafondCredit;
-      
+
+      // Compat V2
+      if (normalizedCode != null && columnNames.contains('code')) {
+        updates['code'] = normalizedCode;
+      }
+      if (raisonSociale != null && columnNames.contains('nom')) {
+        updates['nom'] = raisonSociale;
+      }
+      if (typeClient != null && columnNames.contains('type')) {
+        updates['type'] = typeClient;
+      }
+
       await db.update('clients', updates, where: 'id = ?', whereArgs: [id]);
-      
+
       await _auditService.logAction(
         userId: updatedBy,
         action: 'UPDATE_CLIENT',
@@ -141,7 +253,7 @@ class ClientService {
         entityId: id,
         details: 'Client mis à jour',
       );
-      
+
       return (await getClientById(id))!;
     } catch (e) {
       throw Exception('Erreur lors de la mise à jour: $e');
@@ -155,7 +267,7 @@ class ClientService {
     required int blockedBy,
   }) async {
     final db = await DatabaseInitializer.database;
-    
+
     try {
       await db.update(
         'clients',
@@ -169,7 +281,7 @@ class ClientService {
         where: 'id = ?',
         whereArgs: [id],
       );
-      
+
       await _auditService.logAction(
         userId: blockedBy,
         action: 'BLOCK_CLIENT',
@@ -177,7 +289,7 @@ class ClientService {
         entityId: id,
         details: 'Client bloqué: $raison',
       );
-      
+
       return (await getClientById(id))!;
     } catch (e) {
       throw Exception('Erreur lors du blocage: $e');
@@ -191,7 +303,7 @@ class ClientService {
     required int suspendedBy,
   }) async {
     final db = await DatabaseInitializer.database;
-    
+
     try {
       await db.update(
         'clients',
@@ -203,7 +315,7 @@ class ClientService {
         where: 'id = ?',
         whereArgs: [id],
       );
-      
+
       await _auditService.logAction(
         userId: suspendedBy,
         action: 'SUSPEND_CLIENT',
@@ -211,7 +323,7 @@ class ClientService {
         entityId: id,
         details: 'Client suspendu: $raison',
       );
-      
+
       return (await getClientById(id))!;
     } catch (e) {
       throw Exception('Erreur lors de la suspension: $e');
@@ -224,7 +336,7 @@ class ClientService {
     required int reactivatedBy,
   }) async {
     final db = await DatabaseInitializer.database;
-    
+
     try {
       await db.update(
         'clients',
@@ -238,7 +350,7 @@ class ClientService {
         where: 'id = ?',
         whereArgs: [id],
       );
-      
+
       await _auditService.logAction(
         userId: reactivatedBy,
         action: 'REACTIVATE_CLIENT',
@@ -246,7 +358,7 @@ class ClientService {
         entityId: id,
         details: 'Client réactivé',
       );
-      
+
       return (await getClientById(id))!;
     } catch (e) {
       throw Exception('Erreur lors de la réactivation: $e');
@@ -257,23 +369,20 @@ class ClientService {
   Future<ClientModel?> getClientById(int id) async {
     try {
       final db = await DatabaseInitializer.database;
-      
+
       final result = await db.query(
         'clients',
         where: 'id = ?',
         whereArgs: [id],
         limit: 1,
       );
-      
+
       if (result.isEmpty) return null;
-      
+
       // Calculer les statistiques
       final stats = await _calculateClientStats(id);
-      
-      return ClientModel.fromMap({
-        ...result.first,
-        ...stats,
-      });
+
+      return ClientModel.fromMap({...result.first, ...stats});
     } catch (e) {
       throw Exception('Erreur lors de la récupération: $e');
     }
@@ -283,23 +392,20 @@ class ClientService {
   Future<ClientModel?> getClientByCode(String codeClient) async {
     try {
       final db = await DatabaseInitializer.database;
-      
+
       final result = await db.query(
         'clients',
         where: 'code_client = ?',
         whereArgs: [codeClient],
         limit: 1,
       );
-      
+
       if (result.isEmpty) return null;
-      
+
       final id = result.first['id'] as int;
       final stats = await _calculateClientStats(id);
-      
-      return ClientModel.fromMap({
-        ...result.first,
-        ...stats,
-      });
+
+      return ClientModel.fromMap({...result.first, ...stats});
     } catch (e) {
       throw Exception('Erreur lors de la récupération: $e');
     }
@@ -329,28 +435,28 @@ class ClientService {
   }) async {
     try {
       final db = await DatabaseInitializer.database;
-      
+
       String where = '1=1';
       List<dynamic> whereArgs = [];
-      
+
       if (typeClient != null) {
         where += ' AND type_client = ?';
         whereArgs.add(typeClient);
       }
-      
+
       if (statut != null) {
         where += ' AND statut = ?';
         whereArgs.add(statut);
       }
-      
+
       if (searchQuery != null && searchQuery.isNotEmpty) {
         // Vérifier si les colonnes existent avant de les utiliser dans la recherche
         final columns = await db.rawQuery('PRAGMA table_info(clients)');
         final columnNames = columns.map((c) => c['name'] as String).toList();
-        
+
         final searchConditions = <String>[];
         final query = '%$searchQuery%';
-        
+
         if (columnNames.contains('raison_sociale')) {
           searchConditions.add('raison_sociale LIKE ?');
           whereArgs.add(query);
@@ -363,18 +469,18 @@ class ClientService {
           searchConditions.add('nom_responsable LIKE ?');
           whereArgs.add(query);
         }
-        
+
         if (searchConditions.isNotEmpty) {
           where += ' AND (${searchConditions.join(' OR ')})';
         }
       }
-      
+
       // Déterminer la colonne de tri en fonction de ce qui existe
       String orderBy = 'id ASC'; // Fallback par défaut
       try {
         final columns = await db.rawQuery('PRAGMA table_info(clients)');
         final columnNames = columns.map((c) => c['name'] as String).toList();
-        
+
         if (columnNames.contains('raison_sociale')) {
           orderBy = 'raison_sociale ASC';
         } else if (columnNames.contains('code_client')) {
@@ -382,9 +488,11 @@ class ClientService {
         }
       } catch (e) {
         // En cas d'erreur, utiliser l'ordre par défaut
-        print('⚠️ Erreur lors de la vérification des colonnes pour ORDER BY: $e');
+        print(
+          '⚠️ Erreur lors de la vérification des colonnes pour ORDER BY: $e',
+        );
       }
-      
+
       final result = await db.query(
         'clients',
         where: where,
@@ -392,18 +500,15 @@ class ClientService {
         orderBy: orderBy,
         limit: limit,
       );
-      
+
       // Calculer les statistiques pour chaque client
       final clients = <ClientModel>[];
       for (final row in result) {
         final id = row['id'] as int;
         final stats = await _calculateClientStats(id);
-        clients.add(ClientModel.fromMap({
-          ...row,
-          ...stats,
-        }));
+        clients.add(ClientModel.fromMap({...row, ...stats}));
       }
-      
+
       return clients;
     } catch (e) {
       throw Exception('Erreur lors de la récupération: $e');
@@ -413,33 +518,42 @@ class ClientService {
   /// Calculer les statistiques d'un client
   Future<Map<String, dynamic>> _calculateClientStats(int clientId) async {
     final db = await DatabaseInitializer.database;
-    
+
     // Nombre de ventes et total
-    final ventesResult = await db.rawQuery('''
+    final ventesResult = await db.rawQuery(
+      '''
       SELECT 
         COUNT(*) as nombre_ventes,
         COALESCE(SUM(montant_total), 0) as total_ventes,
         MAX(date_vente) as derniere_vente
       FROM ventes_clients
       WHERE client_id = ?
-    ''', [clientId]);
-    
+    ''',
+      [clientId],
+    );
+
     final nombreVentes = ventesResult.first['nombre_ventes'] as int? ?? 0;
-    final totalVentes = (ventesResult.first['total_ventes'] as num?)?.toDouble() ?? 0.0;
+    final totalVentes =
+        (ventesResult.first['total_ventes'] as num?)?.toDouble() ?? 0.0;
     final derniereVente = ventesResult.first['derniere_vente'] as String?;
-    
+
     // Total paiements
-    final paiementsResult = await db.rawQuery('''
+    final paiementsResult = await db.rawQuery(
+      '''
       SELECT 
         COALESCE(SUM(montant), 0) as total_paiements,
         MAX(date_paiement) as dernier_paiement
       FROM paiements_clients
       WHERE client_id = ?
-    ''', [clientId]);
-    
-    final totalPaiements = (paiementsResult.first['total_paiements'] as num?)?.toDouble() ?? 0.0;
-    final dernierPaiement = paiementsResult.first['dernier_paiement'] as String?;
-    
+    ''',
+      [clientId],
+    );
+
+    final totalPaiements =
+        (paiementsResult.first['total_paiements'] as num?)?.toDouble() ?? 0.0;
+    final dernierPaiement =
+        paiementsResult.first['dernier_paiement'] as String?;
+
     // Mettre à jour le solde dans la table clients
     final soldeClient = totalVentes - totalPaiements;
     await db.update(
@@ -448,7 +562,7 @@ class ClientService {
       where: 'id = ?',
       whereArgs: [clientId],
     );
-    
+
     return {
       'nombre_ventes': nombreVentes,
       'total_ventes': totalVentes,
@@ -462,10 +576,10 @@ class ClientService {
   Future<bool> peutClientVendre(int clientId, double montantVente) async {
     final client = await getClientById(clientId);
     if (client == null) return false;
-    
+
     // Vérifier le statut
     if (!client.peutVendre) return false;
-    
+
     // Vérifier le plafond de crédit
     if (client.plafondCredit != null) {
       final nouveauSolde = client.soldeClient + montantVente;
@@ -473,42 +587,37 @@ class ClientService {
         return false;
       }
     }
-    
+
     return true;
   }
 
   /// Obtenir les clients avec solde impayé
-  Future<List<ClientModel>> getClientsImpayes({
-    double? montantMinimum,
-  }) async {
+  Future<List<ClientModel>> getClientsImpayes({double? montantMinimum}) async {
     try {
       final db = await DatabaseInitializer.database;
-      
+
       String where = 'solde_client > 0';
       List<dynamic> whereArgs = [];
-      
+
       if (montantMinimum != null) {
         where += ' AND solde_client >= ?';
         whereArgs.add(montantMinimum);
       }
-      
+
       final result = await db.query(
         'clients',
         where: where,
         whereArgs: whereArgs,
         orderBy: 'solde_client DESC',
       );
-      
+
       final clients = <ClientModel>[];
       for (final row in result) {
         final id = row['id'] as int;
         final stats = await _calculateClientStats(id);
-        clients.add(ClientModel.fromMap({
-          ...row,
-          ...stats,
-        }));
+        clients.add(ClientModel.fromMap({...row, ...stats}));
       }
-      
+
       return clients;
     } catch (e) {
       throw Exception('Erreur lors de la récupération: $e');

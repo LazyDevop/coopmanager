@@ -126,7 +126,7 @@ class _DashboardScreenImprovedState extends State<DashboardScreenImproved> {
             children: [
               Text(
                 DateTime.now().day.toString(),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.primaryColor,
@@ -134,7 +134,7 @@ class _DashboardScreenImprovedState extends State<DashboardScreenImproved> {
               ),
               Text(
                 _getMonthName(DateTime.now().month),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12,
                   color: AppTheme.primaryColor,
                 ),
@@ -168,7 +168,7 @@ class _DashboardScreenImprovedState extends State<DashboardScreenImproved> {
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.warning_amber_rounded,
                   color: AppTheme.warningColor,
                   size: 32,
@@ -357,7 +357,7 @@ class _DashboardScreenImprovedState extends State<DashboardScreenImproved> {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textPrimary,
                 ),

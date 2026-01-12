@@ -29,7 +29,7 @@ class SettingsProvider extends ChangeNotifier {
   // États de chargement
   bool _isLoading = false;
   String? _errorMessage;
-  Map<String, bool> _loadingCategories = {};
+  final Map<String, bool> _loadingCategories = {};
 
   // Getters
   CooperativeSettingsModel? get cooperativeSettings => _cooperativeSettings;

@@ -1,5 +1,3 @@
-/// Repository pour la gestion des settings (Clean Architecture)
-import 'package:sqflite_common/sqlite_api.dart';
 import '../../../data/models/backend/setting_model.dart';
 import '../../database/db_initializer.dart';
 

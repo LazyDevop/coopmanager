@@ -68,18 +68,31 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
                         icon: const Icon(Icons.bar_chart),
                         tooltip: 'État du capital',
                         onPressed: () {
-                          Navigator.of(context, rootNavigator: false).pushNamed(
-                            AppRoutes.capitalEtat,
-                          );
+                          Navigator.of(
+                            context,
+                            rootNavigator: false,
+                          ).pushNamed(AppRoutes.capitalEtat);
                         },
                       ),
                       IconButton(
                         icon: const Icon(Icons.add),
                         tooltip: 'Nouvelle souscription',
-                        onPressed: () {
-                          Navigator.of(context, rootNavigator: false).pushNamed(
-                            AppRoutes.capitalSouscription,
-                          );
+                        onPressed: () async {
+                          final result = await Navigator.of(
+                            context,
+                            rootNavigator: false,
+                          ).pushNamed(AppRoutes.capitalSouscription);
+
+                          if (!context.mounted) return;
+
+                          if (result == true) {
+                            await context
+                                .read<CapitalViewModel>()
+                                .loadActionnaires();
+                            await context
+                                .read<CapitalViewModel>()
+                                .loadStatistiquesCapital();
+                          }
                         },
                       ),
                     ],
@@ -109,7 +122,9 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
                           icon: const Icon(Icons.clear),
                           onPressed: () {
                             _searchController.clear();
-                            context.read<CapitalViewModel>().searchActionnaires('');
+                            context.read<CapitalViewModel>().searchActionnaires(
+                              '',
+                            );
                             setState(() {});
                           },
                         )
@@ -130,7 +145,7 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedStatut,
+                      initialValue: _selectedStatut,
                       decoration: InputDecoration(
                         labelText: 'Statut',
                         border: OutlineInputBorder(
@@ -141,9 +156,18 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
                       ),
                       items: const [
                         DropdownMenuItem(value: null, child: Text('Tous')),
-                        DropdownMenuItem(value: ActionnaireModel.statutActif, child: Text('Actif')),
-                        DropdownMenuItem(value: ActionnaireModel.statutSuspendu, child: Text('Suspendu')),
-                        DropdownMenuItem(value: ActionnaireModel.statutRadie, child: Text('Radié')),
+                        DropdownMenuItem(
+                          value: ActionnaireModel.statutActif,
+                          child: Text('Actif'),
+                        ),
+                        DropdownMenuItem(
+                          value: ActionnaireModel.statutSuspendu,
+                          child: Text('Suspendu'),
+                        ),
+                        DropdownMenuItem(
+                          value: ActionnaireModel.statutRadie,
+                          child: Text('Radié'),
+                        ),
                       ],
                       onChanged: (value) {
                         setState(() {
@@ -187,7 +211,11 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red.shade300,
+                      ),
                       const SizedBox(height: 16),
                       Text(viewModel.errorMessage!),
                       const SizedBox(height: 16),
@@ -205,7 +233,11 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.people_outline, size: 64, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.people_outline,
+                        size: 64,
+                        color: Colors.grey.shade400,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Aucun actionnaire trouvé',
@@ -236,8 +268,9 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
 
   Widget _buildStatistiquesCards(Map<String, dynamic> stats) {
     final numberFormat = NumberFormat('#,##0.00');
-    final pourcentage = (stats['pourcentage_liberation'] as num?)?.toDouble() ?? 0.0;
-    
+    final pourcentage =
+        (stats['pourcentage_liberation'] as num?)?.toDouble() ?? 0.0;
+
     return Row(
       children: [
         Expanded(
@@ -279,7 +312,12 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, Color color, IconData icon) {
+  Widget _buildStatCard(
+    String label,
+    String value,
+    Color color,
+    IconData icon,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -315,11 +353,11 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Color.fromRGBO(
-            (color.red * 0.7).round(),
-            (color.green * 0.7).round(),
-            (color.blue * 0.7).round(),
-            1.0,
-          ),
+                (color.red * 0.7).round(),
+                (color.green * 0.7).round(),
+                (color.blue * 0.7).round(),
+                1.0,
+              ),
             ),
           ),
         ],
@@ -327,10 +365,13 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
     );
   }
 
-  Widget _buildActionnaireCard(BuildContext context, ActionnaireModel actionnaire) {
+  Widget _buildActionnaireCard(
+    BuildContext context,
+    ActionnaireModel actionnaire,
+  ) {
     final numberFormat = NumberFormat('#,##0.00');
     final dateFormat = DateFormat('dd/MM/yyyy');
-    
+
     // Couleur selon le statut et l'état de libération
     Color cardColor = Colors.white;
     if (actionnaire.statut == ActionnaireModel.statutSuspendu) {
@@ -338,7 +379,7 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
     } else if (!actionnaire.estAJour) {
       cardColor = Colors.yellow.shade50;
     }
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -392,7 +433,10 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
                         if (!actionnaire.estAJour)
                           Container(
                             margin: const EdgeInsets.only(left: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.yellow.shade100,
                               borderRadius: BorderRadius.circular(8),
@@ -416,7 +460,8 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
                         color: Colors.grey.shade600,
                       ),
                     ),
-                    if (actionnaire.capitalSouscrit != null && actionnaire.capitalSouscrit! > 0) ...[
+                    if (actionnaire.capitalSouscrit != null &&
+                        actionnaire.capitalSouscrit! > 0) ...[
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -441,10 +486,15 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
                                   ),
                                   child: FractionallySizedBox(
                                     alignment: Alignment.centerLeft,
-                                    widthFactor: (actionnaire.pourcentageLiberation / 100).clamp(0.0, 1.0),
+                                    widthFactor:
+                                        (actionnaire.pourcentageLiberation /
+                                                100)
+                                            .clamp(0.0, 1.0),
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: actionnaire.estAJour ? Colors.green : Colors.orange,
+                                        color: actionnaire.estAJour
+                                            ? Colors.green
+                                            : Colors.orange,
                                         borderRadius: BorderRadius.circular(3),
                                       ),
                                     ),
@@ -459,7 +509,9 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: actionnaire.estAJour ? Colors.green.shade700 : Colors.orange.shade700,
+                              color: actionnaire.estAJour
+                                  ? Colors.green.shade700
+                                  : Colors.orange.shade700,
                             ),
                           ),
                         ],
@@ -478,7 +530,7 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
   Widget _buildStatutBadge(String statut) {
     Color color;
     String label;
-    
+
     switch (statut) {
       case ActionnaireModel.statutActif:
         color = Colors.green;
@@ -496,7 +548,7 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
         color = Colors.grey;
         label = statut;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -519,4 +571,3 @@ class _ActionnairesListScreenState extends State<ActionnairesListScreen> {
     );
   }
 }
-

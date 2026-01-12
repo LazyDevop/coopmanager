@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:sqflite_common/sqlite_api.dart';
 import '../database/db_initializer.dart';
 import '../../data/models/notification_model.dart';
-import '../../config/app_config.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();

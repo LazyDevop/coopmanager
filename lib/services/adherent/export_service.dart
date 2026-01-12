@@ -6,6 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import '../../data/models/adherent_model.dart';
 import '../../data/models/adherent_historique_model.dart';
+import '../document/pdf_template_engine.dart';
+import '../document/pdf_utils.dart';
 
 class ExportService {
   final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
@@ -20,6 +22,16 @@ class ExportService {
     required List<Map<String, dynamic>> recettes,
   }) async {
     try {
+      final baseFont = await PdfUtils.loadBaseFont();
+      final boldFont = await PdfUtils.loadBoldFont();
+      final italicFont = await PdfUtils.loadItalicFont();
+      final coopSettings = await PdfUtils.loadCooperativeSettings();
+      final meta = await PdfUtils.loadDocumentMeta(
+        'historique_${adherent.code}_${DateTime.now().millisecondsSinceEpoch}',
+        '',
+      );
+      const templateEngine = PdfTemplateEngine();
+
       final pdf = pw.Document();
 
       // En-tête
@@ -27,10 +39,25 @@ class ExportService {
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(40),
+          theme: pw.ThemeData.withFont(
+            base: baseFont,
+            bold: boldFont,
+            italic: italicFont,
+          ),
+          header: templateEngine.buildHeader(
+            coopSettings,
+            documentTitle: 'HISTORIQUE DES OPÉRATIONS',
+            logoBytes: meta.logoBytes,
+          ),
+          footer: templateEngine.buildFooter(
+            coopSettings,
+            documentSettings: meta.documentSettings,
+            documentReference: meta.referenceDocument,
+            qrData: meta.qrData,
+            generatedAt: meta.generatedAt,
+          ),
           build: (pw.Context context) {
             return [
-              _buildHeader(adherent),
-              pw.SizedBox(height: 20),
               _buildInformationsSection(adherent),
               pw.SizedBox(height: 20),
               _buildHistoriqueSection(historique),
@@ -40,8 +67,6 @@ class ExportService {
               _buildVentesSection(ventes),
               pw.SizedBox(height: 20),
               _buildRecettesSection(recettes),
-              pw.SizedBox(height: 20),
-              _buildFooter(),
             ];
           },
         ),
@@ -95,7 +120,7 @@ class ExportService {
         ),
         pw.Text(
           'Date d\'édition: ${_dateFormat.format(DateTime.now())}',
-          style: pw.TextStyle(
+          style: const pw.TextStyle(
             fontSize: 12,
             color: PdfColors.grey700,
           ),
@@ -164,7 +189,7 @@ class ExportService {
     if (historique.isEmpty) {
       return pw.Text(
         'Aucun historique disponible',
-        style: pw.TextStyle(color: PdfColors.grey700),
+        style: const pw.TextStyle(color: PdfColors.grey700),
       );
     }
 
@@ -387,7 +412,7 @@ class ExportService {
       ),
       child: pw.Text(
         'Document généré le ${_dateFormat.format(DateTime.now())} par CoopManager',
-        style: pw.TextStyle(
+        style: const pw.TextStyle(
           fontSize: 10,
           color: PdfColors.grey700,
         ),

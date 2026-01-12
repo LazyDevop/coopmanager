@@ -26,13 +26,13 @@ class AccountingSettingsModel {
 
   factory AccountingSettingsModel.fromMap(Map<String, dynamic> map) {
     // Helper functions for safe type conversion
-    String? _parseString(dynamic value) {
+    String? parseString(dynamic value) {
       if (value == null) return null;
       if (value is String) return value.isEmpty ? null : value;
       return value.toString();
     }
 
-    double _parseDouble(dynamic value, {double defaultValue = 0.0}) {
+    double parseDouble(dynamic value, {double defaultValue = 0.0}) {
       if (value == null) return defaultValue;
       if (value is double) return value;
       if (value is int) return value.toDouble();
@@ -42,16 +42,16 @@ class AccountingSettingsModel {
     }
 
     return AccountingSettingsModel(
-      exerciceActif: _parseString(map['exercice_actif']),
-      soldeInitialCaisse: _parseDouble(map['solde_initial_caisse']),
-      soldeInitialBanque: _parseDouble(map['solde_initial_banque']),
-      tauxFraisGestion: _parseDouble(map['taux_frais_gestion']),
-      tauxReserve: _parseDouble(map['taux_reserve']),
-      compteCaisse: _parseString(map['compte_caisse']),
-      compteBanque: _parseString(map['compte_banque']),
-      compteVente: _parseString(map['compte_vente']),
-      compteRecette: _parseString(map['compte_recette']),
-      compteCommission: _parseString(map['compte_commission']),
+      exerciceActif: parseString(map['exercice_actif']),
+      soldeInitialCaisse: parseDouble(map['solde_initial_caisse']),
+      soldeInitialBanque: parseDouble(map['solde_initial_banque']),
+      tauxFraisGestion: parseDouble(map['taux_frais_gestion']),
+      tauxReserve: parseDouble(map['taux_reserve']),
+      compteCaisse: parseString(map['compte_caisse']),
+      compteBanque: parseString(map['compte_banque']),
+      compteVente: parseString(map['compte_vente']),
+      compteRecette: parseString(map['compte_recette']),
+      compteCommission: parseString(map['compte_commission']),
     );
   }
 

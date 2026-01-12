@@ -9,4 +9,3 @@ class VenteProvider extends ChangeNotifierProvider<VenteViewModel> {
     VenteViewModel Function(BuildContext)? create,
   }) : super(create: create ?? ((_) => VenteViewModel()));
 }
-r

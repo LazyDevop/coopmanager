@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../database/db_initializer.dart';
 import '../../data/models/paiement_model.dart';
@@ -6,6 +8,8 @@ import '../auth/audit_service.dart';
 import '../notification/notification_service.dart';
 import '../comptabilite/comptabilite_service.dart';
 import '../qrcode/document_security_service.dart';
+import '../document/pdf_engine.dart';
+import '../document/pdf_utils.dart';
 
 class PaiementService {
   final AuditService _auditService = AuditService();
@@ -13,10 +17,7 @@ class PaiementService {
   final ComptabiliteService _comptabiliteService = ComptabiliteService();
 
   /// Créer un paiement (partiel ou total)
-  /// 
-  /// Vérifie le solde disponible avant de créer le paiement
-  /// Met à jour automatiquement le compte financier
-  /// Génère un reçu PDF avec QR Code
+  /// Génère un reçu PDF avec QR Code via le moteur modulaire
   Future<PaiementModel> createPaiement({
     required int adherentId,
     required double montant,
@@ -29,19 +30,13 @@ class PaiementService {
     bool generateRecu = true,
   }) async {
     final db = await DatabaseInitializer.database;
-    
     try {
-      // Démarrer une transaction
       await db.execute('BEGIN TRANSACTION');
-      
       try {
-        // 1. Vérifier le solde disponible
         final compte = await getCompteFinancier(adherentId);
         if (montant > compte.soldeTotal) {
           throw Exception('Montant supérieur au solde disponible (${compte.soldeTotal.toStringAsFixed(2)} FCFA)');
         }
-        
-        // 2. Créer le paiement
         final paiement = PaiementModel(
           adherentId: adherentId,
           recetteId: recetteId,
@@ -54,46 +49,35 @@ class PaiementService {
           createdBy: createdBy,
           createdAt: DateTime.now(),
         );
-        
         final paiementId = await db.insert('paiements', paiement.toMap());
-        
-        // 3. Générer QR Code hash
         final qrCodeHash = await DocumentSecurityService.generateQRCodeHash(
           type: 'paiement',
           id: paiementId,
           adherentId: adherentId,
           montant: montant,
         );
-        
         await db.update(
           'paiements',
           {'qr_code_hash': qrCodeHash},
           where: 'id = ?',
           whereArgs: [paiementId],
         );
-        
-        // 4. Mettre à jour le compte financier
         await _updateCompteAfterPaiement(adherentId, montant);
-        
-        // 5. Journaliser l'opération
         await _logJournalFinancier(
           adherentId: adherentId,
           typeOperation: 'PAIEMENT',
           operationId: paiementId,
           operationType: 'paiement',
           montant: montant,
-          description: 'Paiement de $montant FCFA (${modePaiement})',
+          description: 'Paiement de $montant FCFA ($modePaiement)',
           createdBy: createdBy,
         );
-        
-        // 6. Générer écriture comptable
         try {
           final ecritureId = await _comptabiliteService.generateEcritureForPaiement(
             paiementId: paiementId,
             montant: montant,
             createdBy: createdBy,
           );
-          
           await db.update(
             'paiements',
             {'ecriture_comptable_id': ecritureId},
@@ -103,8 +87,6 @@ class PaiementService {
         } catch (e) {
           print('Erreur lors de la génération de l\'écriture comptable: $e');
         }
-        
-        // 7. Générer reçu PDF si demandé
         if (generateRecu) {
           try {
             final pdfPath = await _generateRecuPDF(paiementId, adherentId, montant, qrCodeHash);
@@ -118,8 +100,6 @@ class PaiementService {
             print('Erreur lors de la génération du reçu PDF: $e');
           }
         }
-        
-        // 8. Créer événement timeline
         await _createTimelineEvent(
           adherentId: adherentId,
           type: 'paiement',
@@ -128,8 +108,6 @@ class PaiementService {
           description: 'Paiement de ${montant.toStringAsFixed(2)} FCFA par $modePaiement',
           montant: montant,
         );
-        
-        // 9. Audit et notification
         await _auditService.logAction(
           userId: createdBy,
           action: 'CREATE_PAIEMENT',
@@ -137,19 +115,14 @@ class PaiementService {
           entityId: paiementId,
           details: 'Paiement de $montant FCFA pour adhérent $adherentId',
         );
-        
         await _notificationService.notifyPaiementEffectue(
           paiementId: paiementId,
           montant: montant,
           userId: createdBy,
         );
-        
-        // Commit transaction
         await db.execute('COMMIT');
-        
         return paiement.copyWith(id: paiementId, qrCodeHash: qrCodeHash);
       } catch (e) {
-        // Rollback en cas d'erreur
         await db.execute('ROLLBACK');
         rethrow;
       }
@@ -396,11 +369,26 @@ class PaiementService {
     });
   }
 
-  /// Générer le reçu PDF (placeholder - à implémenter avec pdf package)
+  /// Générer le reçu PDF avec le moteur modulaire PdfEngine
   Future<String> _generateRecuPDF(int paiementId, int adherentId, double montant, String qrCodeHash) async {
-    // TODO: Implémenter la génération PDF avec le package pdf
-    // Pour l'instant, retourner un chemin placeholder
-    return 'recus/paiement_$paiementId.pdf';
+    final baseFont = await PdfUtils.loadBaseFont();
+    final boldFont = await PdfUtils.loadBoldFont();
+    final italicFont = await PdfUtils.loadItalicFont();
+    final engine = PdfEngine(baseFont: baseFont, boldFont: boldFont, italicFont: italicFont);
+    final settings = await PdfUtils.loadCooperativeSettings();
+    final meta = await PdfUtils.loadDocumentMeta(paiementId, qrCodeHash);
+    final builder = RecuDepotPdfBuilder(
+      RecuDepotData(
+        deposant: 'Adhérent #$adherentId',
+        montant: montant,
+        date: DateTime.now().toIso8601String(),
+      ),
+    );
+    final pdfBytes = await engine.generate(document: builder, settings: settings, meta: meta);
+    final exportDir = await PdfUtils.getExportDirectory('recus');
+    final file = File('${exportDir.path}/recu_paiement_$paiementId.pdf');
+    await file.writeAsBytes(pdfBytes);
+    return file.path;
   }
 }
 

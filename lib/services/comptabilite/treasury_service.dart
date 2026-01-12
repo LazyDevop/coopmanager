@@ -1,6 +1,4 @@
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../../data/models/tresorerie_model.dart';
-import '../../data/models/journal_comptable_model.dart';
 import '../database/db_initializer.dart';
 import '../auth/audit_service.dart';
 

@@ -202,7 +202,7 @@ class _ParametresFinancesScreenState extends State<ParametresFinancesScreen> wit
     // (seulement si pas de modifications en cours par l'utilisateur)
     if (parametres != null && !_hasChanges && _lastLoadedPeriode != parametres.periodeCampagneDays) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && parametres != null && !_hasChanges) {
+        if (mounted && !_hasChanges) {
           _commissionController.text = (parametres.commissionRate * 100).toStringAsFixed(2);
           _periodeController.text = parametres.periodeCampagneDays.toString();
           _lastLoadedPeriode = parametres.periodeCampagneDays;
@@ -227,7 +227,7 @@ class _ParametresFinancesScreenState extends State<ParametresFinancesScreen> wit
     // Recharger automatiquement si les paramètres sont chargés mais les champs sont vides
     if (parametres != null && _commissionController.text.isEmpty && !viewModel.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && parametres != null && !_hasChanges) {
+        if (mounted && !_hasChanges) {
           _loadParametres();
         }
       });

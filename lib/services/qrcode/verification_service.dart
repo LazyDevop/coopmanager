@@ -1,7 +1,6 @@
 import '../../data/models/document_securise_model.dart';
 import '../../services/database/db_initializer.dart';
 import 'qrcode_service.dart';
-import 'dart:convert';
 
 /// Service de vérification des documents sécurisés
 class VerificationService {

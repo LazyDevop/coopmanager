@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import '../../data/models/document_securise_model.dart';
 import '../../config/app_config.dart';

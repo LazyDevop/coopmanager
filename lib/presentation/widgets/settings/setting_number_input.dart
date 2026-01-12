@@ -177,7 +177,7 @@ class _SettingNumberInputState extends State<SettingNumberInput> {
               filled: true,
               fillColor: widget.enabled
                   ? theme.colorScheme.surface
-                  : theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                  : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
             ),
             validator: (value) {
               if (widget.required && (value == null || value.isEmpty)) {

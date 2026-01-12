@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../config/routes/routes.dart';
 import '../../data/models/user_model.dart';
 import '../../services/navigation/navigation_service.dart';
 import '../viewmodels/auth_viewmodel.dart';

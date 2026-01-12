@@ -38,7 +38,7 @@ class SyncQueueItem {
       'is_synced': isSynced ? 1 : 0,
       'error_message': errorMessage,
       'retry_count': retryCount,
-      'local_id': localId != null ? localId.toString() : null,
+      'local_id': localId?.toString(),
     };
   }
 

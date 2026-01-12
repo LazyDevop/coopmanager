@@ -64,14 +64,12 @@ class FormFieldWidget extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
-            suffixIcon: suffixWidget != null
-                ? suffixWidget
-                : suffixIcon != null
+            suffixIcon: suffixWidget ?? (suffixIcon != null
                     ? IconButton(
                         icon: Icon(suffixIcon),
                         onPressed: onSuffixTap,
                       )
-                    : null,
+                    : null),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -81,15 +79,15 @@ class FormFieldWidget extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
+              borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppTheme.errorColor),
+              borderSide: const BorderSide(color: AppTheme.errorColor),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppTheme.errorColor, width: 2),
+              borderSide: const BorderSide(color: AppTheme.errorColor, width: 2),
             ),
             errorMaxLines: 2,
           ),

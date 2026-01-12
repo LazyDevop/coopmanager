@@ -5,6 +5,8 @@ import '../../data/models/vente_adherent_model.dart';
 import '../../data/models/adherent_model.dart';
 import '../../data/models/client_model.dart';
 import '../../data/models/parametres_cooperative_model.dart';
+import '../../data/models/vente_mensuelle_stats_model.dart';
+import '../../data/models/vente_top_client_stats_model.dart';
 // V2: Nouveaux modèles
 import '../../data/models/lot_vente_model.dart';
 import '../../data/models/lot_vente_detail_model.dart';
@@ -32,10 +34,12 @@ class VenteViewModel extends ChangeNotifier {
   final ClientService _clientService = ClientService();
   final ParametresService _parametresService = ParametresService();
   // V2: Nouveaux services
-  final SimulationVenteService _simulationVenteService = SimulationVenteService();
+  final SimulationVenteService _simulationVenteService =
+      SimulationVenteService();
   final LotVenteService _lotVenteService = LotVenteService();
   final CreanceClientService _creanceClientService = CreanceClientService();
-  final ValidationWorkflowService _validationWorkflowService = ValidationWorkflowService();
+  final ValidationWorkflowService _validationWorkflowService =
+      ValidationWorkflowService();
   final FondsSocialService _fondsSocialService = FondsSocialService();
 
   List<VenteModel> _ventes = [];
@@ -46,10 +50,10 @@ class VenteViewModel extends ChangeNotifier {
   List<CampagneModel> _campagnes = [];
   CampagneModel? _campagneActive;
   ParametresCooperativeModel? _parametres;
-  
+
   bool _isLoading = false;
   String? _errorMessage;
-  
+
   // Filtres V1
   int? _filterAdherentId;
   int? _filterClientId;
@@ -60,7 +64,7 @@ class VenteViewModel extends ChangeNotifier {
   DateTime? _filterStartDate;
   DateTime? _filterEndDate;
   String _searchQuery = '';
-  
+
   // Calculs temps réel pour formulaire V1
   double? _prixUnitaireSaisi;
   double? _quantiteSaisie;
@@ -90,7 +94,7 @@ class VenteViewModel extends ChangeNotifier {
   DateTime? get filterStartDate => _filterStartDate;
   DateTime? get filterEndDate => _filterEndDate;
   String get searchQuery => _searchQuery;
-  
+
   // Calculs temps réel
   double? get montantBrutCalcule => _montantBrutCalcule;
   double? get montantCommissionCalcule => _montantCommissionCalcule;
@@ -109,12 +113,16 @@ class VenteViewModel extends ChangeNotifier {
 
     // Filtre par campagne (V1)
     if (_filterCampagneId != null) {
-      filtered = filtered.where((v) => v.campagneId == _filterCampagneId).toList();
+      filtered = filtered
+          .where((v) => v.campagneId == _filterCampagneId)
+          .toList();
     }
 
     // Filtre par statut paiement (V1)
     if (_filterStatutPaiement != null) {
-      filtered = filtered.where((v) => v.statutPaiement == _filterStatutPaiement).toList();
+      filtered = filtered
+          .where((v) => v.statutPaiement == _filterStatutPaiement)
+          .toList();
     }
 
     // Recherche
@@ -122,7 +130,7 @@ class VenteViewModel extends ChangeNotifier {
       final query = _searchQuery.toLowerCase();
       filtered = filtered.where((v) {
         return (v.acheteur?.toLowerCase().contains(query) ?? false) ||
-               (v.notes?.toLowerCase().contains(query) ?? false);
+            (v.notes?.toLowerCase().contains(query) ?? false);
       }).toList();
     }
 
@@ -170,7 +178,9 @@ class VenteViewModel extends ChangeNotifier {
   /// Charger les clients
   Future<void> loadClients() async {
     try {
-      _clients = await _clientService.getClients(statut: ClientModel.statutActif);
+      _clients = await _clientService.getClients(
+        statut: ClientModel.statutActif,
+      );
       notifyListeners();
     } catch (e) {
       print('Erreur lors du chargement des clients: $e');
@@ -287,6 +297,7 @@ class VenteViewModel extends ChangeNotifier {
     required double quantite,
     required double prixUnitaire,
     String? acheteur,
+    int? clientId,
     String? modePaiement,
     required DateTime dateVente,
     String? notes,
@@ -303,6 +314,7 @@ class VenteViewModel extends ChangeNotifier {
         quantite: quantite,
         prixUnitaire: prixUnitaire,
         acheteur: acheteur,
+        clientId: clientId,
         modePaiement: modePaiement,
         dateVente: dateVente,
         notes: notes,
@@ -315,7 +327,7 @@ class VenteViewModel extends ChangeNotifier {
         try {
           // Attendre un court délai pour que la facture soit créée
           await Future.delayed(const Duration(milliseconds: 500));
-          
+
           final db = await DatabaseInitializer.database;
           final result = await db.query(
             'ventes',
@@ -325,11 +337,13 @@ class VenteViewModel extends ChangeNotifier {
           );
           if (result.isNotEmpty) {
             _lastCreatedFactureId = result.first['facture_id'] as int?;
-            print('📄 Facture ID récupérée pour vente #${vente.id}: $_lastCreatedFactureId');
+            print(
+              '📄 Facture ID récupérée pour vente #${vente.id}: $_lastCreatedFactureId',
+            );
           } else {
             print('⚠️ Aucune facture trouvée pour vente #${vente.id}');
           }
-          
+
           // Si facture_id n'est pas trouvé dans ventes, chercher directement dans factures
           if (_lastCreatedFactureId == null) {
             final factureResult = await db.query(
@@ -342,7 +356,9 @@ class VenteViewModel extends ChangeNotifier {
             );
             if (factureResult.isNotEmpty) {
               _lastCreatedFactureId = factureResult.first['id'] as int?;
-              print('📄 Facture ID trouvée directement dans factures: $_lastCreatedFactureId');
+              print(
+                '📄 Facture ID trouvée directement dans factures: $_lastCreatedFactureId',
+              );
             }
           }
         } catch (e) {
@@ -351,7 +367,7 @@ class VenteViewModel extends ChangeNotifier {
       }
 
       await loadVentes();
-      
+
       // Notifier les autres ViewModels pour recharger les stocks
       // Le StockViewModel sera notifié via Provider et rechargera automatiquement
       _isLoading = false;
@@ -370,6 +386,7 @@ class VenteViewModel extends ChangeNotifier {
     required List<VenteDetailModel> details,
     required double prixUnitaire,
     String? acheteur,
+    int? clientId,
     String? modePaiement,
     required DateTime dateVente,
     String? notes,
@@ -385,6 +402,7 @@ class VenteViewModel extends ChangeNotifier {
         details: details,
         prixUnitaire: prixUnitaire,
         acheteur: acheteur,
+        clientId: clientId,
         modePaiement: modePaiement,
         dateVente: dateVente,
         notes: notes,
@@ -396,7 +414,7 @@ class VenteViewModel extends ChangeNotifier {
         try {
           // Attendre un court délai pour que la facture soit créée
           await Future.delayed(const Duration(milliseconds: 500));
-          
+
           final db = await DatabaseInitializer.database;
           final result = await db.query(
             'ventes',
@@ -406,9 +424,11 @@ class VenteViewModel extends ChangeNotifier {
           );
           if (result.isNotEmpty) {
             _lastCreatedFactureId = result.first['facture_id'] as int?;
-            print('📄 Facture ID récupérée pour vente groupée #${vente.id}: $_lastCreatedFactureId');
+            print(
+              '📄 Facture ID récupérée pour vente groupée #${vente.id}: $_lastCreatedFactureId',
+            );
           }
-          
+
           // Si facture_id n'est pas trouvé dans ventes, chercher directement dans factures
           if (_lastCreatedFactureId == null) {
             final factureResult = await db.query(
@@ -421,11 +441,15 @@ class VenteViewModel extends ChangeNotifier {
             );
             if (factureResult.isNotEmpty) {
               _lastCreatedFactureId = factureResult.first['id'] as int?;
-              print('📄 Facture ID trouvée directement dans factures pour vente groupée: $_lastCreatedFactureId');
+              print(
+                '📄 Facture ID trouvée directement dans factures pour vente groupée: $_lastCreatedFactureId',
+              );
             }
           }
         } catch (e) {
-          print('❌ Erreur lors de la récupération de la facture pour vente groupée: $e');
+          print(
+            '❌ Erreur lors de la récupération de la facture pour vente groupée: $e',
+          );
         }
       }
 
@@ -472,7 +496,7 @@ class VenteViewModel extends ChangeNotifier {
 
     try {
       _selectedVente = await _venteService.getVenteById(venteId);
-      
+
       if (_selectedVente != null && _selectedVente!.isGroupee) {
         _venteDetails = await _venteService.getVenteDetails(venteId);
       } else {
@@ -563,7 +587,8 @@ class VenteViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = 'Erreur lors de la création avec répartition: ${e.toString()}';
+      _errorMessage =
+          'Erreur lors de la création avec répartition: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -575,7 +600,8 @@ class VenteViewModel extends ChangeNotifier {
     try {
       return await _venteService.getRepartitionVente(venteId);
     } catch (e) {
-      _errorMessage = 'Erreur lors de la récupération de la répartition: ${e.toString()}';
+      _errorMessage =
+          'Erreur lors de la récupération de la répartition: ${e.toString()}';
       notifyListeners();
       return [];
     }
@@ -603,11 +629,45 @@ class VenteViewModel extends ChangeNotifier {
         adherentId: adherentId,
       );
     } catch (e) {
-      return {
-        'nombreVentes': 0,
-        'quantiteTotale': 0.0,
-        'montantTotal': 0.0,
-      };
+      return {'nombreVentes': 0, 'quantiteTotale': 0.0, 'montantTotal': 0.0};
+    }
+  }
+
+  /// Obtenir les ventes agrégées par mois (pour graphiques)
+  Future<List<VenteMensuelleStatsModel>> getVentesParMois({
+    DateTime? startDate,
+    DateTime? endDate,
+    int? adherentId,
+  }) async {
+    try {
+      return await _venteService.getVentesParMois(
+        startDate: startDate,
+        endDate: endDate,
+        adherentId: adherentId,
+      );
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Obtenir les top clients (agrégé)
+  Future<List<VenteTopClientStatsModel>> getTopClients({
+    DateTime? startDate,
+    DateTime? endDate,
+    int? adherentId,
+    int limit = 10,
+    String orderBy = 'montant_total',
+  }) async {
+    try {
+      return await _venteService.getTopClients(
+        startDate: startDate,
+        endDate: endDate,
+        adherentId: adherentId,
+        limit: limit,
+        orderBy: orderBy,
+      );
+    } catch (e) {
+      return [];
     }
   }
 
@@ -669,23 +729,23 @@ class VenteViewModel extends ChangeNotifier {
   }) async {
     _quantiteSaisie = quantite;
     _prixUnitaireSaisi = prixUnitaire;
-    
+
     // Calculer montant brut
     _montantBrutCalcule = quantite * prixUnitaire;
-    
+
     // Charger les paramètres si nécessaire
     if (_parametres == null) {
       await loadParametres();
     }
-    
+
     // Calculer commission et net
     final commissionRate = _parametres?.commissionRate ?? 0.05;
     _montantCommissionCalcule = _montantBrutCalcule! * commissionRate;
     _montantNetCalcule = _montantBrutCalcule! - _montantCommissionCalcule!;
-    
+
     // Valider le prix
     await _validatePrix(prixUnitaire);
-    
+
     notifyListeners();
   }
 
@@ -693,40 +753,42 @@ class VenteViewModel extends ChangeNotifier {
   Future<void> _validatePrix(double prixUnitaire) async {
     try {
       final baremes = await _parametresService.getAllBaremesQualite();
-      
+
       _prixHorsSeuil = false;
       _prixValidationMessage = null;
-      
+
       if (baremes.isEmpty) {
         // Pas de barèmes configurés, prix accepté
         return;
       }
-      
+
       bool prixValide = false;
-      
+
       for (final bareme in baremes) {
         final prixMin = bareme.prixMin;
         final prixMax = bareme.prixMax;
-        
+
         if (prixMin != null && prixUnitaire < prixMin) {
           _prixHorsSeuil = true;
-          _prixValidationMessage = 'Prix trop bas: ${prixUnitaire.toStringAsFixed(0)} FCFA/kg < ${prixMin.toStringAsFixed(0)} FCFA/kg (minimum)';
+          _prixValidationMessage =
+              'Prix trop bas: ${prixUnitaire.toStringAsFixed(0)} FCFA/kg < ${prixMin.toStringAsFixed(0)} FCFA/kg (minimum)';
           return;
         }
-        
+
         if (prixMax != null && prixUnitaire > prixMax) {
           _prixHorsSeuil = true;
-          _prixValidationMessage = 'Prix trop élevé: ${prixUnitaire.toStringAsFixed(0)} FCFA/kg > ${prixMax.toStringAsFixed(0)} FCFA/kg (maximum)';
+          _prixValidationMessage =
+              'Prix trop élevé: ${prixUnitaire.toStringAsFixed(0)} FCFA/kg > ${prixMax.toStringAsFixed(0)} FCFA/kg (maximum)';
           return;
         }
-        
+
         // Si on arrive ici, le prix est dans les seuils pour au moins un barème
-        if ((prixMin == null || prixUnitaire >= prixMin) && 
+        if ((prixMin == null || prixUnitaire >= prixMin) &&
             (prixMax == null || prixUnitaire <= prixMax)) {
           prixValide = true;
         }
       }
-      
+
       if (!prixValide) {
         _prixHorsSeuil = true;
         _prixValidationMessage = 'Prix hors des seuils configurés';
@@ -768,7 +830,8 @@ class VenteViewModel extends ChangeNotifier {
   SimulationVenteModel? get selectedSimulation => _selectedSimulation;
   List<CreanceClientModel> get creances => _creances;
   List<ValidationVenteModel> get workflowValidations => _workflowValidations;
-  List<FondsSocialModel> get contributionsFondsSocial => _contributionsFondsSocial;
+  List<FondsSocialModel> get contributionsFondsSocial =>
+      _contributionsFondsSocial;
 
   // ========== LOTS DE VENTE V2 ==========
 
@@ -945,7 +1008,11 @@ class VenteViewModel extends ChangeNotifier {
   // ========== SIMULATIONS V2 ==========
 
   /// Charger toutes les simulations
-  Future<void> loadSimulations({int? clientId, int? campagneId, String? statut}) async {
+  Future<void> loadSimulations({
+    int? clientId,
+    int? campagneId,
+    String? statut,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -959,7 +1026,8 @@ class VenteViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Erreur lors du chargement des simulations: ${e.toString()}';
+      _errorMessage =
+          'Erreur lors du chargement des simulations: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
     }
@@ -974,7 +1042,7 @@ class VenteViewModel extends ChangeNotifier {
     required double prixUnitairePropose,
     double? pourcentageFondsSocial,
     String? notes,
-    required int createdBy,
+    int? createdBy,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -996,7 +1064,8 @@ class VenteViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = 'Erreur lors de la création de la simulation: ${e.toString()}';
+      _errorMessage =
+          'Erreur lors de la création de la simulation: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -1010,11 +1079,14 @@ class VenteViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _selectedSimulation = await _simulationVenteService.getSimulationById(simulationId);
+      _selectedSimulation = await _simulationVenteService.getSimulationById(
+        simulationId,
+      );
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Erreur lors du chargement de la simulation: ${e.toString()}';
+      _errorMessage =
+          'Erreur lors du chargement de la simulation: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
     }
@@ -1069,7 +1141,8 @@ class VenteViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = 'Erreur lors de la création de la créance: ${e.toString()}';
+      _errorMessage =
+          'Erreur lors de la création de la créance: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -1097,7 +1170,8 @@ class VenteViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = 'Erreur lors de l\'enregistrement du paiement: ${e.toString()}';
+      _errorMessage =
+          'Erreur lors de l\'enregistrement du paiement: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -1113,7 +1187,9 @@ class VenteViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _workflowValidations = await _validationWorkflowService.getWorkflowVente(venteId);
+      _workflowValidations = await _validationWorkflowService.getWorkflowVente(
+        venteId,
+      );
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -1151,7 +1227,8 @@ class VenteViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = 'Erreur lors de l\'initialisation du workflow: ${e.toString()}';
+      _errorMessage =
+          'Erreur lors de l\'initialisation du workflow: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -1179,7 +1256,8 @@ class VenteViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Erreur lors du chargement des contributions: ${e.toString()}';
+      _errorMessage =
+          'Erreur lors du chargement des contributions: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
     }
@@ -1212,7 +1290,8 @@ class VenteViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = 'Erreur lors de la création de la contribution: ${e.toString()}';
+      _errorMessage =
+          'Erreur lors de la création de la contribution: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       return false;

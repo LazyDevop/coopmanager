@@ -46,11 +46,11 @@ class _AdherentsListScreenImprovedState extends State<AdherentsListScreenImprove
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
+                  const Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
                   const SizedBox(height: 16),
                   Text(
                     viewModel.errorMessage!,
-                    style: TextStyle(color: AppTheme.errorColor),
+                    style: const TextStyle(color: AppTheme.errorColor),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -273,7 +273,7 @@ class _AdherentsListScreenImprovedState extends State<AdherentsListScreenImprove
           const SizedBox(width: 4),
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               color: AppTheme.textSecondary,
             ),

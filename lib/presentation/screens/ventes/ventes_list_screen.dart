@@ -297,7 +297,7 @@ class _VentesListScreenState extends State<VentesListScreen> with SingleTickerPr
               SizedBox(
                 width: 200,
                 child: DropdownButtonFormField<int?>(
-                  value: viewModel.filterClientId,
+                  initialValue: viewModel.filterClientId,
                   isExpanded: true,
                   decoration: InputDecoration(
                     labelText: 'Client',
@@ -332,7 +332,7 @@ class _VentesListScreenState extends State<VentesListScreen> with SingleTickerPr
               SizedBox(
                 width: 200,
                 child: DropdownButtonFormField<int?>(
-                  value: viewModel.filterCampagneId,
+                  initialValue: viewModel.filterCampagneId,
                   isExpanded: true,
                   decoration: InputDecoration(
                     labelText: 'Campagne',
@@ -367,7 +367,7 @@ class _VentesListScreenState extends State<VentesListScreen> with SingleTickerPr
               SizedBox(
                 width: 180,
                 child: DropdownButtonFormField<String?>(
-                  value: viewModel.filterStatutPaiement,
+                  initialValue: viewModel.filterStatutPaiement,
                   decoration: InputDecoration(
                     labelText: 'Paiement',
                     border: OutlineInputBorder(
@@ -391,7 +391,7 @@ class _VentesListScreenState extends State<VentesListScreen> with SingleTickerPr
               SizedBox(
                 width: 200,
                 child: DropdownButtonFormField<int?>(
-                  value: viewModel.filterAdherentId,
+                  initialValue: viewModel.filterAdherentId,
                   isExpanded: true,
                   decoration: InputDecoration(
                     labelText: 'Adhérent',
@@ -426,7 +426,7 @@ class _VentesListScreenState extends State<VentesListScreen> with SingleTickerPr
               SizedBox(
                 width: 150,
                 child: DropdownButtonFormField<String?>(
-                  value: viewModel.filterType,
+                  initialValue: viewModel.filterType,
                   decoration: InputDecoration(
                     labelText: 'Type',
                     border: OutlineInputBorder(
@@ -449,7 +449,7 @@ class _VentesListScreenState extends State<VentesListScreen> with SingleTickerPr
               SizedBox(
                 width: 150,
                 child: DropdownButtonFormField<String?>(
-                  value: viewModel.filterStatut,
+                  initialValue: viewModel.filterStatut,
                   decoration: InputDecoration(
                     labelText: 'Statut',
                     border: OutlineInputBorder(

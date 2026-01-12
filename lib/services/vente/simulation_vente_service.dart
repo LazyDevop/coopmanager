@@ -1,12 +1,3 @@
-/// Service de Simulation de Vente (V2)
-/// 
-/// Permet de simuler une vente avant validation avec :
-/// - Comparaison prix du jour
-/// - Comparaison ventes précédentes
-/// - Calcul indicateurs (marge coopérative, impact adhérents)
-/// - Détection risques
-
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../database/db_initializer.dart';
 import '../../data/models/simulation_vente_model.dart';
 import '../../data/models/historique_simulation_model.dart';
@@ -14,7 +5,6 @@ import '../../data/models/vente_model.dart';
 import '../../data/models/parametres_cooperative_model.dart';
 import '../parametres/parametres_service.dart';
 import '../comptabilite/comptabilite_service.dart';
-import 'dart:convert';
 
 class SimulationVenteService {
   final ParametresService _parametresService = ParametresService();
@@ -29,10 +19,14 @@ class SimulationVenteService {
     required double prixUnitairePropose,
     double? pourcentageFondsSocial,
     String? notes,
-    required int createdBy,
+    int? createdBy,
   }) async {
     try {
       final db = await DatabaseInitializer.database;
+
+      final normalizedCreatedBy = (createdBy != null && createdBy > 0)
+          ? createdBy
+          : null;
 
       // Calculer les montants
       final montantBrut = quantiteTotal * prixUnitairePropose;
@@ -83,7 +77,7 @@ class SimulationVenteService {
         margeCooperative: margeCooperative,
         indicateurs: indicateurs,
         notes: notes,
-        createdBy: createdBy,
+        createdBy: normalizedCreatedBy,
         createdAt: DateTime.now(),
       );
 
@@ -99,7 +93,7 @@ class SimulationVenteService {
         action: 'create',
         donneesAvant: {},
         donneesApres: simulation.toMap(),
-        userId: createdBy,
+        userId: normalizedCreatedBy,
       );
 
       return simulation.copyWith(id: simulationId);
@@ -113,14 +107,21 @@ class SimulationVenteService {
     try {
       final db = await DatabaseInitializer.database;
       final aujourdhui = DateTime.now();
-      final debutJour = DateTime(aujourdhui.year, aujourdhui.month, aujourdhui.day);
+      final debutJour = DateTime(
+        aujourdhui.year,
+        aujourdhui.month,
+        aujourdhui.day,
+      );
 
-      final result = await db.rawQuery('''
+      final result = await db.rawQuery(
+        '''
         SELECT AVG(prix_unitaire) as prix_moyen
         FROM ventes
         WHERE date_vente >= ? 
           AND statut = 'valide'
-      ''', [debutJour.toIso8601String()]);
+      ''',
+        [debutJour.toIso8601String()],
+      );
 
       if (result.isEmpty || result.first['prix_moyen'] == null) {
         return 0.0;
@@ -196,17 +197,20 @@ class SimulationVenteService {
           final prixMin = bareme['prix_min'] as num?;
           final prixMax = bareme['prix_max'] as num?;
 
-          if (prixMin != null && (prixMinGlobal == null || prixMin < prixMinGlobal)) {
+          if (prixMin != null &&
+              (prixMinGlobal == null || prixMin < prixMinGlobal)) {
             prixMinGlobal = prixMin.toDouble();
           }
-          if (prixMax != null && (prixMaxGlobal == null || prixMax > prixMaxGlobal)) {
+          if (prixMax != null &&
+              (prixMaxGlobal == null || prixMax > prixMaxGlobal)) {
             prixMaxGlobal = prixMax.toDouble();
           }
         }
 
         indicateurs['prix_min'] = prixMinGlobal;
         indicateurs['prix_max'] = prixMaxGlobal;
-        indicateurs['prix_hors_seuil'] = (prixMinGlobal != null && prixUnitairePropose < prixMinGlobal) ||
+        indicateurs['prix_hors_seuil'] =
+            (prixMinGlobal != null && prixUnitairePropose < prixMinGlobal) ||
             (prixMaxGlobal != null && prixUnitairePropose > prixMaxGlobal);
       }
     } catch (e) {
@@ -215,12 +219,14 @@ class SimulationVenteService {
 
     // Comparaisons de prix
     indicateurs['ecart_prix_jour'] = prixUnitairePropose - prixMoyenJour;
-    indicateurs['ecart_prix_precedent'] = prixUnitairePropose - prixMoyenPrecedent;
+    indicateurs['ecart_prix_precedent'] =
+        prixUnitairePropose - prixMoyenPrecedent;
     indicateurs['pourcentage_ecart_jour'] = prixMoyenJour > 0
         ? ((prixUnitairePropose - prixMoyenJour) / prixMoyenJour) * 100
         : 0.0;
     indicateurs['pourcentage_ecart_precedent'] = prixMoyenPrecedent > 0
-        ? ((prixUnitairePropose - prixMoyenPrecedent) / prixMoyenPrecedent) * 100
+        ? ((prixUnitairePropose - prixMoyenPrecedent) / prixMoyenPrecedent) *
+              100
         : 0.0;
 
     // Indicateurs financiers
@@ -228,7 +234,9 @@ class SimulationVenteService {
     indicateurs['taux_marge'] = montantBrut > 0
         ? ((montantBrut - montantNet) / montantBrut) * 100
         : 0.0;
-    indicateurs['montant_par_kg'] = quantiteTotal > 0 ? montantNet / quantiteTotal : 0.0;
+    indicateurs['montant_par_kg'] = quantiteTotal > 0
+        ? montantNet / quantiteTotal
+        : 0.0;
 
     // Niveaux de risque
     final risques = <String>[];
@@ -245,8 +253,8 @@ class SimulationVenteService {
     indicateurs['niveau_risque'] = risques.isEmpty
         ? 'faible'
         : risques.length == 1
-            ? 'moyen'
-            : 'eleve';
+        ? 'moyen'
+        : 'eleve';
 
     return indicateurs;
   }
@@ -310,7 +318,9 @@ class SimulationVenteService {
       );
 
       // TODO: Retourner la vente créée
-      throw Exception('Validation de simulation non implémentée - à compléter avec création de vente');
+      throw Exception(
+        'Validation de simulation non implémentée - à compléter avec création de vente',
+      );
     } catch (e) {
       throw Exception('Erreur lors de la validation de la simulation: $e');
     }
@@ -331,10 +341,7 @@ class SimulationVenteService {
       final db = await DatabaseInitializer.database;
       await db.update(
         'simulations_vente',
-        {
-          'statut': 'rejetee',
-          'notes': raison,
-        },
+        {'statut': 'rejetee', 'notes': raison},
         where: 'id = ?',
         whereArgs: [simulationId],
       );
@@ -344,7 +351,11 @@ class SimulationVenteService {
         simulationId: simulationId,
         action: 'reject',
         donneesAvant: simulation.toMap(),
-        donneesApres: {...simulation.toMap(), 'statut': 'rejetee', 'notes': raison},
+        donneesApres: {
+          ...simulation.toMap(),
+          'statut': 'rejetee',
+          'notes': raison,
+        },
         userId: userId,
         commentaire: raison,
       );
@@ -361,7 +372,7 @@ class SimulationVenteService {
     required String action,
     required Map<String, dynamic> donneesAvant,
     required Map<String, dynamic> donneesApres,
-    required int userId,
+    int? userId,
     String? commentaire,
   }) async {
     try {
@@ -372,7 +383,7 @@ class SimulationVenteService {
         donneesAvant: donneesAvant,
         donneesApres: donneesApres,
         commentaire: commentaire,
-        userId: userId,
+        userId: (userId != null && userId > 0) ? userId : null,
         createdAt: DateTime.now(),
       );
 
@@ -422,4 +433,3 @@ class SimulationVenteService {
     }
   }
 }
-

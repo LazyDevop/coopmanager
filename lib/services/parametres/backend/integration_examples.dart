@@ -73,7 +73,7 @@ class VentesIntegrationExample {
     if (prixJour != null) {
       final variation = ((prixUnitaire - prixJour) / prixJour * 100).abs();
       if (variation > variationAutorisee) {
-        throw Exception('La variation de prix dépasse le seuil autorisé: ${variationAutorisee}%');
+        throw Exception('La variation de prix dépasse le seuil autorisé: $variationAutorisee%');
       }
     }
 

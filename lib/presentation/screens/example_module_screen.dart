@@ -6,7 +6,6 @@ import '../widgets/common/conditional_actions.dart';
 import '../widgets/common/loading_indicator.dart';
 import '../widgets/common/toast_helper.dart';
 import '../widgets/common/status_indicators.dart';
-import '../../config/routes/routes.dart';
 import '../../services/auth/permission_service.dart';
 
 /// Exemple d'écran de module avec actions conditionnelles selon le rôle

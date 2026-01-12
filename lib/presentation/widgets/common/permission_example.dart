@@ -25,14 +25,14 @@ class ExampleScreenWithPermissions extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: WritePermissionWrapper(
               uiViewCode: 'adherents',
+              fallback: const SizedBox.shrink(),
               child: ElevatedButton.icon(
                 onPressed: () {
                   // Action de création
                 },
                 icon: const Icon(Icons.add),
                 label: const Text('Nouvel adhérent'),
-              ),
-              fallback: const SizedBox.shrink(), // Masquer si pas de permission
+              ), // Masquer si pas de permission
             ),
           ),
           

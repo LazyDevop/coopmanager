@@ -7,10 +7,8 @@
 
 import 'package:flutter/foundation.dart';
 import '../../data/models/vente_model.dart';
-import '../../data/models/vente_detail_model.dart';
 import '../../data/repositories/vente_repository.dart';
 import '../../services/integration/error_handler.dart';
-import '../../services/api/api_exception.dart';
 
 /// Exemple de ViewModel mis à jour avec Repository
 class VenteViewModelUpdated extends ChangeNotifier {

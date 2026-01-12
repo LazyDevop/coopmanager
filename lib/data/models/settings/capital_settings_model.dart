@@ -20,7 +20,7 @@ class CapitalSettingsModel {
 
   factory CapitalSettingsModel.fromMap(Map<String, dynamic> map) {
     // Helper functions for safe type conversion
-    int? _parseInt(dynamic value) {
+    int? parseInt(dynamic value) {
       if (value == null) return null;
       if (value is int) return value;
       if (value is String) return int.tryParse(value);
@@ -28,7 +28,7 @@ class CapitalSettingsModel {
       return null;
     }
 
-    double _parseDouble(dynamic value, {double defaultValue = 0.0}) {
+    double parseDouble(dynamic value, {double defaultValue = 0.0}) {
       if (value == null) return defaultValue;
       if (value is double) return value;
       if (value is int) return value.toDouble();
@@ -37,7 +37,7 @@ class CapitalSettingsModel {
       return defaultValue;
     }
 
-    bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    bool parseBool(dynamic value, {bool defaultValue = false}) {
       if (value == null) return defaultValue;
       if (value is bool) return value;
       if (value is int) return value == 1;
@@ -50,14 +50,14 @@ class CapitalSettingsModel {
     }
 
     return CapitalSettingsModel(
-      valeurPart: _parseDouble(map['valeur_part']),
-      nombreMinParts: _parseInt(map['nombre_min_parts']) ?? 1,
-      nombreMaxParts: _parseInt(map['nombre_max_parts']),
-      liberationObligatoire: _parseBool(map['liberation_obligatoire']),
-      delaiLiberationJours: _parseInt(map['delai_liberation_jours']),
-      dividendesActives: _parseBool(map['dividendes_actives']),
+      valeurPart: parseDouble(map['valeur_part']),
+      nombreMinParts: parseInt(map['nombre_min_parts']) ?? 1,
+      nombreMaxParts: parseInt(map['nombre_max_parts']),
+      liberationObligatoire: parseBool(map['liberation_obligatoire']),
+      delaiLiberationJours: parseInt(map['delai_liberation_jours']),
+      dividendesActives: parseBool(map['dividendes_actives']),
       tauxDividende: map['taux_dividende'] != null
-          ? _parseDouble(map['taux_dividende'])
+          ? parseDouble(map['taux_dividende'])
           : null,
     );
   }

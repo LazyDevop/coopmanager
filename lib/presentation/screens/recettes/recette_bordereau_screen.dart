@@ -10,6 +10,8 @@ import '../../viewmodels/recette_viewmodel.dart';
 import '../../../services/recette/recette_service.dart';
 import '../../../services/adherent/adherent_service.dart';
 import '../../../data/models/adherent_model.dart';
+import '../../../services/document/pdf_template_engine.dart';
+import '../../../services/document/pdf_utils.dart';
 
 class RecetteBordereauScreen extends StatefulWidget {
   final int adherentId;
@@ -84,42 +86,50 @@ class _RecetteBordereauScreenState extends State<RecetteBordereauScreen> {
       // Obtenir le taux de commission
       final commissionRate = await _recetteService.getCommissionRate();
 
+      final baseFont = await PdfUtils.loadBaseFont();
+      final boldFont = await PdfUtils.loadBoldFont();
+      final italicFont = await PdfUtils.loadItalicFont();
+      final coopSettings = await PdfUtils.loadCooperativeSettings();
+      final meta = await PdfUtils.loadDocumentMeta(
+        'bordereau_recette_${widget.adherentId}_${DateTime.now().millisecondsSinceEpoch}',
+        '',
+      );
+      const templateEngine = PdfTemplateEngine();
+
       // Créer le PDF
       final pdf = pw.Document();
 
       pdf.addPage(
-        pw.Page(
+        pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(40),
+          theme: pw.ThemeData.withFont(
+            base: baseFont,
+            bold: boldFont,
+            italic: italicFont,
+          ),
+          header: templateEngine.buildHeader(
+            coopSettings,
+            documentTitle: 'BORDEREAU DE RECETTE',
+            logoBytes: meta.logoBytes,
+          ),
+          footer: templateEngine.buildFooter(
+            coopSettings,
+            documentSettings: meta.documentSettings,
+            documentReference: meta.referenceDocument,
+            qrData: meta.qrData,
+            generatedAt: meta.generatedAt,
+          ),
           build: (context) {
-            return pw.Column(
+            return [
+              pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                // En-tête
-                pw.Header(
-                  level: 0,
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'BORDEREAU DE RECETTE',
-                        style: pw.TextStyle(
-                          fontSize: 24,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      pw.SizedBox(height: 8),
-                      pw.Text(
-                        'Coopérative de Cacaoculteurs',
-                        style: pw.TextStyle(fontSize: 14),
-                      ),
-                      pw.Text(
-                        'Date: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}',
-                        style: pw.TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
+                pw.Text(
+                  'Date: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}',
+                  style: const pw.TextStyle(fontSize: 12),
                 ),
-                pw.SizedBox(height: 20),
+                pw.SizedBox(height: 12),
 
                 // Informations adhérent
                 pw.Container(
@@ -221,15 +231,17 @@ class _RecetteBordereauScreenState extends State<RecetteBordereauScreen> {
                   ),
                 ),
               ],
-            );
+            ),
+            ];
           },
         ),
       );
 
       // Afficher le PDF
       if (mounted) {
+        final pdfBytes = await pdf.save();
         await Printing.layoutPdf(
-          onLayout: (format) async => pdf.save(),
+          onLayout: (format) async => pdfBytes,
         );
       }
 
@@ -311,9 +323,9 @@ class _RecetteBordereauScreenState extends State<RecetteBordereauScreen> {
             if (_adherent != null) ...[
               Card(
                 child: ListTile(
-                  leading: SizedBox(
+                  leading: const SizedBox(
                     width: 24,
-                    child: const Icon(Icons.person),
+                    child: Icon(Icons.person),
                   ),
                   title: Text(_adherent!.fullName),
                   subtitle: Text('Code: ${_adherent!.code}'),

@@ -1,5 +1,5 @@
 /// Modèles pour le module Capital Social & Actionnariat
-/// 
+///
 /// Gère les parts sociales, souscriptions, libérations et mouvements de capital
 
 /// Modèle pour un actionnaire (adhérent possédant des parts)
@@ -13,7 +13,13 @@ class ActionnaireModel {
   final DateTime createdAt;
   final int? createdBy;
   final DateTime? updatedAt;
-  
+
+  // Infos adhérent (pour affichage/recherche)
+  final String? adherentCode;
+  final String? adherentNom;
+  final String? adherentPrenom;
+  final String? adherentTelephone;
+
   // Statistiques calculées
   final int? nombrePartsDetenues;
   final double? capitalSouscrit;
@@ -32,6 +38,10 @@ class ActionnaireModel {
     required this.createdAt,
     this.createdBy,
     this.updatedAt,
+    this.adherentCode,
+    this.adherentNom,
+    this.adherentPrenom,
+    this.adherentTelephone,
     this.nombrePartsDetenues,
     this.capitalSouscrit,
     this.capitalLibere,
@@ -39,6 +49,13 @@ class ActionnaireModel {
     this.derniereSouscription,
     this.derniereLiberation,
   });
+
+  String get adherentDisplayName {
+    final prenom = (adherentPrenom ?? '').trim();
+    final nom = (adherentNom ?? '').trim();
+    final full = '$prenom $nom'.trim();
+    return full.isEmpty ? codeActionnaire : full;
+  }
 
   // Statuts
   static const String statutActif = 'actif';
@@ -84,6 +101,10 @@ class ActionnaireModel {
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)
           : null,
+      adherentCode: map['adherent_code'] as String?,
+      adherentNom: map['adherent_nom'] as String?,
+      adherentPrenom: map['adherent_prenom'] as String?,
+      adherentTelephone: map['adherent_telephone'] as String?,
       nombrePartsDetenues: map['nombre_parts_detenues'] as int?,
       capitalSouscrit: map['capital_souscrit'] != null
           ? (map['capital_souscrit'] as num).toDouble()
@@ -127,6 +148,10 @@ class ActionnaireModel {
     DateTime? createdAt,
     int? createdBy,
     DateTime? updatedAt,
+    String? adherentCode,
+    String? adherentNom,
+    String? adherentPrenom,
+    String? adherentTelephone,
     int? nombrePartsDetenues,
     double? capitalSouscrit,
     double? capitalLibere,
@@ -144,6 +169,10 @@ class ActionnaireModel {
       createdAt: createdAt ?? this.createdAt,
       createdBy: createdBy ?? this.createdBy,
       updatedAt: updatedAt ?? this.updatedAt,
+      adherentCode: adherentCode ?? this.adherentCode,
+      adherentNom: adherentNom ?? this.adherentNom,
+      adherentPrenom: adherentPrenom ?? this.adherentPrenom,
+      adherentTelephone: adherentTelephone ?? this.adherentTelephone,
       nombrePartsDetenues: nombrePartsDetenues ?? this.nombrePartsDetenues,
       capitalSouscrit: capitalSouscrit ?? this.capitalSouscrit,
       capitalLibere: capitalLibere ?? this.capitalLibere,
@@ -231,7 +260,7 @@ class SouscriptionCapitalModel {
   final String? notes;
   final DateTime createdAt;
   final int createdBy;
-  
+
   // Documents générés
   final String? certificatPdfPath;
   final String? qrCodeHash;
@@ -307,7 +336,8 @@ class SouscriptionCapitalModel {
     return SouscriptionCapitalModel(
       id: id ?? this.id,
       actionnaireId: actionnaireId ?? this.actionnaireId,
-      nombrePartsSouscrites: nombrePartsSouscrites ?? this.nombrePartsSouscrites,
+      nombrePartsSouscrites:
+          nombrePartsSouscrites ?? this.nombrePartsSouscrites,
       montantSouscrit: montantSouscrit ?? this.montantSouscrit,
       dateSouscription: dateSouscription ?? this.dateSouscription,
       campagneId: campagneId ?? this.campagneId,
@@ -334,7 +364,7 @@ class LiberationCapitalModel {
   final String? qrCodeHash;
   final int createdBy;
   final DateTime createdAt;
-  
+
   // Lien comptabilité
   final int? ecritureComptableId;
 
@@ -383,7 +413,8 @@ class LiberationCapitalModel {
       if (qrCodeHash != null) 'qr_code_hash': qrCodeHash,
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
-      if (ecritureComptableId != null) 'ecriture_comptable_id': ecritureComptableId,
+      if (ecritureComptableId != null)
+        'ecriture_comptable_id': ecritureComptableId,
     };
   }
 
@@ -496,4 +527,3 @@ class MouvementCapitalModel {
     };
   }
 }
-

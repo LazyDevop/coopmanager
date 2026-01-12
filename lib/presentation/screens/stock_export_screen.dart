@@ -9,6 +9,8 @@ import 'package:path_provider/path_provider.dart';
 import '../viewmodels/stock_viewmodel.dart';
 import '../../data/models/stock_movement_model.dart';
 import '../../data/models/stock_model.dart';
+import '../../services/document/pdf_template_engine.dart';
+import '../../services/document/pdf_utils.dart';
 
 class StockExportScreen extends StatefulWidget {
   const StockExportScreen({super.key});
@@ -31,24 +33,43 @@ class _StockExportScreenState extends State<StockExportScreen> {
       await stockViewModel.loadStocks();
       await stockViewModel.loadMouvements();
 
+      final baseFont = await PdfUtils.loadBaseFont();
+      final boldFont = await PdfUtils.loadBoldFont();
+      final italicFont = await PdfUtils.loadItalicFont();
+      final coopSettings = await PdfUtils.loadCooperativeSettings();
+      final meta = await PdfUtils.loadDocumentMeta(
+        'stocks_${DateTime.now().millisecondsSinceEpoch}',
+        '',
+      );
+      const templateEngine = PdfTemplateEngine();
+
       final pdf = pw.Document();
 
       // Page 1: Résumé des stocks
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
+          theme: pw.ThemeData.withFont(
+            base: baseFont,
+            bold: boldFont,
+            italic: italicFont,
+          ),
+          header: templateEngine.buildHeader(
+            coopSettings,
+            documentTitle: 'RAPPORT DES STOCKS',
+            logoBytes: meta.logoBytes,
+          ),
+          footer: templateEngine.buildFooter(
+            coopSettings,
+            documentSettings: meta.documentSettings,
+            documentReference: meta.referenceDocument,
+            qrData: meta.qrData,
+            generatedAt: meta.generatedAt,
+          ),
           build: (context) => [
-            pw.Header(
-              level: 0,
-              child: pw.Text(
-                'Rapport des Stocks - CoopManager',
-                style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-              ),
-            ),
-            pw.SizedBox(height: 20),
             pw.Text(
               'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
-              style: pw.TextStyle(fontSize: 12),
+              style: const pw.TextStyle(fontSize: 12),
             ),
             pw.SizedBox(height: 20),
             pw.Text(
@@ -119,15 +140,24 @@ class _StockExportScreenState extends State<StockExportScreen> {
         pdf.addPage(
           pw.MultiPage(
             pageFormat: PdfPageFormat.a4,
+            theme: pw.ThemeData.withFont(
+              base: baseFont,
+              bold: boldFont,
+              italic: italicFont,
+            ),
+            header: templateEngine.buildHeader(
+              coopSettings,
+              documentTitle: 'HISTORIQUE DES MOUVEMENTS',
+              logoBytes: meta.logoBytes,
+            ),
+            footer: templateEngine.buildFooter(
+              coopSettings,
+              documentSettings: meta.documentSettings,
+              documentReference: meta.referenceDocument,
+              qrData: meta.qrData,
+              generatedAt: meta.generatedAt,
+            ),
             build: (context) => [
-              pw.Header(
-                level: 0,
-                child: pw.Text(
-                  'Historique des Mouvements',
-                  style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-                ),
-              ),
-              pw.SizedBox(height: 20),
               pw.Table(
                 border: pw.TableBorder.all(),
                 children: [

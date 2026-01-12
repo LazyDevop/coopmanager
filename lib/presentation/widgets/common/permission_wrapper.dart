@@ -121,12 +121,12 @@ class PermissionButton {
   }) {
     return WritePermissionWrapper(
       uiViewCode: uiViewCode,
+      fallback: const SizedBox.shrink(),
       child: ElevatedButton.icon(
         onPressed: onPressed,
         icon: icon != null ? Icon(icon) : const Icon(Icons.add),
         label: Text(label),
       ),
-      fallback: const SizedBox.shrink(),
     );
   }
 
@@ -139,12 +139,12 @@ class PermissionButton {
   }) {
     return WritePermissionWrapper(
       uiViewCode: uiViewCode,
+      fallback: const SizedBox.shrink(),
       child: IconButton(
         onPressed: onPressed,
         icon: icon != null ? Icon(icon) : const Icon(Icons.edit),
         tooltip: 'Modifier',
       ),
-      fallback: const SizedBox.shrink(),
     );
   }
 
@@ -157,13 +157,13 @@ class PermissionButton {
   }) {
     return DeletePermissionWrapper(
       uiViewCode: uiViewCode,
+      fallback: const SizedBox.shrink(),
       child: IconButton(
         onPressed: onPressed,
         icon: icon != null ? Icon(icon) : const Icon(Icons.delete),
         tooltip: 'Supprimer',
         color: Colors.red,
       ),
-      fallback: const SizedBox.shrink(),
     );
   }
 }

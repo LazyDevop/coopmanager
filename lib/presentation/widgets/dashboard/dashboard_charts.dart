@@ -16,9 +16,9 @@ class SalesBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (data.isEmpty) {
-      return Card(
+      return const Card(
         child: Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: EdgeInsets.all(32.0),
           child: Center(
             child: Text(
               'Aucune donnée disponible',
@@ -155,9 +155,9 @@ class TrendLineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (data.isEmpty) {
-      return Card(
+      return const Card(
         child: Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: EdgeInsets.all(32.0),
           child: Center(
             child: Text(
               'Aucune donnée disponible',
@@ -189,8 +189,8 @@ class TrendLineChart extends StatelessWidget {
               height: 200,
               child: LineChart(
                 LineChartData(
-                  gridData: FlGridData(show: true),
-                  titlesData: FlTitlesData(show: true),
+                  gridData: const FlGridData(show: true),
+                  titlesData: const FlTitlesData(show: true),
                   borderData: FlBorderData(show: false),
                   lineBarsData: [
                     LineChartBarData(
@@ -231,9 +231,9 @@ class PieChartWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (data.isEmpty) {
-      return Card(
+      return const Card(
         child: Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: EdgeInsets.all(32.0),
           child: Center(
             child: Text(
               'Aucune donnée disponible',

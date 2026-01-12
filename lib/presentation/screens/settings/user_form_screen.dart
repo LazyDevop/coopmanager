@@ -284,7 +284,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
 
               // Rôle
               DropdownButtonFormField<String>(
-                value: _selectedRole,
+                initialValue: _selectedRole,
                 decoration: const InputDecoration(
                   labelText: 'Rôle *',
                   prefixIcon: Icon(Icons.verified_user),

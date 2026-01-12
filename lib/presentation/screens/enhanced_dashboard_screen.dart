@@ -203,13 +203,13 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
         ),
         StatCard(
           title: 'Recettes',
-          value: '${_formatCurrency(recetteViewModel.totalRecettes)}',
+          value: _formatCurrency(recetteViewModel.totalRecettes),
           icon: Icons.attach_money,
           color: Colors.teal,
         ),
         StatCard(
           title: 'Paiements',
-          value: '${_formatCurrency(_calculateTotalPaiements(venteViewModel))}',
+          value: _formatCurrency(_calculateTotalPaiements(venteViewModel)),
           icon: Icons.payment,
           color: Colors.green,
         ),
@@ -244,7 +244,7 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
         ),
         StatCard(
           title: 'Recettes nettes',
-          value: '${_formatCurrency(recetteViewModel.totalRecettes)}',
+          value: _formatCurrency(recetteViewModel.totalRecettes),
           icon: Icons.attach_money,
           color: Colors.teal,
         ),

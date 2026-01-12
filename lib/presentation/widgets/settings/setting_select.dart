@@ -45,7 +45,7 @@ class SettingSelect<T> extends StatelessWidget {
         ],
         const SizedBox(height: 8),
         DropdownButtonFormField<T>(
-          value: value,
+          initialValue: value,
           items: options.map((option) {
             return DropdownMenuItem<T>(
               value: option.value,
@@ -60,7 +60,7 @@ class SettingSelect<T> extends StatelessWidget {
             filled: true,
             fillColor: enabled
                 ? theme.colorScheme.surface
-                : theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
           ),
         ),
         const SizedBox(height: 16),

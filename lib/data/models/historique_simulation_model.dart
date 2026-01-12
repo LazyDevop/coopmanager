@@ -1,6 +1,8 @@
 /// Modèle de données pour l'Historique des Simulations (V2)
-/// 
+///
 /// Conserve l'historique des simulations pour analyse et comparaison
+import 'dart:convert';
+
 class HistoriqueSimulationModel {
   final int? id;
   final int simulationId;
@@ -23,12 +25,33 @@ class HistoriqueSimulationModel {
   });
 
   factory HistoriqueSimulationModel.fromMap(Map<String, dynamic> map) {
+    Map<String, dynamic> parseJsonMap(dynamic raw) {
+      if (raw == null) return <String, dynamic>{};
+      if (raw is Map) {
+        return raw.map((k, v) => MapEntry(k.toString(), v));
+      }
+      if (raw is String) {
+        final trimmed = raw.trim();
+        if (trimmed.isEmpty) return <String, dynamic>{};
+        try {
+          final decoded = jsonDecode(trimmed);
+          if (decoded is Map) {
+            return decoded.map((k, v) => MapEntry(k.toString(), v));
+          }
+        } catch (_) {
+          // Backward-compat: older rows used Map.toString(), which isn't valid JSON.
+          return <String, dynamic>{};
+        }
+      }
+      return <String, dynamic>{};
+    }
+
     return HistoriqueSimulationModel(
       id: map['id'] as int?,
       simulationId: map['simulation_id'] as int,
       action: map['action'] as String,
-      donneesAvant: map['donnees_avant'] as Map<String, dynamic>? ?? {},
-      donneesApres: map['donnees_apres'] as Map<String, dynamic>? ?? {},
+      donneesAvant: parseJsonMap(map['donnees_avant']),
+      donneesApres: parseJsonMap(map['donnees_apres']),
       commentaire: map['commentaire'] as String?,
       userId: map['user_id'] as int?,
       createdAt: DateTime.parse(map['created_at'] as String),
@@ -40,8 +63,8 @@ class HistoriqueSimulationModel {
       if (id != null) 'id': id,
       'simulation_id': simulationId,
       'action': action,
-      'donnees_avant': donneesAvant.toString(), // Stocker comme JSON string
-      'donnees_apres': donneesApres.toString(), // Stocker comme JSON string
+      'donnees_avant': jsonEncode(donneesAvant),
+      'donnees_apres': jsonEncode(donneesApres),
       'commentaire': commentaire,
       'user_id': userId,
       'created_at': createdAt.toIso8601String(),
@@ -70,4 +93,3 @@ class HistoriqueSimulationModel {
     );
   }
 }
-

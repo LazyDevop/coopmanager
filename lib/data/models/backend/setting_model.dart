@@ -28,7 +28,7 @@ class SettingModel {
     this.editable = true,
     DateTime? createdAt,
     this.updatedAt,
-  }) : id = id ?? Uuid().v4(),
+  }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now();
 
   factory SettingModel.fromMap(Map<String, dynamic> map) {

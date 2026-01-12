@@ -64,18 +64,20 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                 icon: const Icon(Icons.account_balance_wallet),
                 tooltip: 'Clients impayés',
                 onPressed: () {
-                  Navigator.of(context, rootNavigator: false).pushNamed(
-                    AppRoutes.clientsImpayes,
-                  );
+                  Navigator.of(
+                    context,
+                    rootNavigator: false,
+                  ).pushNamed(AppRoutes.clientsImpayes);
                 },
               ),
               IconButton(
                 icon: const Icon(Icons.add),
                 tooltip: 'Nouveau client',
                 onPressed: () {
-                  Navigator.of(context, rootNavigator: false).pushNamed(
-                    AppRoutes.clientAdd,
-                  );
+                  Navigator.of(
+                    context,
+                    rootNavigator: false,
+                  ).pushNamed(AppRoutes.clientAdd);
                 },
               ),
             ],
@@ -91,7 +93,8 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
               TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Rechercher par code, raison sociale, responsable...',
+                  hintText:
+                      'Rechercher par code, raison sociale, responsable...',
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
@@ -120,7 +123,7 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedType,
+                      initialValue: _selectedType,
                       decoration: InputDecoration(
                         labelText: 'Type de client',
                         border: OutlineInputBorder(
@@ -129,27 +132,27 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                         filled: true,
                         fillColor: Colors.white,
                       ),
-                      items: [
-                        const DropdownMenuItem(value: null, child: Text('Tous')),
+                      items: const [
+                        DropdownMenuItem(value: null, child: Text('Tous')),
                         DropdownMenuItem(
                           value: ClientModel.typeLocal,
-                          child: const Text('Acheteur local'),
+                          child: Text('Acheteur local'),
                         ),
                         DropdownMenuItem(
                           value: ClientModel.typeGrossiste,
-                          child: const Text('Grossiste'),
+                          child: Text('Grossiste'),
                         ),
                         DropdownMenuItem(
                           value: ClientModel.typeExportateur,
-                          child: const Text('Exportateur'),
+                          child: Text('Exportateur'),
                         ),
                         DropdownMenuItem(
                           value: ClientModel.typeIndustriel,
-                          child: const Text('Industriel'),
+                          child: Text('Industriel'),
                         ),
                         DropdownMenuItem(
                           value: ClientModel.typeOccasionnel,
-                          child: const Text('Occasionnel'),
+                          child: Text('Occasionnel'),
                         ),
                       ],
                       onChanged: (value) {
@@ -163,7 +166,7 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedStatut,
+                      initialValue: _selectedStatut,
                       decoration: InputDecoration(
                         labelText: 'Statut',
                         border: OutlineInputBorder(
@@ -174,10 +177,22 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                       ),
                       items: const [
                         DropdownMenuItem(value: null, child: Text('Tous')),
-                        DropdownMenuItem(value: ClientModel.statutActif, child: Text('Actif')),
-                        DropdownMenuItem(value: ClientModel.statutSuspendu, child: Text('Suspendu')),
-                        DropdownMenuItem(value: ClientModel.statutBloque, child: Text('Bloqué')),
-                        DropdownMenuItem(value: ClientModel.statutArchive, child: Text('Archivé')),
+                        DropdownMenuItem(
+                          value: ClientModel.statutActif,
+                          child: Text('Actif'),
+                        ),
+                        DropdownMenuItem(
+                          value: ClientModel.statutSuspendu,
+                          child: Text('Suspendu'),
+                        ),
+                        DropdownMenuItem(
+                          value: ClientModel.statutBloque,
+                          child: Text('Bloqué'),
+                        ),
+                        DropdownMenuItem(
+                          value: ClientModel.statutArchive,
+                          child: Text('Archivé'),
+                        ),
                       ],
                       onChanged: (value) {
                         setState(() {
@@ -222,7 +237,11 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red.shade300,
+                      ),
                       const SizedBox(height: 16),
                       Text(viewModel.errorMessage!),
                       const SizedBox(height: 16),
@@ -240,7 +259,11 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.business_outlined, size: 64, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.business_outlined,
+                        size: 64,
+                        color: Colors.grey.shade400,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Aucun client trouvé',
@@ -249,9 +272,10 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         onPressed: () {
-                          Navigator.of(context, rootNavigator: false).pushNamed(
-                            AppRoutes.clientAdd,
-                          );
+                          Navigator.of(
+                            context,
+                            rootNavigator: false,
+                          ).pushNamed(AppRoutes.clientAdd);
                         },
                         icon: const Icon(Icons.add),
                         label: const Text('Créer le premier client'),
@@ -282,7 +306,7 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
   Widget _buildClientCard(BuildContext context, ClientModel client) {
     final numberFormat = NumberFormat('#,##0.00');
     final dateFormat = DateFormat('dd/MM/yyyy');
-    
+
     // Couleur selon le statut et le risque
     Color cardColor = Colors.white;
     if (client.statut == ClientModel.statutBloque) {
@@ -292,7 +316,7 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
     } else if (client.soldeClient > 0) {
       cardColor = Colors.yellow.shade50;
     }
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -300,11 +324,17 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
-          context.read<ClientViewModel>().loadClientById(client.id!);
-          Navigator.of(context, rootNavigator: false).pushNamed(
-            AppRoutes.clientDetail,
-            arguments: client.id,
-          );
+          final id = client.id;
+          if (id == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Client invalide (id manquant)')),
+            );
+            return;
+          }
+          Navigator.of(
+            context,
+            rootNavigator: false,
+          ).pushNamed(AppRoutes.clientDetail, arguments: id);
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -346,7 +376,10 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                         if (client.estARisque)
                           Container(
                             margin: const EdgeInsets.only(left: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.orange.shade100,
                               borderRadius: BorderRadius.circular(8),
@@ -384,7 +417,11 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.phone, size: 14, color: Colors.grey.shade600),
+                          Icon(
+                            Icons.phone,
+                            size: 14,
+                            color: Colors.grey.shade600,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             client.telephone!,
@@ -408,7 +445,9 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: client.soldeClient > 0 ? Colors.red.shade700 : Colors.green.shade700,
+                      color: client.soldeClient > 0
+                          ? Colors.red.shade700
+                          : Colors.green.shade700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -430,10 +469,13 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                       ),
                       child: FractionallySizedBox(
                         alignment: Alignment.centerLeft,
-                        widthFactor: (client.pourcentageCreditUtilise / 100).clamp(0.0, 1.0),
+                        widthFactor: (client.pourcentageCreditUtilise / 100)
+                            .clamp(0.0, 1.0),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: client.estARisque ? Colors.orange : Colors.green,
+                            color: client.estARisque
+                                ? Colors.orange
+                                : Colors.green,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -452,7 +494,7 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
   Widget _buildStatutBadge(String statut) {
     Color color;
     String label;
-    
+
     switch (statut) {
       case ClientModel.statutActif:
         color = Colors.green;
@@ -474,7 +516,7 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
         color = Colors.grey;
         label = statut;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(

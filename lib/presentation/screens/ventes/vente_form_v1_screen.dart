@@ -124,7 +124,7 @@ class _VenteFormV1ScreenState extends State<VenteFormV1Screen> {
     return Consumer<VenteViewModel>(
       builder: (context, viewModel, child) {
         return DropdownButtonFormField<int>(
-          value: _selectedClientId,
+          initialValue: _selectedClientId,
           decoration: InputDecoration(
             labelText: 'Client (Acheteur) *',
             prefixIcon: const Icon(Icons.business),
@@ -164,7 +164,7 @@ class _VenteFormV1ScreenState extends State<VenteFormV1Screen> {
         }
 
         return DropdownButtonFormField<int>(
-          value: _selectedCampagneId,
+          initialValue: _selectedCampagneId,
           decoration: InputDecoration(
             labelText: 'Campagne agricole *',
             prefixIcon: const Icon(Icons.calendar_today),
@@ -208,7 +208,7 @@ class _VenteFormV1ScreenState extends State<VenteFormV1Screen> {
     return Consumer<VenteViewModel>(
       builder: (context, viewModel, child) {
         return DropdownButtonFormField<int>(
-          value: _selectedAdherentId,
+          initialValue: _selectedAdherentId,
           decoration: InputDecoration(
             labelText: 'Adhérent (Vendeur) *',
             prefixIcon: const Icon(Icons.person),
@@ -453,7 +453,7 @@ class _VenteFormV1ScreenState extends State<VenteFormV1Screen> {
 
   Widget _buildModePaiementField() {
     return DropdownButtonFormField<String>(
-      value: _modePaiement,
+      initialValue: _modePaiement,
       decoration: InputDecoration(
         labelText: 'Mode de paiement',
         prefixIcon: const Icon(Icons.payment),

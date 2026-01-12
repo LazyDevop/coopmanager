@@ -1,5 +1,3 @@
-/// Repository pour les paramètres spécialisés (Clean Architecture)
-import 'package:sqflite_common/sqlite_api.dart';
 import '../../../data/models/backend/specialized_settings_models.dart';
 import '../../database/db_initializer.dart';
 

@@ -312,7 +312,7 @@ class _CooperativeSettingsScreenState extends State<CooperativeSettingsScreen> {
     // (seulement si pas de modifications en cours par l'utilisateur)
     if (settings != null && !_hasChanges && _lastLoadedRaisonSociale != settings.raisonSociale) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && settings != null && !_hasChanges) {
+        if (mounted && !_hasChanges) {
           _raisonSocialeController.text = settings.raisonSociale;
           _sigleController.text = settings.sigle ?? '';
           _formeJuridiqueController.text = settings.formeJuridique ?? '';
@@ -333,7 +333,7 @@ class _CooperativeSettingsScreenState extends State<CooperativeSettingsScreen> {
     // Recharger automatiquement si les paramètres sont chargés mais les champs sont vides
     if (settings != null && _raisonSocialeController.text.isEmpty && !provider.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && settings != null && !_hasChanges) {
+        if (mounted && !_hasChanges) {
           _loadSettings();
         }
       });

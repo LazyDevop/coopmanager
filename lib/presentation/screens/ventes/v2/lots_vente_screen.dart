@@ -346,7 +346,7 @@ class _LotsVenteScreenState extends State<LotsVenteScreen> {
             children: [
               if (type == 'campagne')
                 DropdownButtonFormField<int?>(
-                  value: selectedCampagneId,
+                  initialValue: selectedCampagneId,
                   decoration: const InputDecoration(
                     labelText: 'Campagne',
                     border: OutlineInputBorder(),
@@ -362,7 +362,7 @@ class _LotsVenteScreenState extends State<LotsVenteScreen> {
                 ),
               if (type == 'qualite') ...[
                 DropdownButtonFormField<String?>(
-                  value: selectedQualite,
+                  initialValue: selectedQualite,
                   decoration: const InputDecoration(
                     labelText: 'Qualité',
                     border: OutlineInputBorder(),
@@ -376,7 +376,7 @@ class _LotsVenteScreenState extends State<LotsVenteScreen> {
                 ),
                 if (selectedCampagneId == null)
                   DropdownButtonFormField<int?>(
-                    value: selectedCampagneId,
+                    initialValue: selectedCampagneId,
                     decoration: const InputDecoration(
                       labelText: 'Campagne (optionnel)',
                       border: OutlineInputBorder(),
@@ -393,7 +393,7 @@ class _LotsVenteScreenState extends State<LotsVenteScreen> {
               ],
               if (type == 'categorie') ...[
                 DropdownButtonFormField<String?>(
-                  value: selectedCategorie,
+                  initialValue: selectedCategorie,
                   decoration: const InputDecoration(
                     labelText: 'Catégorie Producteur',
                     border: OutlineInputBorder(),
@@ -407,7 +407,7 @@ class _LotsVenteScreenState extends State<LotsVenteScreen> {
                 ),
                 if (selectedCampagneId == null)
                   DropdownButtonFormField<int?>(
-                    value: selectedCampagneId,
+                    initialValue: selectedCampagneId,
                     decoration: const InputDecoration(
                       labelText: 'Campagne (optionnel)',
                       border: OutlineInputBorder(),
@@ -443,10 +443,10 @@ class _LotsVenteScreenState extends State<LotsVenteScreen> {
             onPressed: () async {
               if (prixController.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Prix requis'),
+                  const SnackBar(
+                    content: Text('Prix requis'),
                     backgroundColor: AppTheme.errorColor,
-                    duration: const Duration(seconds: 3),
+                    duration: Duration(seconds: 3),
                   ),
                 );
                 return;
@@ -482,10 +482,10 @@ class _LotsVenteScreenState extends State<LotsVenteScreen> {
                 Navigator.pop(context);
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Lot créé avec succès'),
+                    const SnackBar(
+                      content: Text('Lot créé avec succès'),
                       backgroundColor: AppTheme.successColor,
-                      duration: const Duration(seconds: 3),
+                      duration: Duration(seconds: 3),
                     ),
                   );
                 } else {
@@ -545,8 +545,8 @@ class _LotsVenteScreenState extends State<LotsVenteScreen> {
                       title: Text('Adhérent #${detail.adherentId}'),
                       trailing: Text('${detail.quantite.toStringAsFixed(2)} kg'),
                       leading: detail.isExclu
-                          ? Icon(Icons.cancel, color: AppTheme.errorColor)
-                          : Icon(Icons.check_circle, color: AppTheme.successColor),
+                          ? const Icon(Icons.cancel, color: AppTheme.errorColor)
+                          : const Icon(Icons.check_circle, color: AppTheme.successColor),
                     )),
                 ],
               ),
@@ -588,10 +588,10 @@ class _LotsVenteScreenState extends State<LotsVenteScreen> {
 
     // TODO: Implémenter la validation du lot
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Validation du lot à implémenter'),
+      const SnackBar(
+        content: Text('Validation du lot à implémenter'),
         backgroundColor: AppTheme.infoColor,
-        duration: const Duration(seconds: 3),
+        duration: Duration(seconds: 3),
       ),
     );
   }

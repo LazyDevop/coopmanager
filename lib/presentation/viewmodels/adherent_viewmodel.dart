@@ -22,7 +22,7 @@ class AdherentViewModel extends ChangeNotifier {
   List<String> _villages = [];
   
   // Intégration Ventes
-  List<VenteAdherentModel> _ventesAdherent = [];
+  final List<VenteAdherentModel> _ventesAdherent = [];
   Map<String, dynamic>? _stockDisponible;
   Map<String, dynamic>? _statistiquesVentes;
   

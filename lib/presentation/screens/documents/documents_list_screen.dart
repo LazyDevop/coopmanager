@@ -124,7 +124,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedType,
+                      initialValue: _selectedType,
                       decoration: InputDecoration(
                         labelText: 'Type de document',
                         border: OutlineInputBorder(
@@ -133,55 +133,55 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
                         filled: true,
                         fillColor: Colors.white,
                       ),
-                      items: [
-                        const DropdownMenuItem(value: null, child: Text('Tous')),
+                      items: const [
+                        DropdownMenuItem(value: null, child: Text('Tous')),
                         DropdownMenuItem(
                           value: DocumentModel.typeRecuDepot,
-                          child: const Text('Reçu de dépôt'),
+                          child: Text('Reçu de dépôt'),
                         ),
                         DropdownMenuItem(
                           value: DocumentModel.typeBordereauPesee,
-                          child: const Text('Bordereau de pesée'),
+                          child: Text('Bordereau de pesée'),
                         ),
                         DropdownMenuItem(
                           value: DocumentModel.typeFactureClient,
-                          child: const Text('Facture client'),
+                          child: Text('Facture client'),
                         ),
                         DropdownMenuItem(
                           value: DocumentModel.typeBonLivraison,
-                          child: const Text('Bon de livraison'),
+                          child: Text('Bon de livraison'),
                         ),
                         DropdownMenuItem(
                           value: DocumentModel.typeBordereauPaiement,
-                          child: const Text('Bordereau de paiement'),
+                          child: Text('Bordereau de paiement'),
                         ),
                         DropdownMenuItem(
                           value: DocumentModel.typeRecuPaiement,
-                          child: const Text('Reçu de paiement'),
+                          child: Text('Reçu de paiement'),
                         ),
                         DropdownMenuItem(
                           value: DocumentModel.typeEtatCompte,
-                          child: const Text('État de compte'),
+                          child: Text('État de compte'),
                         ),
                         DropdownMenuItem(
                           value: DocumentModel.typeEtatParticipation,
-                          child: const Text('État de participation'),
+                          child: Text('État de participation'),
                         ),
                         DropdownMenuItem(
                           value: DocumentModel.typeJournalVentes,
-                          child: const Text('Journal des ventes'),
+                          child: Text('Journal des ventes'),
                         ),
                         DropdownMenuItem(
                           value: DocumentModel.typeJournalCaisse,
-                          child: const Text('Journal de caisse'),
+                          child: Text('Journal de caisse'),
                         ),
                         DropdownMenuItem(
                           value: DocumentModel.typeJournalPaiements,
-                          child: const Text('Journal des paiements'),
+                          child: Text('Journal des paiements'),
                         ),
                         DropdownMenuItem(
                           value: DocumentModel.typeRapportSocial,
-                          child: const Text('Rapport social'),
+                          child: Text('Rapport social'),
                         ),
                       ],
                       onChanged: (value) {
@@ -195,7 +195,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedStatut,
+                      initialValue: _selectedStatut,
                       decoration: InputDecoration(
                         labelText: 'Statut',
                         border: OutlineInputBorder(

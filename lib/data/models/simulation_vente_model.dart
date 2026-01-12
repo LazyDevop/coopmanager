@@ -1,6 +1,8 @@
 /// Modèle de données pour une Simulation de Vente (V2)
-/// 
+///
 /// Permet de simuler une vente avant validation avec comparaisons et indicateurs
+import 'dart:convert';
+
 class SimulationVenteModel {
   final int? id;
   final int? lotVenteId; // Si simulation basée sur un lot
@@ -61,6 +63,27 @@ class SimulationVenteModel {
   bool get isPrixSuperieurMoyenne => prixUnitairePropose > prixMoyenPrecedent;
 
   factory SimulationVenteModel.fromMap(Map<String, dynamic> map) {
+    Map<String, dynamic> parseJsonMap(dynamic raw) {
+      if (raw == null) return <String, dynamic>{};
+      if (raw is Map) {
+        return raw.map((k, v) => MapEntry(k.toString(), v));
+      }
+      if (raw is String) {
+        final trimmed = raw.trim();
+        if (trimmed.isEmpty) return <String, dynamic>{};
+        try {
+          final decoded = jsonDecode(trimmed);
+          if (decoded is Map) {
+            return decoded.map((k, v) => MapEntry(k.toString(), v));
+          }
+        } catch (_) {
+          // Backward-compat: older rows used Map.toString(), which isn't valid JSON.
+          return <String, dynamic>{};
+        }
+      }
+      return <String, dynamic>{};
+    }
+
     return SimulationVenteModel(
       id: map['id'] as int?,
       lotVenteId: map['lot_vente_id'] as int?,
@@ -71,11 +94,13 @@ class SimulationVenteModel {
       montantBrut: (map['montant_brut'] as num).toDouble(),
       montantCommission: (map['montant_commission'] as num).toDouble(),
       montantNet: (map['montant_net'] as num).toDouble(),
-      montantFondsSocial: (map['montant_fonds_social'] as num?)?.toDouble() ?? 0.0,
+      montantFondsSocial:
+          (map['montant_fonds_social'] as num?)?.toDouble() ?? 0.0,
       prixMoyenJour: (map['prix_moyen_jour'] as num?)?.toDouble() ?? 0.0,
-      prixMoyenPrecedent: (map['prix_moyen_precedent'] as num?)?.toDouble() ?? 0.0,
+      prixMoyenPrecedent:
+          (map['prix_moyen_precedent'] as num?)?.toDouble() ?? 0.0,
       margeCooperative: (map['marge_cooperative'] as num?)?.toDouble() ?? 0.0,
-      indicateurs: map['indicateurs'] as Map<String, dynamic>? ?? {},
+      indicateurs: parseJsonMap(map['indicateurs']),
       statut: map['statut'] as String? ?? 'simulee',
       notes: map['notes'] as String?,
       createdBy: map['created_by'] as int?,
@@ -101,7 +126,7 @@ class SimulationVenteModel {
       'prix_moyen_jour': prixMoyenJour,
       'prix_moyen_precedent': prixMoyenPrecedent,
       'marge_cooperative': margeCooperative,
-      'indicateurs': indicateurs.toString(), // Stocker comme JSON string
+      'indicateurs': jsonEncode(indicateurs),
       'statut': statut,
       'notes': notes,
       'created_by': createdBy,
@@ -154,4 +179,3 @@ class SimulationVenteModel {
     );
   }
 }
-

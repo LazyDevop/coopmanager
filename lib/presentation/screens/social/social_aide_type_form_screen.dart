@@ -201,7 +201,7 @@ class _SocialAideTypeFormScreenState extends State<SocialAideTypeFormScreen> {
 
               // Catégorie
               DropdownButtonFormField<String>(
-                value: _categorie,
+                initialValue: _categorie,
                 decoration: const InputDecoration(
                   labelText: 'Catégorie *',
                 ),
@@ -238,7 +238,7 @@ class _SocialAideTypeFormScreenState extends State<SocialAideTypeFormScreen> {
               if (_estRemboursable) ...[
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _modeRemboursement,
+                  initialValue: _modeRemboursement,
                   decoration: const InputDecoration(
                     labelText: 'Mode de remboursement',
                     helperText: 'Comment l\'aide sera remboursée',

@@ -41,7 +41,7 @@ class SocialAideTypeModel {
   bool get hasRetenueAutomatique => modeRemboursement == 'RETENUE_RECETTE';
 
   factory SocialAideTypeModel.fromMap(Map<String, dynamic> map) {
-    int? _parseInt(dynamic value) {
+    int? parseInt(dynamic value) {
       if (value == null) return null;
       if (value is int) return value;
       if (value is String) return int.tryParse(value);
@@ -49,7 +49,7 @@ class SocialAideTypeModel {
       return null;
     }
 
-    double? _parseDouble(dynamic value) {
+    double? parseDouble(dynamic value) {
       if (value == null) return null;
       if (value is double) return value;
       if (value is int) return value.toDouble();
@@ -58,7 +58,7 @@ class SocialAideTypeModel {
       return null;
     }
 
-    bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    bool parseBool(dynamic value, {bool defaultValue = false}) {
       if (value == null) return defaultValue;
       if (value is bool) return value;
       if (value is int) return value == 1;
@@ -70,13 +70,13 @@ class SocialAideTypeModel {
       return defaultValue;
     }
 
-    String _parseStringRequired(dynamic value, String defaultValue) {
+    String parseStringRequired(dynamic value, String defaultValue) {
       if (value == null) return defaultValue;
       if (value is String) return value.isEmpty ? defaultValue : value;
       return value.toString();
     }
 
-    DateTime? _parseDateTime(dynamic value) {
+    DateTime? parseDateTime(dynamic value) {
       if (value == null) return null;
       if (value is DateTime) return value;
       if (value is String) {
@@ -90,20 +90,20 @@ class SocialAideTypeModel {
     }
 
     return SocialAideTypeModel(
-      id: _parseInt(map['id']),
-      code: _parseStringRequired(map['code'], ''),
-      libelle: _parseStringRequired(map['libelle'], ''),
-      categorie: _parseStringRequired(map['categorie'], 'SOCIALE'),
-      estRemboursable: _parseBool(map['est_remboursable'], defaultValue: false),
-      plafondMontant: _parseDouble(map['plafond_montant']),
-      dureeMaxMois: _parseInt(map['duree_max_mois']),
+      id: parseInt(map['id']),
+      code: parseStringRequired(map['code'], ''),
+      libelle: parseStringRequired(map['libelle'], ''),
+      categorie: parseStringRequired(map['categorie'], 'SOCIALE'),
+      estRemboursable: parseBool(map['est_remboursable'], defaultValue: false),
+      plafondMontant: parseDouble(map['plafond_montant']),
+      dureeMaxMois: parseInt(map['duree_max_mois']),
       modeRemboursement: map['mode_remboursement']?.toString(),
-      activation: _parseBool(map['activation'], defaultValue: true),
+      activation: parseBool(map['activation'], defaultValue: true),
       description: map['description']?.toString(),
-      createdAt: _parseDateTime(map['created_at']) ?? DateTime.now(),
-      updatedAt: _parseDateTime(map['updated_at']),
-      createdBy: _parseInt(map['created_by']),
-      updatedBy: _parseInt(map['updated_by']),
+      createdAt: parseDateTime(map['created_at']) ?? DateTime.now(),
+      updatedAt: parseDateTime(map['updated_at']),
+      createdBy: parseInt(map['created_by']),
+      updatedBy: parseInt(map['updated_by']),
     );
   }
 

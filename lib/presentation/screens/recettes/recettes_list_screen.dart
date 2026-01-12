@@ -5,10 +5,6 @@ import '../../viewmodels/recette_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../../data/models/recette_model.dart';
 import '../../../config/routes/routes.dart';
-import '../../../services/auth/permission_service.dart';
-import 'recette_detail_screen.dart';
-import 'recette_bordereau_screen.dart';
-import 'recette_export_screen.dart';
 
 class RecettesListScreen extends StatefulWidget {
   const RecettesListScreen({super.key});
@@ -20,24 +16,17 @@ class RecettesListScreen extends StatefulWidget {
 class _RecettesListScreenState extends State<RecettesListScreen> {
   bool _hasLoaded = false;
 
+  Future<void> _refreshRecettes() async {
+    await context.read<RecetteViewModel>().loadRecettesSummary();
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasLoaded) {
         _hasLoaded = true;
-        context.read<RecetteViewModel>().loadRecettesSummary();
-      }
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Recharger quand on revient sur cet écran
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _hasLoaded) {
-        context.read<RecetteViewModel>().loadRecettesSummary();
+        _refreshRecettes();
       }
     });
   }
@@ -79,7 +68,14 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
                 icon: const Icon(Icons.download),
                 tooltip: 'Exporter',
                 onPressed: () {
-                  Navigator.of(context, rootNavigator: false).pushNamed(AppRoutes.recetteExport);
+                  Navigator.of(
+                    context,
+                    rootNavigator: false,
+                  ).pushNamed(AppRoutes.recetteExport).then((_) {
+                    if (mounted) {
+                      _refreshRecettes();
+                    }
+                  });
                 },
               ),
             ],
@@ -91,7 +87,7 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
             children: [
               // Statistiques globales
               _buildStatisticsCard(recetteViewModel),
-              
+
               // Liste des recettes
               Expanded(
                 child: RefreshIndicator(
@@ -101,55 +97,61 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
                   child: recetteViewModel.isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : recetteViewModel.recettesSummary.isEmpty
-                          ? ListView(
-                              children: [
-                                SizedBox(
-                                  height: MediaQuery.of(context).size.height * 0.5,
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.receipt_long_outlined,
-                                          size: 64,
-                                          color: Colors.grey.shade400,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'Aucune recette enregistrée',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        if (recetteViewModel.errorMessage != null) ...[
-                                          const SizedBox(height: 8),
-                                          Padding(
-                                            padding: const EdgeInsets.all(16.0),
-                                            child: Text(
-                                              recetteViewModel.errorMessage!,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.red.shade600,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
-                                        ],
-                                      ],
+                      ? ListView(
+                          children: [
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.5,
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.receipt_long_outlined,
+                                      size: 64,
+                                      color: Colors.grey.shade400,
                                     ),
-                                  ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Aucune recette enregistrée',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                    if (recetteViewModel.errorMessage !=
+                                        null) ...[
+                                      const SizedBox(height: 8),
+                                      Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Text(
+                                          recetteViewModel.errorMessage!,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.red.shade600,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
-                              ],
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.all(8),
-                              itemCount: recetteViewModel.recettesSummary.length,
-                              itemBuilder: (context, index) {
-                                final summary = recetteViewModel.recettesSummary[index];
-                                return _buildRecetteCard(context, summary, recetteViewModel);
-                              },
+                              ),
                             ),
+                          ],
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(8),
+                          itemCount: recetteViewModel.recettesSummary.length,
+                          itemBuilder: (context, index) {
+                            final summary =
+                                recetteViewModel.recettesSummary[index];
+                            return _buildRecetteCard(
+                              context,
+                              summary,
+                              recetteViewModel,
+                            );
+                          },
+                        ),
                 ),
               ),
             ],
@@ -199,7 +201,12 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+  Widget _buildStatItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       children: [
         Icon(icon, color: color, size: 24),
@@ -215,10 +222,7 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
         ),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
           textAlign: TextAlign.center,
         ),
       ],
@@ -233,16 +237,17 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
           viewModel.loadRecettesByAdherent(summary.adherentId);
-          Navigator.of(context, rootNavigator: false).pushNamed(
-            AppRoutes.recetteDetail,
-            arguments: summary.adherentId,
-          );
+          Navigator.of(context, rootNavigator: false)
+              .pushNamed(AppRoutes.recetteDetail, arguments: summary.adherentId)
+              .then((_) {
+                if (mounted) {
+                  _refreshRecettes();
+                }
+              });
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -263,7 +268,7 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              
+
               // Informations adhérent
               Expanded(
                 child: Column(
@@ -295,7 +300,11 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.receipt, size: 14, color: Colors.grey.shade600),
+                        Icon(
+                          Icons.receipt,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${summary.nombreRecettes} recette${summary.nombreRecettes > 1 ? 's' : ''}',
@@ -319,7 +328,7 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
                   ],
                 ),
               ),
-              
+
               // Montants
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -335,17 +344,11 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Brut: ${NumberFormat('#,##0').format(summary.totalMontantBrut)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                   Text(
                     'Comm: ${NumberFormat('#,##0').format(summary.totalCommission)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                 ],
               ),
@@ -356,4 +359,3 @@ class _RecettesListScreenState extends State<RecettesListScreen> {
     );
   }
 }
-

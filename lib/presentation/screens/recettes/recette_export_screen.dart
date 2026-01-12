@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../../viewmodels/recette_viewmodel.dart';
+import '../../../services/document/pdf_template_engine.dart';
+import '../../../services/document/pdf_utils.dart';
 
 class RecetteExportScreen extends StatefulWidget {
   const RecetteExportScreen({super.key});
@@ -28,23 +30,42 @@ class _RecetteExportScreenState extends State<RecetteExportScreen> {
       final recetteViewModel = context.read<RecetteViewModel>();
       await recetteViewModel.loadRecettesSummary();
 
+      final baseFont = await PdfUtils.loadBaseFont();
+      final boldFont = await PdfUtils.loadBoldFont();
+      final italicFont = await PdfUtils.loadItalicFont();
+      final coopSettings = await PdfUtils.loadCooperativeSettings();
+      final meta = await PdfUtils.loadDocumentMeta(
+        'recettes_${DateTime.now().millisecondsSinceEpoch}',
+        '',
+      );
+      const templateEngine = PdfTemplateEngine();
+
       final pdf = pw.Document();
 
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
+          theme: pw.ThemeData.withFont(
+            base: baseFont,
+            bold: boldFont,
+            italic: italicFont,
+          ),
+          header: templateEngine.buildHeader(
+            coopSettings,
+            documentTitle: 'RAPPORT DES RECETTES',
+            logoBytes: meta.logoBytes,
+          ),
+          footer: templateEngine.buildFooter(
+            coopSettings,
+            documentSettings: meta.documentSettings,
+            documentReference: meta.referenceDocument,
+            qrData: meta.qrData,
+            generatedAt: meta.generatedAt,
+          ),
           build: (context) => [
-            pw.Header(
-              level: 0,
-              child: pw.Text(
-                'Rapport des Recettes - CoopManager',
-                style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-              ),
-            ),
-            pw.SizedBox(height: 20),
             pw.Text(
               'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
-              style: pw.TextStyle(fontSize: 12),
+              style: const pw.TextStyle(fontSize: 12),
             ),
             pw.SizedBox(height: 20),
             
@@ -116,7 +137,8 @@ class _RecetteExportScreenState extends State<RecetteExportScreen> {
       // Sauvegarder le PDF
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/rapport_recettes_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf');
-      await file.writeAsBytes(await pdf.save());
+      final pdfBytes = await pdf.save();
+      await file.writeAsBytes(pdfBytes);
 
       setState(() {
         _isExporting = false;
@@ -125,7 +147,7 @@ class _RecetteExportScreenState extends State<RecetteExportScreen> {
 
       if (mounted) {
         await Printing.layoutPdf(
-          onLayout: (format) async => pdf.save(),
+          onLayout: (format) async => pdfBytes,
         );
         
         ScaffoldMessenger.of(context).showSnackBar(

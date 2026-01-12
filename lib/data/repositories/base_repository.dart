@@ -1,5 +1,4 @@
 import '../../services/api/api_client.dart';
-import '../../services/api/api_exception.dart';
 import '../../services/integration/sync_service.dart';
 import '../../services/integration/error_handler.dart';
 import '../../data/dto/api_response.dart';

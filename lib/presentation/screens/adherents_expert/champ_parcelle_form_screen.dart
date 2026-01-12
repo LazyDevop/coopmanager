@@ -372,7 +372,7 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
 
               // Type de sol
               DropdownButtonFormField<String>(
-                value: _typeSol,
+                initialValue: _typeSol,
                 decoration: InputDecoration(
                   labelText: 'Type de sol',
                   prefixIcon: const Icon(Icons.terrain),
@@ -408,7 +408,7 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
 
               // État du champ
               DropdownButtonFormField<String>(
-                value: _etatChamp,
+                initialValue: _etatChamp,
                 decoration: InputDecoration(
                   labelText: 'État du champ *',
                   prefixIcon: const Icon(Icons.info),
@@ -460,7 +460,7 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
 
               // Variété de cacao
               DropdownButtonFormField<String>(
-                value: _varieteCacao,
+                initialValue: _varieteCacao,
                 decoration: InputDecoration(
                   labelText: 'Variété de cacao',
                   prefixIcon: const Icon(Icons.eco),
@@ -508,34 +508,12 @@ class _ChampParcelleFormScreenState extends State<ChampParcelleFormScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Densité des arbres associés
-              TextFormField(
-                controller: _densiteArbresAssociesController,
-                decoration: InputDecoration(
-                  labelText: 'Densité des arbres associés (arbres/ha)',
-                  hintText: 'Nombre d\'arbres associés par hectare',
-                  prefixIcon: const Icon(Icons.forest),
-                  suffixText: 'arbres/ha',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    final densite = double.tryParse(value);
-                    if (densite == null || densite < 0) {
-                      return 'La densité doit être un nombre positif';
-                    }
-                  }
-                  return null;
-                },
-              ),
+
               const SizedBox(height: 16),
 
               // Système d'irrigation
               DropdownButtonFormField<String>(
-                value: _systemeIrrigation,
+                initialValue: _systemeIrrigation,
                 decoration: InputDecoration(
                   labelText: 'Système d\'irrigation',
                   prefixIcon: const Icon(Icons.water_drop),

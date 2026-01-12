@@ -91,14 +91,14 @@ class DocumentPreviewScreen extends StatelessWidget {
           ),
           if (document.isVerified) ...[
             const SizedBox(height: 8),
-            Row(
+            const Row(
               children: [
                 Icon(
                   Icons.verified,
                   color: Colors.green,
                   size: 16,
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: 4),
                 Text(
                   'Document vérifié',
                   style: TextStyle(
@@ -270,7 +270,7 @@ class DocumentPreviewScreen extends StatelessWidget {
     // TODO: Récupérer l'ID de l'utilisateur actuel depuis AuthViewModel
     // final authViewModel = context.read<AuthViewModel>();
     // final userId = authViewModel.currentUser?.id ?? 1;
-    final userId = 1; // À remplacer par l'ID réel
+    const userId = 1; // À remplacer par l'ID réel
 
     final confirmed = await showDialog<bool>(
       context: context,

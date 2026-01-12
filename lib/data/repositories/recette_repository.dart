@@ -1,7 +1,6 @@
 import '../models/recette_model.dart';
 import 'base_repository.dart';
 import '../../services/api/api_client.dart';
-import '../../services/api/api_exception.dart';
 import '../../data/dto/api_response.dart';
 import '../../services/integration/error_handler.dart';
 

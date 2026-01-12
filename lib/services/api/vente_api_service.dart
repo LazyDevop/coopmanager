@@ -1,5 +1,4 @@
 import '../api/api_client.dart';
-import '../api/api_exception.dart';
 import '../../data/models/vente_model.dart';
 import '../../data/models/vente_detail_model.dart';
 

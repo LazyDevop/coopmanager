@@ -354,7 +354,7 @@ class ParametrageBackendMigrations {
 
       if (existing.isEmpty) {
         await db.insert('settings', {
-          'id': 'setting-${DateTime.now().millisecondsSinceEpoch}-${category}-$key',
+          'id': 'setting-${DateTime.now().millisecondsSinceEpoch}-$category-$key',
           'cooperative_id': cooperativeId,
           'category': category,
           'key': key,

@@ -72,7 +72,7 @@ class SettingInput extends StatelessWidget {
             filled: true,
             fillColor: enabled
                 ? theme.colorScheme.surface
-                : theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
           ),
         ),
         const SizedBox(height: 16),

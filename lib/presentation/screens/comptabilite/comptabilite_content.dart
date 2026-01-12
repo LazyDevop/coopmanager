@@ -252,7 +252,7 @@ class _ComptabiliteContentState extends State<ComptabiliteContent> {
                 topRight: Radius.circular(12),
               ),
             ),
-            child: Row(
+            child: const Row(
               children: [
                 Expanded(flex: 2, child: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
                 Expanded(flex: 2, child: Text('N°', style: TextStyle(fontWeight: FontWeight.bold))),

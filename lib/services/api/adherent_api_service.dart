@@ -1,5 +1,4 @@
 import '../api/api_client.dart';
-import '../api/api_exception.dart';
 import '../../data/models/adherent_model.dart';
 
 /// Service API pour les opérations sur les adhérents

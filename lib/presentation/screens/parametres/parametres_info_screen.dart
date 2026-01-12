@@ -131,7 +131,7 @@ class _ParametresInfoScreenState extends State<ParametresInfoScreen> with Automa
     // (seulement si pas de modifications en cours par l'utilisateur)
     if (parametres != null && !_hasChanges && _lastLoadedNom != parametres.nomCooperative) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && parametres != null && !_hasChanges) {
+        if (mounted && !_hasChanges) {
           _nomController.text = parametres.nomCooperative;
           _adresseController.text = parametres.adresse ?? '';
           _telephoneController.text = parametres.telephone ?? '';
@@ -144,7 +144,7 @@ class _ParametresInfoScreenState extends State<ParametresInfoScreen> with Automa
     // Recharger automatiquement si les paramètres sont chargés mais les champs sont vides
     if (parametres != null && _nomController.text.isEmpty && !viewModel.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && parametres != null && !_hasChanges) {
+        if (mounted && !_hasChanges) {
           _loadParametres();
         }
       });

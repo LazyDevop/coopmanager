@@ -184,7 +184,7 @@ class _SocialContentState extends State<SocialContent> {
         children: [
           Expanded(
             child: DropdownButtonFormField<String?>(
-              value: _filterStatut,
+              initialValue: _filterStatut,
               decoration: InputDecoration(
                 labelText: 'Statut',
                 border: OutlineInputBorder(
@@ -215,7 +215,7 @@ class _SocialContentState extends State<SocialContent> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return DropdownButtonFormField<int?>(
-                    value: null,
+                    initialValue: null,
                     items: const [],
                     decoration: const InputDecoration(
                       labelText: 'Type d\'aide',
@@ -229,7 +229,7 @@ class _SocialContentState extends State<SocialContent> {
                 
                 final types = snapshot.data!;
                 return DropdownButtonFormField<int?>(
-                  value: _filterTypeId,
+                  initialValue: _filterTypeId,
                   decoration: InputDecoration(
                     labelText: 'Type d\'aide',
                     border: OutlineInputBorder(

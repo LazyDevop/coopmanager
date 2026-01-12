@@ -21,10 +21,10 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _quantiteController = TextEditingController();
   final _prixUnitaireController = TextEditingController();
-  final _acheteurController = TextEditingController();
   final _notesController = TextEditingController();
 
   int? _selectedAdherentId;
+  int? _selectedClientId;
   DateTime? _dateVente;
   String? _modePaiement;
   double? _stockDisponible;
@@ -39,6 +39,7 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = context.read<VenteViewModel>();
       viewModel.loadAdherents();
+      viewModel.loadClients();
     });
   }
 
@@ -46,7 +47,6 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
   void dispose() {
     _quantiteController.dispose();
     _prixUnitaireController.dispose();
-    _acheteurController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -72,14 +72,15 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 700),
                 child: Padding(
-          padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (widget.type == 'individuelle') _buildIndividuelleForm(),
-            if (widget.type == 'groupee') _buildGroupeeForm(),
-            const SizedBox(height: 32),
-            _buildSubmitButton(),
+                    children: [
+                      if (widget.type == 'individuelle')
+                        _buildIndividuelleForm(),
+                      if (widget.type == 'groupee') _buildGroupeeForm(),
+                      const SizedBox(height: 32),
+                      _buildSubmitButton(),
                     ],
                   ),
                 ),
@@ -97,10 +98,12 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
       children: [
         _buildSectionTitle('Informations de la vente'),
         const SizedBox(height: 12),
+        _buildClientAcheteurField(),
+        const SizedBox(height: 16),
         Consumer<VenteViewModel>(
           builder: (context, viewModel, child) {
             return DropdownButtonFormField<int>(
-              value: _selectedAdherentId,
+              initialValue: _selectedAdherentId,
               decoration: InputDecoration(
                 labelText: 'Adhérent *',
                 prefixIcon: const Icon(Icons.person),
@@ -176,9 +179,7 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
           decoration: InputDecoration(
             labelText: 'Quantité (kg) *',
             prefixIcon: const Icon(Icons.scale),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
           keyboardType: TextInputType.number,
           validator: (value) {
@@ -201,9 +202,7 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
           decoration: InputDecoration(
             labelText: 'Prix unitaire (FCFA/kg) *',
             prefixIcon: const Icon(Icons.attach_money),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
           keyboardType: TextInputType.number,
           validator: (value) {
@@ -218,29 +217,19 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
           },
         ),
         const SizedBox(height: 16),
-        TextFormField(
-          controller: _acheteurController,
-          decoration: InputDecoration(
-            labelText: 'Acheteur',
-            prefixIcon: const Icon(Icons.business),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
         DropdownButtonFormField<String>(
-          value: _modePaiement,
+          initialValue: _modePaiement,
           decoration: InputDecoration(
             labelText: 'Mode de paiement',
             prefixIcon: const Icon(Icons.payment),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
           items: const [
             DropdownMenuItem(value: 'especes', child: Text('Espèces')),
-            DropdownMenuItem(value: 'mobile_money', child: Text('Mobile Money')),
+            DropdownMenuItem(
+              value: 'mobile_money',
+              child: Text('Mobile Money'),
+            ),
             DropdownMenuItem(value: 'virement', child: Text('Virement')),
           ],
           onChanged: (value) {
@@ -273,7 +262,9 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
                   ? DateFormat('dd/MM/yyyy').format(_dateVente!)
                   : 'Sélectionner une date',
               style: TextStyle(
-                color: _dateVente != null ? Colors.black87 : Colors.grey.shade600,
+                color: _dateVente != null
+                    ? Colors.black87
+                    : Colors.grey.shade600,
               ),
             ),
           ),
@@ -284,9 +275,7 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
           decoration: InputDecoration(
             labelText: 'Observations',
             prefixIcon: const Icon(Icons.note),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
           maxLines: 3,
         ),
@@ -300,14 +289,14 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
       children: [
         _buildSectionTitle('Informations générales'),
         const SizedBox(height: 12),
+        _buildClientAcheteurField(),
+        const SizedBox(height: 16),
         TextFormField(
           controller: _prixUnitaireController,
           decoration: InputDecoration(
             labelText: 'Prix unitaire (FCFA/kg) *',
             prefixIcon: const Icon(Icons.attach_money),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
           keyboardType: TextInputType.number,
           validator: (value) {
@@ -322,29 +311,19 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
           },
         ),
         const SizedBox(height: 16),
-        TextFormField(
-          controller: _acheteurController,
-          decoration: InputDecoration(
-            labelText: 'Acheteur',
-            prefixIcon: const Icon(Icons.business),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
         DropdownButtonFormField<String>(
-          value: _modePaiement,
+          initialValue: _modePaiement,
           decoration: InputDecoration(
             labelText: 'Mode de paiement',
             prefixIcon: const Icon(Icons.payment),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
           items: const [
             DropdownMenuItem(value: 'especes', child: Text('Espèces')),
-            DropdownMenuItem(value: 'mobile_money', child: Text('Mobile Money')),
+            DropdownMenuItem(
+              value: 'mobile_money',
+              child: Text('Mobile Money'),
+            ),
             DropdownMenuItem(value: 'virement', child: Text('Virement')),
           ],
           onChanged: (value) {
@@ -377,7 +356,9 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
                   ? DateFormat('dd/MM/yyyy').format(_dateVente!)
                   : 'Sélectionner une date',
               style: TextStyle(
-                color: _dateVente != null ? Colors.black87 : Colors.grey.shade600,
+                color: _dateVente != null
+                    ? Colors.black87
+                    : Colors.grey.shade600,
               ),
             ),
           ),
@@ -388,9 +369,7 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
           decoration: InputDecoration(
             labelText: 'Observations',
             prefixIcon: const Icon(Icons.note),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
           maxLines: 3,
         ),
@@ -442,7 +421,7 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
                   child: Consumer<VenteViewModel>(
                     builder: (context, viewModel, child) {
                       return DropdownButtonFormField<int>(
-                        value: item.adherentId,
+                        initialValue: item.adherentId,
                         decoration: const InputDecoration(
                           labelText: 'Adhérent *',
                           isDense: true,
@@ -450,7 +429,9 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
                         items: viewModel.adherents.map((adherent) {
                           return DropdownMenuItem<int>(
                             value: adherent.id,
-                            child: Text('${adherent.code} - ${adherent.fullName}'),
+                            child: Text(
+                              '${adherent.code} - ${adherent.fullName}',
+                            ),
                           );
                         }).toList(),
                         onChanged: (value) {
@@ -498,7 +479,8 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
               keyboardType: TextInputType.number,
               onChanged: (value) {
                 final quantite = double.tryParse(value);
-                if (quantite != null && _prixUnitaireController.text.isNotEmpty) {
+                if (quantite != null &&
+                    _prixUnitaireController.text.isNotEmpty) {
                   final prix = double.tryParse(_prixUnitaireController.text);
                   if (prix != null) {
                     item.montant = quantite * prix;
@@ -551,9 +533,9 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
-              : Text(
+              : const Text(
                   'Créer la vente',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
         );
       },
@@ -562,6 +544,16 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_selectedClientId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez sélectionner un client acheteur'),
+          duration: Duration(seconds: 3),
+        ),
+      );
       return;
     }
 
@@ -591,6 +583,21 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
 
     bool success = false;
 
+    final selectedClientId = _selectedClientId!;
+    final selectedClient = viewModel.clients.where(
+      (c) => c.id == selectedClientId,
+    );
+    if (selectedClient.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Client acheteur introuvable: #$selectedClientId'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+    final acheteur = selectedClient.first.raisonSociale;
+
     if (widget.type == 'individuelle') {
       if (_selectedAdherentId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -606,9 +613,8 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
         adherentId: _selectedAdherentId!,
         quantite: double.parse(_quantiteController.text),
         prixUnitaire: double.parse(_prixUnitaireController.text),
-        acheteur: _acheteurController.text.trim().isEmpty
-            ? null
-            : _acheteurController.text.trim(),
+        acheteur: acheteur,
+        clientId: selectedClientId,
         modePaiement: _modePaiement,
         dateVente: _dateVente!,
         notes: _notesController.text.trim().isEmpty
@@ -645,9 +651,8 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
       success = await viewModel.createVenteGroupee(
         details: details,
         prixUnitaire: prixUnitaire,
-        acheteur: _acheteurController.text.trim().isEmpty
-            ? null
-            : _acheteurController.text.trim(),
+        acheteur: acheteur,
+        clientId: selectedClientId,
         modePaiement: _modePaiement,
         dateVente: _dateVente!,
         notes: _notesController.text.trim().isEmpty
@@ -665,7 +670,7 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
       } catch (e) {
         print('Erreur lors du rechargement des stocks: $e');
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Vente créée avec succès'),
@@ -684,10 +689,11 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
               : null,
         ),
       );
-      
+
       // Si une facture a été créée, naviguer vers le reçu
       if (viewModel.lastCreatedFactureId != null) {
-        Navigator.of(context, rootNavigator: false).pushReplacementNamed(
+        final navigator = Navigator.of(context, rootNavigator: false);
+        navigator.pushNamed(
           AppRoutes.factureDetail,
           arguments: viewModel.lastCreatedFactureId,
         );
@@ -703,6 +709,54 @@ class _VenteFormScreenState extends State<VenteFormScreen> {
         ),
       );
     }
+  }
+
+  Widget _buildClientAcheteurField() {
+    return Consumer<VenteViewModel>(
+      builder: (context, viewModel, child) {
+        final clients = viewModel.clients;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DropdownButtonFormField<int>(
+              value: _selectedClientId,
+              decoration: InputDecoration(
+                labelText: 'Acheteur (Client) *',
+                prefixIcon: const Icon(Icons.business),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                helperText: clients.isEmpty
+                    ? 'Aucun client disponible (module Clients)'
+                    : 'Sélectionnez un client acheteur',
+              ),
+              items: clients
+                  .where((c) => c.id != null)
+                  .map(
+                    (client) => DropdownMenuItem<int>(
+                      value: client.id!,
+                      child: Text(
+                        '${client.codeClient} - ${client.raisonSociale}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: clients.isEmpty
+                  ? null
+                  : (value) {
+                      setState(() => _selectedClientId = value);
+                    },
+              validator: (value) {
+                if (value == null) return 'Le client acheteur est obligatoire';
+                return null;
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

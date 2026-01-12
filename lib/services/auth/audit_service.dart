@@ -1,4 +1,3 @@
-import 'package:sqflite_common/sqlite_api.dart';
 import '../database/db_initializer.dart';
 import '../../data/models/audit_log_model.dart';
 

@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import '../../config/app_config.dart';
 
 /// Service pour la génération de PDF des documents officiels
 /// 

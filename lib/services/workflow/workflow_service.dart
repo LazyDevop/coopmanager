@@ -462,7 +462,7 @@ class WorkflowService {
           quantite: quantite,
           depotId: depotId,
           dateMouvement: dateDepot,
-          commentaire: 'Dépôt de ${quantite} kg${qualite != null ? ' ($qualite)' : ''}',
+          commentaire: 'Dépôt de $quantite kg${qualite != null ? ' ($qualite)' : ''}',
           createdBy: createdBy,
           createdAt: DateTime.now(),
         );
@@ -785,7 +785,7 @@ class WorkflowService {
           action: 'WORKFLOW_MODIFIER_VENTE',
           entityType: 'ventes',
           entityId: venteId,
-          details: 'Vente modifiée: ${ancienneVente.quantiteTotal} kg → ${nouvelleQuantite} kg',
+          details: 'Vente modifiée: ${ancienneVente.quantiteTotal} kg → $nouvelleQuantite kg',
         );
 
         // 10. Notifications

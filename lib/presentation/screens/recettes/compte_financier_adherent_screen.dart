@@ -22,7 +22,7 @@ class CompteFinancierAdherentScreen extends StatefulWidget {
 class _CompteFinancierAdherentScreenState extends State<CompteFinancierAdherentScreen> {
   final PaiementService _paiementService = PaiementService();
   CompteFinancierAdherentModel? _compte;
-  List<TimelineEventModel> _timelineEvents = [];
+  final List<TimelineEventModel> _timelineEvents = [];
   bool _isLoading = true;
   String? _errorMessage;
 

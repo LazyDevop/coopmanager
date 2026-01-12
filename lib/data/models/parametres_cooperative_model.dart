@@ -34,7 +34,7 @@ class ParametresCooperativeModel {
   // Convertir depuis Map (base de données)
   factory ParametresCooperativeModel.fromMap(Map<String, dynamic> map) {
     // Fonction helper pour convertir en int de manière sûre
-    int? _parseInt(dynamic value) {
+    int? parseInt(dynamic value) {
       if (value == null) return null;
       if (value is int) return value;
       if (value is String) return int.tryParse(value);
@@ -43,7 +43,7 @@ class ParametresCooperativeModel {
     }
 
     // Fonction helper pour convertir en double de manière sûre
-    double _parseDouble(dynamic value) {
+    double parseDouble(dynamic value) {
       if (value == null) return 0.0;
       if (value is double) return value;
       if (value is int) return value.toDouble();
@@ -53,14 +53,14 @@ class ParametresCooperativeModel {
     }
 
     // Fonction helper pour convertir en String de manière sûre (nullable)
-    String? _parseString(dynamic value) {
+    String? parseString(dynamic value) {
       if (value == null) return null;
       if (value is String) return value.isEmpty ? null : value;
       return value.toString();
     }
 
     // Fonction helper pour convertir en String non-nullable
-    String _parseStringRequired(dynamic value, String defaultValue) {
+    String parseStringRequired(dynamic value, String defaultValue) {
       if (value == null) return defaultValue;
       if (value is String) return value.isEmpty ? defaultValue : value;
       final str = value.toString();
@@ -68,27 +68,27 @@ class ParametresCooperativeModel {
     }
 
     return ParametresCooperativeModel(
-      id: _parseInt(map['id']),
-      nomCooperative: _parseStringRequired(map['nom_cooperative'], 'Coopérative de Cacaoculteurs'),
-      logoPath: _parseString(map['logo_path']),
-      adresse: _parseString(map['adresse']),
-      telephone: _parseString(map['telephone']),
-      email: _parseString(map['email']),
-      commissionRate: _parseDouble(map['commission_rate']),
+      id: parseInt(map['id']),
+      nomCooperative: parseStringRequired(map['nom_cooperative'], 'Coopérative de Cacaoculteurs'),
+      logoPath: parseString(map['logo_path']),
+      adresse: parseString(map['adresse']),
+      telephone: parseString(map['telephone']),
+      email: parseString(map['email']),
+      commissionRate: parseDouble(map['commission_rate']),
       commissionRateActionnaire: map['commission_rate_actionnaire'] != null
-          ? _parseDouble(map['commission_rate_actionnaire'])
+          ? parseDouble(map['commission_rate_actionnaire'])
           : null,
       commissionRateProducteur: map['commission_rate_producteur'] != null
-          ? _parseDouble(map['commission_rate_producteur'])
+          ? parseDouble(map['commission_rate_producteur'])
           : null,
-      periodeCampagneDays: _parseInt(map['periode_campagne_days']) ?? 365,
+      periodeCampagneDays: parseInt(map['periode_campagne_days']) ?? 365,
       dateDebutCampagne: map['date_debut_campagne'] != null
           ? DateTime.tryParse(map['date_debut_campagne'].toString())
           : null,
       dateFinCampagne: map['date_fin_campagne'] != null
           ? DateTime.tryParse(map['date_fin_campagne'].toString())
           : null,
-      codeCooperative: _parseString(map['code_cooperative']),
+      codeCooperative: parseString(map['code_cooperative']),
       updatedAt: map['updated_at'] != null
           ? DateTime.tryParse(map['updated_at'].toString())
           : null,
@@ -191,7 +191,7 @@ class CampagneModel {
   // Convertir depuis Map (base de données)
   factory CampagneModel.fromMap(Map<String, dynamic> map) {
     // Fonction helper pour convertir en int de manière sûre
-    int? _parseInt(dynamic value) {
+    int? parseInt(dynamic value) {
       if (value == null) return null;
       if (value is int) return value;
       if (value is String) return int.tryParse(value);
@@ -200,7 +200,7 @@ class CampagneModel {
     }
 
     // Fonction helper pour convertir en bool de manière sûre
-    bool _parseBool(dynamic value) {
+    bool parseBool(dynamic value) {
       if (value == null) return true;
       if (value is bool) return value;
       if (value is int) return value == 1;
@@ -209,7 +209,7 @@ class CampagneModel {
     }
 
     // Fonction helper pour convertir en String non-nullable
-    String _parseStringRequired(dynamic value, String defaultValue) {
+    String parseStringRequired(dynamic value, String defaultValue) {
       if (value == null) return defaultValue;
       if (value is String) return value.isEmpty ? defaultValue : value;
       final str = value.toString();
@@ -217,12 +217,12 @@ class CampagneModel {
     }
 
     return CampagneModel(
-      id: _parseInt(map['id']),
-      nom: _parseStringRequired(map['nom'], 'Nouvelle campagne'),
+      id: parseInt(map['id']),
+      nom: parseStringRequired(map['nom'], 'Nouvelle campagne'),
       dateDebut: DateTime.tryParse(map['date_debut'].toString()) ?? DateTime.now(),
       dateFin: DateTime.tryParse(map['date_fin'].toString()) ?? DateTime.now(),
       description: map['description']?.toString(),
-      isActive: _parseBool(map['is_active']),
+      isActive: parseBool(map['is_active']),
       createdAt: DateTime.tryParse(map['created_at'].toString()) ?? DateTime.now(),
       updatedAt: map['updated_at'] != null
           ? DateTime.tryParse(map['updated_at'].toString())
@@ -285,7 +285,7 @@ class BaremeQualiteModel {
   // Convertir depuis Map
   factory BaremeQualiteModel.fromMap(Map<String, dynamic> map) {
     // Fonction helper pour convertir en double de manière sûre
-    double? _parseDouble(dynamic value) {
+    double? parseDouble(dynamic value) {
       if (value == null) return null;
       if (value is double) return value;
       if (value is int) return value.toDouble();
@@ -295,7 +295,7 @@ class BaremeQualiteModel {
     }
 
     // Fonction helper pour convertir en String non-nullable
-    String _parseStringRequired(dynamic value, String defaultValue) {
+    String parseStringRequired(dynamic value, String defaultValue) {
       if (value == null) return defaultValue;
       if (value is String) return value.isEmpty ? defaultValue : value;
       final str = value.toString();
@@ -303,10 +303,10 @@ class BaremeQualiteModel {
     }
 
     return BaremeQualiteModel(
-      qualite: _parseStringRequired(map['qualite'], 'standard'),
-      prixMin: _parseDouble(map['prix_min']),
-      prixMax: _parseDouble(map['prix_max']),
-      commissionRate: _parseDouble(map['commission_rate']),
+      qualite: parseStringRequired(map['qualite'], 'standard'),
+      prixMin: parseDouble(map['prix_min']),
+      prixMax: parseDouble(map['prix_max']),
+      commissionRate: parseDouble(map['commission_rate']),
     );
   }
 

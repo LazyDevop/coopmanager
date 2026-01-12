@@ -146,9 +146,9 @@ class _StockAdjustmentScreenState extends State<StockAdjustmentScreen> {
               if (_adherent != null)
                 Card(
                   child: ListTile(
-                    leading: SizedBox(
+                    leading: const SizedBox(
                       width: 24,
-                      child: const Icon(Icons.person),
+                      child: Icon(Icons.person),
                     ),
                     title: Text(_adherent!.fullName),
                     subtitle: Text('Code: ${_adherent!.code}'),

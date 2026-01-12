@@ -1,5 +1,5 @@
 /// Écran de Simulation de Vente V2
-/// 
+///
 /// Permet de simuler une vente avant validation avec comparaisons et indicateurs
 
 import 'package:flutter/material.dart';
@@ -72,10 +72,24 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.of(context, rootNavigator: false).pushReplacementNamed(AppRoutes.ventes),
+                    onPressed: () {
+                      final navigator = Navigator.of(
+                        context,
+                        rootNavigator: false,
+                      );
+                      if (navigator.canPop()) {
+                        navigator.pop();
+                      } else {
+                        navigator.pushNamed(AppRoutes.ventes);
+                      }
+                    },
                     tooltip: 'Retour',
                   ),
-                  const Icon(Icons.calculate, color: AppTheme.infoColor, size: 28),
+                  const Icon(
+                    Icons.calculate,
+                    color: AppTheme.infoColor,
+                    size: 28,
+                  ),
                   const SizedBox(width: 12),
                   const Text(
                     'Simulation de Vente',
@@ -87,7 +101,8 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
                   ),
                   const Spacer(),
                   ElevatedButton.icon(
-                    onPressed: () => _showCreateSimulationDialog(context, viewModel),
+                    onPressed: () =>
+                        _showCreateSimulationDialog(context, viewModel),
                     icon: const Icon(Icons.add),
                     label: const Text('Nouvelle Simulation'),
                     style: ElevatedButton.styleFrom(
@@ -149,8 +164,9 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
     VenteViewModel viewModel,
     SimulationVenteModel simulation,
   ) {
-    final isRisque = simulation.isPrixHorsSeuil || simulation.isPrixInferieurMoyenne;
-    
+    final isRisque =
+        simulation.isPrixHorsSeuil || simulation.isPrixInferieurMoyenne;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -164,9 +180,14 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(simulation.statut).withOpacity(0.1),
+                      color: _getStatusColor(
+                        simulation.statut,
+                      ).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -181,16 +202,23 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
                   if (isRisque) ...[
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.warningColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Row(
+                      child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.warning, size: 16, color: AppTheme.warningColor),
-                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.warning,
+                            size: 16,
+                            color: AppTheme.warningColor,
+                          ),
+                          SizedBox(width: 4),
                           Text(
                             'RISQUE',
                             style: TextStyle(
@@ -273,14 +301,19 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton.icon(
-                    onPressed: () => _showSimulationDetail(context, viewModel, simulation),
+                    onPressed: () =>
+                        _showSimulationDetail(context, viewModel, simulation),
                     icon: const Icon(Icons.visibility, size: 18),
                     label: const Text('Détails'),
                   ),
                   if (simulation.isSimulee) ...[
                     const SizedBox(width: 8),
                     ElevatedButton.icon(
-                      onPressed: () => _validerSimulation(context, viewModel, simulation.id!),
+                      onPressed: () => _validerSimulation(
+                        context,
+                        viewModel,
+                        simulation.id!,
+                      ),
                       icon: const Icon(Icons.check, size: 18),
                       label: const Text('Valider'),
                       style: ElevatedButton.styleFrom(
@@ -318,16 +351,17 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
       ],
     );
   }
 
-  Widget _buildComparisonItem(String label, double prixReference, double prixPropose) {
+  Widget _buildComparisonItem(
+    String label,
+    double prixReference,
+    double prixPropose,
+  ) {
     final ecart = prixPropose - prixReference;
     final pourcentage = prixReference > 0 ? (ecart / prixReference) * 100 : 0.0;
     final isPositif = ecart >= 0;
@@ -337,16 +371,13 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 11,
-            color: AppTheme.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
         ),
         const SizedBox(height: 4),
         Row(
           children: [
             Text(
-              '${NumberFormat('#,##0').format(prixReference)}',
+              NumberFormat('#,##0').format(prixReference),
               style: const TextStyle(fontSize: 12),
             ),
             const SizedBox(width: 4),
@@ -382,7 +413,10 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
     }
   }
 
-  void _showCreateSimulationDialog(BuildContext context, VenteViewModel viewModel) {
+  void _showCreateSimulationDialog(
+    BuildContext context,
+    VenteViewModel viewModel,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -394,35 +428,47 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<int?>(
-                  value: _selectedClientId,
+                  initialValue: _selectedClientId,
                   decoration: const InputDecoration(
                     labelText: 'Client',
                     border: OutlineInputBorder(),
                   ),
                   items: [
-                    const DropdownMenuItem<int?>(value: null, child: Text('Sélectionner un client')),
-                    ...viewModel.clients.map((client) => DropdownMenuItem<int?>(
-                      value: client.id,
-                      child: Text(client.raisonSociale),
-                    )),
+                    const DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text('Sélectionner un client'),
+                    ),
+                    ...viewModel.clients.map(
+                      (client) => DropdownMenuItem<int?>(
+                        value: client.id,
+                        child: Text(client.raisonSociale),
+                      ),
+                    ),
                   ],
-                  onChanged: (value) => setState(() => _selectedClientId = value),
+                  onChanged: (value) =>
+                      setState(() => _selectedClientId = value),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<int?>(
-                  value: _selectedCampagneId,
+                  initialValue: _selectedCampagneId,
                   decoration: const InputDecoration(
                     labelText: 'Campagne',
                     border: OutlineInputBorder(),
                   ),
                   items: [
-                    const DropdownMenuItem<int?>(value: null, child: Text('Sélectionner une campagne')),
-                    ...viewModel.campagnes.map((campagne) => DropdownMenuItem<int?>(
-                      value: campagne.id,
-                      child: Text(campagne.nom),
-                    )),
+                    const DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text('Sélectionner une campagne'),
+                    ),
+                    ...viewModel.campagnes.map(
+                      (campagne) => DropdownMenuItem<int?>(
+                        value: campagne.id,
+                        child: Text(campagne.nom),
+                      ),
+                    ),
                   ],
-                  onChanged: (value) => setState(() => _selectedCampagneId = value),
+                  onChanged: (value) =>
+                      setState(() => _selectedCampagneId = value),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -433,8 +479,10 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Quantité requise';
-                    if (double.tryParse(value) == null) return 'Valeur invalide';
+                    if (value == null || value.isEmpty)
+                      return 'Quantité requise';
+                    if (double.tryParse(value) == null)
+                      return 'Valeur invalide';
                     return null;
                   },
                 ),
@@ -448,7 +496,8 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) return 'Prix requis';
-                    if (double.tryParse(value) == null) return 'Valeur invalide';
+                    if (double.tryParse(value) == null)
+                      return 'Valeur invalide';
                     return null;
                   },
                 ),
@@ -457,7 +506,8 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
                   children: [
                     Checkbox(
                       value: _usePourcentage,
-                      onChanged: (value) => setState(() => _usePourcentage = value ?? true),
+                      onChanged: (value) =>
+                          setState(() => _usePourcentage = value ?? true),
                     ),
                     const Text('Pourcentage'),
                   ],
@@ -498,18 +548,22 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
     );
   }
 
-  Future<void> _createSimulation(BuildContext context, VenteViewModel viewModel) async {
+  Future<void> _createSimulation(
+    BuildContext context,
+    VenteViewModel viewModel,
+  ) async {
     if (!_formKey.currentState!.validate()) return;
 
     final authViewModel = context.read<AuthViewModel>();
-    final userId = authViewModel.currentUser?.id ?? 0;
+    final userId = authViewModel.currentUser?.id;
 
     final success = await viewModel.createSimulation(
       clientId: _selectedClientId,
       campagneId: _selectedCampagneId,
       quantiteTotal: double.parse(_quantiteController.text),
       prixUnitairePropose: double.parse(_prixController.text),
-      pourcentageFondsSocial: _usePourcentage && _fondsSocialController.text.isNotEmpty
+      pourcentageFondsSocial:
+          _usePourcentage && _fondsSocialController.text.isNotEmpty
           ? double.parse(_fondsSocialController.text)
           : null,
       createdBy: userId,
@@ -519,16 +573,18 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
       Navigator.pop(context);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Simulation créée avec succès'),
+          const SnackBar(
+            content: Text('Simulation créée avec succès'),
             backgroundColor: AppTheme.successColor,
-            duration: const Duration(seconds: 3),
+            duration: Duration(seconds: 3),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(viewModel.errorMessage ?? 'Erreur lors de la création'),
+            content: Text(
+              viewModel.errorMessage ?? 'Erreur lors de la création',
+            ),
             backgroundColor: AppTheme.errorColor,
             duration: const Duration(seconds: 4),
           ),
@@ -551,16 +607,43 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetailRow('Quantité', '${simulation.quantiteTotal.toStringAsFixed(2)} kg'),
-              _buildDetailRow('Prix unitaire', '${NumberFormat('#,##0').format(simulation.prixUnitairePropose)} FCFA/kg'),
-              _buildDetailRow('Montant brut', '${NumberFormat('#,##0').format(simulation.montantBrut)} FCFA'),
-              _buildDetailRow('Commission', '${NumberFormat('#,##0').format(simulation.montantCommission)} FCFA'),
-              _buildDetailRow('Montant net', '${NumberFormat('#,##0').format(simulation.montantNet)} FCFA'),
-              _buildDetailRow('Fonds social', '${NumberFormat('#,##0').format(simulation.montantFondsSocial)} FCFA'),
+              _buildDetailRow(
+                'Quantité',
+                '${simulation.quantiteTotal.toStringAsFixed(2)} kg',
+              ),
+              _buildDetailRow(
+                'Prix unitaire',
+                '${NumberFormat('#,##0').format(simulation.prixUnitairePropose)} FCFA/kg',
+              ),
+              _buildDetailRow(
+                'Montant brut',
+                '${NumberFormat('#,##0').format(simulation.montantBrut)} FCFA',
+              ),
+              _buildDetailRow(
+                'Commission',
+                '${NumberFormat('#,##0').format(simulation.montantCommission)} FCFA',
+              ),
+              _buildDetailRow(
+                'Montant net',
+                '${NumberFormat('#,##0').format(simulation.montantNet)} FCFA',
+              ),
+              _buildDetailRow(
+                'Fonds social',
+                '${NumberFormat('#,##0').format(simulation.montantFondsSocial)} FCFA',
+              ),
               const Divider(),
-              _buildDetailRow('Prix moyen du jour', '${NumberFormat('#,##0').format(simulation.prixMoyenJour)} FCFA/kg'),
-              _buildDetailRow('Prix moyen précédent', '${NumberFormat('#,##0').format(simulation.prixMoyenPrecedent)} FCFA/kg'),
-              _buildDetailRow('Marge coopérative', '${NumberFormat('#,##0').format(simulation.margeCooperative)} FCFA'),
+              _buildDetailRow(
+                'Prix moyen du jour',
+                '${NumberFormat('#,##0').format(simulation.prixMoyenJour)} FCFA/kg',
+              ),
+              _buildDetailRow(
+                'Prix moyen précédent',
+                '${NumberFormat('#,##0').format(simulation.prixMoyenPrecedent)} FCFA/kg',
+              ),
+              _buildDetailRow(
+                'Marge coopérative',
+                '${NumberFormat('#,##0').format(simulation.margeCooperative)} FCFA',
+              ),
               if (simulation.isPrixHorsSeuil)
                 Container(
                   margin: const EdgeInsets.only(top: 8),
@@ -569,10 +652,10 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
                     color: AppTheme.warningColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Row(
+                  child: const Row(
                     children: [
                       Icon(Icons.warning, color: AppTheme.warningColor),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Prix hors des seuils configurés',
@@ -601,28 +684,25 @@ class _SimulationVenteScreenState extends State<SimulationVenteScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(color: AppTheme.textSecondary),
-          ),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text(label, style: const TextStyle(color: AppTheme.textSecondary)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
-  Future<void> _validerSimulation(BuildContext context, VenteViewModel viewModel, int simulationId) async {
+  Future<void> _validerSimulation(
+    BuildContext context,
+    VenteViewModel viewModel,
+    int simulationId,
+  ) async {
     // TODO: Implémenter la validation de simulation
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Validation de simulation à implémenter'),
+      const SnackBar(
+        content: Text('Validation de simulation à implémenter'),
         backgroundColor: AppTheme.infoColor,
-        duration: const Duration(seconds: 3),
+        duration: Duration(seconds: 3),
       ),
     );
   }
 }
-

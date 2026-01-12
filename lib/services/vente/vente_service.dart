@@ -5,6 +5,8 @@ import '../../data/models/vente_detail_model.dart';
 import '../../data/models/vente_ligne_model.dart';
 import '../../data/models/vente_adherent_model.dart';
 import '../../data/models/journal_vente_model.dart';
+import '../../data/models/vente_mensuelle_stats_model.dart';
+import '../../data/models/vente_top_client_stats_model.dart';
 import '../../data/models/parametres_cooperative_model.dart';
 import '../../data/models/stock_model.dart';
 import '../stock/stock_service.dart';
@@ -76,7 +78,7 @@ class VenteService {
 
       // Insérer la vente
       final venteId = await db.insert('ventes', venteMap);
-      
+
       // V2: Générer écriture comptable si demandé et client fourni
       int? ecritureComptableId;
       if (generateEcritureComptable && clientId != null) {
@@ -89,7 +91,7 @@ class VenteService {
             createdBy: createdBy,
           );
           ecritureComptableId = ecriture.id;
-          
+
           // Mettre à jour la vente avec l'ID de l'écriture comptable
           await db.update(
             'ventes',
@@ -102,7 +104,7 @@ class VenteService {
           // Ne pas faire échouer la vente si l'écriture échoue
         }
       }
-      
+
       // V2: Générer QR Code pour la vente
       try {
         final documentContent = {
@@ -112,20 +114,21 @@ class VenteService {
           'quantite': quantite,
           'date': dateVente.toIso8601String(),
         };
-        
+
         await DocumentSecurityService.generateSecureDocument(
           documentType: 'vente',
           documentId: venteId,
           documentContent: documentContent,
           createdBy: createdBy,
         );
-        
+
         // Mettre à jour la vente avec le hash QR Code
-        final documentSecurise = await DocumentSecurityService.getSecureDocument(
-          documentType: 'vente',
-          documentId: venteId,
-        );
-        
+        final documentSecurise =
+            await DocumentSecurityService.getSecureDocument(
+              documentType: 'vente',
+              documentId: venteId,
+            );
+
         if (documentSecurise != null) {
           await db.update(
             'ventes',
@@ -173,13 +176,16 @@ class VenteService {
       );
 
       // Créer automatiquement la recette pour cette vente
-      print('🛒 Tentative de création de recette pour vente individuelle #$venteId');
+      print(
+        '🛒 Tentative de création de recette pour vente individuelle #$venteId',
+      );
       try {
         await _recetteService.createRecetteFromVente(
           adherentId: adherentId,
           venteId: venteId,
           montantBrut: montantTotal,
-          notes: 'Recette générée automatiquement pour vente individuelle #$venteId',
+          notes:
+              'Recette générée automatiquement pour vente individuelle #$venteId',
           createdBy: createdBy,
           generateEcritureComptable: generateEcritureComptable,
         );
@@ -204,8 +210,10 @@ class VenteService {
           createdBy: createdBy,
         );
         factureId = facture.id;
-        print('✅ Facture (reçu) créée avec succès! ID: $factureId, Numéro: ${facture.numero}');
-        
+        print(
+          '✅ Facture (reçu) créée avec succès! ID: $factureId, Numéro: ${facture.numero}',
+        );
+
         // Mettre à jour la vente avec l'ID de la facture
         await db.update(
           'ventes',
@@ -231,6 +239,7 @@ class VenteService {
     required List<VenteDetailModel> details,
     required double prixUnitaire,
     String? acheteur,
+    int? clientId, // V2: Lien avec client
     String? modePaiement,
     required DateTime dateVente,
     String? notes,
@@ -239,7 +248,9 @@ class VenteService {
     try {
       // Vérifier les stocks pour tous les adhérents
       for (final detail in details) {
-        final stockDisponible = await _stockService.getStockActuel(detail.adherentId);
+        final stockDisponible = await _stockService.getStockActuel(
+          detail.adherentId,
+        );
         if (stockDisponible < detail.quantite) {
           throw Exception(
             'Stock insuffisant pour l\'adhérent ${detail.adherentId}. Stock disponible: ${stockDisponible.toStringAsFixed(2)} kg, Quantité demandée: ${detail.quantite.toStringAsFixed(2)} kg',
@@ -248,7 +259,7 @@ class VenteService {
       }
 
       final db = await DatabaseInitializer.database;
-      
+
       // Calculer le total
       final quantiteTotal = details.fold<double>(
         0.0,
@@ -268,6 +279,7 @@ class VenteService {
         statut: 'valide',
         createdBy: createdBy,
         createdAt: DateTime.now(),
+        clientId: clientId,
       );
 
       // Insérer la vente
@@ -276,7 +288,10 @@ class VenteService {
       // Insérer les détails et déduire les stocks
       for (final detail in details) {
         // Insérer le détail avec l'ID de la vente
-        await db.insert('vente_details', detail.copyWith(venteId: venteId).toMap());
+        await db.insert(
+          'vente_details',
+          detail.copyWith(venteId: venteId).toMap(),
+        );
 
         // Déduire du stock
         await _stockService.deductStockForVente(
@@ -297,19 +312,27 @@ class VenteService {
         );
 
         // Créer automatiquement la recette pour cet adhérent
-        print('🛒 Tentative de création de recette pour vente groupée #$venteId, adhérent #${detail.adherentId}');
+        print(
+          '🛒 Tentative de création de recette pour vente groupée #$venteId, adhérent #${detail.adherentId}',
+        );
         try {
           await _recetteService.createRecetteFromVente(
             adherentId: detail.adherentId,
             venteId: venteId,
             montantBrut: detail.montant,
-            notes: 'Recette générée automatiquement pour vente groupée #$venteId',
+            notes:
+                'Recette générée automatiquement pour vente groupée #$venteId',
             createdBy: createdBy,
-            generateEcritureComptable: false, // Générer une seule écriture pour toute la vente groupée
+            generateEcritureComptable:
+                false, // Générer une seule écriture pour toute la vente groupée
           );
-          print('✅ Recette créée avec succès pour vente groupée #$venteId, adhérent #${detail.adherentId}');
+          print(
+            '✅ Recette créée avec succès pour vente groupée #$venteId, adhérent #${detail.adherentId}',
+          );
         } catch (e, stackTrace) {
-          print('❌ Erreur lors de la création de la recette pour adhérent ${detail.adherentId}: $e');
+          print(
+            '❌ Erreur lors de la création de la recette pour adhérent ${detail.adherentId}: $e',
+          );
           print('❌ Stack trace: $stackTrace');
           // Ne pas faire échouer la vente si la recette échoue
         }
@@ -320,7 +343,8 @@ class VenteService {
         action: 'CREATE_VENTE_GROUPEE',
         entityType: 'ventes',
         entityId: venteId,
-        details: 'Vente groupée de $quantiteTotal kg pour ${details.length} adhérent(s)',
+        details:
+            'Vente groupée de $quantiteTotal kg pour ${details.length} adhérent(s)',
       );
 
       // Créer automatiquement une facture (reçu) pour la vente groupée
@@ -338,8 +362,10 @@ class VenteService {
           createdBy: createdBy,
         );
         factureId = facture.id;
-        print('✅ Facture (reçu) créée avec succès pour vente groupée! ID: $factureId, Numéro: ${facture.numero}');
-        
+        print(
+          '✅ Facture (reçu) créée avec succès pour vente groupée! ID: $factureId, Numéro: ${facture.numero}',
+        );
+
         // Mettre à jour la vente avec l'ID de la facture
         await db.update(
           'ventes',
@@ -349,7 +375,9 @@ class VenteService {
         );
         print('✅ Vente groupée #$venteId liée à la facture #$factureId');
       } catch (e, stackTrace) {
-        print('❌ Erreur lors de la création de la facture (reçu) pour vente groupée: $e');
+        print(
+          '❌ Erreur lors de la création de la facture (reçu) pour vente groupée: $e',
+        );
         print('❌ Stack trace: $stackTrace');
         // Ne pas faire échouer la vente si la facture échoue
       }
@@ -393,9 +421,7 @@ class VenteService {
       // Marquer la vente comme annulée
       await db.update(
         'ventes',
-        {
-          'statut': 'annulee',
-        },
+        {'statut': 'annulee'},
         where: 'id = ?',
         whereArgs: [venteId],
       );
@@ -406,7 +432,8 @@ class VenteService {
         await _stockService.createAjustement(
           adherentId: vente.adherentId!,
           quantite: vente.quantiteTotal, // Positif pour restaurer
-          raison: 'Annulation de vente #$venteId${raison != null ? ': $raison' : ''}',
+          raison:
+              'Annulation de vente #$venteId${raison != null ? ': $raison' : ''}',
           createdBy: annulePar,
         );
 
@@ -429,12 +456,13 @@ class VenteService {
 
         for (final detailMap in detailsResult) {
           final detail = VenteDetailModel.fromMap(detailMap);
-          
+
           // Restaurer le stock pour chaque adhérent
           await _stockService.createAjustement(
             adherentId: detail.adherentId,
             quantite: detail.quantite,
-            raison: 'Annulation de vente groupée #$venteId${raison != null ? ': $raison' : ''}',
+            raison:
+                'Annulation de vente groupée #$venteId${raison != null ? ': $raison' : ''}',
             createdBy: annulePar,
           );
 
@@ -523,6 +551,124 @@ class VenteService {
     }
   }
 
+  /// Récupérer les ventes d'un adhérent (vue Expert).
+  ///
+  /// Important: les ventes "groupées" n'ont pas de `adherent_id` dans `ventes`.
+  /// Elles sont rattachées via la table pivot `vente_adherents`.
+  ///
+  /// Cette méthode renvoie :
+  /// - les ventes individuelles (ventes.adherent_id = adherentId)
+  /// - les ventes groupées où l'adhérent apparaît dans vente_adherents
+  ///   en surchargeant quantite/montant avec la part de l'adhérent.
+  Future<List<VenteModel>> getVentesForAdherentExpert({
+    required int adherentId,
+    String? statut,
+  }) async {
+    try {
+      final db = await DatabaseInitializer.database;
+
+      // 1) Ventes individuelles
+      final individuelleWhere = <String>['adherent_id = ?'];
+      final individuelleArgs = <Object?>[adherentId];
+      if (statut != null) {
+        individuelleWhere.add('statut = ?');
+        individuelleArgs.add(statut);
+      }
+
+      final individuelles = await db.query(
+        'ventes',
+        where: individuelleWhere.join(' AND '),
+        whereArgs: individuelleArgs,
+      );
+      final ventesIndividuelles =
+          individuelles.map((m) => VenteModel.fromMap(m)).toList();
+
+      // 2) Ventes groupées (répartition via vente_adherents)
+      final groupedWhere = <String>['va.adherent_id = ?'];
+      final groupedArgs = <Object?>[adherentId];
+      if (statut != null) {
+        groupedWhere.add('v.statut = ?');
+        groupedArgs.add(statut);
+      }
+
+      final groupedRows = await db.rawQuery(
+        '''
+        SELECT
+          v.*,
+          va.poids_utilise,
+          va.prix_kg,
+          va.montant_brut,
+          va.commission_rate,
+          va.commission_amount,
+          va.montant_net
+        FROM ventes v
+        INNER JOIN vente_adherents va ON va.vente_id = v.id
+        WHERE ${groupedWhere.join(' AND ')}
+        ORDER BY v.date_vente DESC, v.created_at DESC
+      ''',
+        groupedArgs,
+      );
+
+      final ventesGroupees = groupedRows.map((row) {
+        final map = Map<String, dynamic>.from(row);
+
+        // Forcer l'adhérent courant pour homogénéiser l'affichage.
+        map['adherent_id'] = adherentId;
+
+        // Surcharger les totaux pour refléter la part de cet adhérent.
+        if (map['poids_utilise'] != null) {
+          map['quantite_total'] = (map['poids_utilise'] as num).toDouble();
+        }
+        if (map['prix_kg'] != null) {
+          map['prix_unitaire'] = (map['prix_kg'] as num).toDouble();
+        }
+        if (map['montant_brut'] != null) {
+          map['montant_total'] = (map['montant_brut'] as num).toDouble();
+        }
+
+        // Champs V1 utilisés dans certains écrans/stats.
+        if (map['commission_amount'] != null) {
+          map['montant_commission'] =
+              (map['commission_amount'] as num).toDouble();
+        }
+        if (map['montant_net'] != null) {
+          map['montant_net'] = (map['montant_net'] as num).toDouble();
+        }
+
+        return VenteModel.fromMap(map);
+      }).toList();
+
+      // Fusionner sans doublons (une vente peut être individuelle ou groupée)
+      final seenIds = <int>{};
+      final merged = <VenteModel>[];
+
+      for (final v in ventesGroupees) {
+        if (v.id != null && seenIds.add(v.id!)) {
+          merged.add(v);
+        }
+      }
+      for (final v in ventesIndividuelles) {
+        if (v.id != null) {
+          if (seenIds.add(v.id!)) merged.add(v);
+        } else {
+          merged.add(v);
+        }
+      }
+
+      merged.sort((a, b) {
+        final cmpDate = b.dateVente.compareTo(a.dateVente);
+        if (cmpDate != 0) return cmpDate;
+        return b.createdAt.compareTo(a.createdAt);
+      });
+
+      return merged;
+    } catch (e) {
+      throw Exception(
+        'Erreur lors de la récupération des ventes (expert): $e',
+      );
+    }
+  }
+
   /// Récupérer une vente par ID
   Future<VenteModel?> getVenteById(int id) async {
     try {
@@ -570,10 +716,7 @@ class VenteService {
         where: '''
           (acheteur LIKE ? OR notes LIKE ?)
         ''',
-        whereArgs: [
-          '%$query%',
-          '%$query%',
-        ],
+        whereArgs: ['%$query%', '%$query%'],
         orderBy: 'date_vente DESC',
       );
 
@@ -631,6 +774,159 @@ class VenteService {
     }
   }
 
+  /// Obtenir les ventes agrégées par mois (pour graphiques)
+  Future<List<VenteMensuelleStatsModel>> getVentesParMois({
+    DateTime? startDate,
+    DateTime? endDate,
+    int? adherentId,
+  }) async {
+    try {
+      final db = await DatabaseInitializer.database;
+
+      String where = 'statut = ?';
+      final whereArgs = <dynamic>['valide'];
+
+      if (adherentId != null) {
+        where += ' AND adherent_id = ?';
+        whereArgs.add(adherentId);
+      }
+
+      if (startDate != null) {
+        where += ' AND date_vente >= ?';
+        whereArgs.add(startDate.toIso8601String());
+      }
+
+      if (endDate != null) {
+        where += ' AND date_vente <= ?';
+        whereArgs.add(endDate.toIso8601String());
+      }
+
+      // date_vente est stockée en ISO-8601 ; substr(1,7) => YYYY-MM
+      final rows = await db.rawQuery('''
+        SELECT
+          substr(date_vente, 1, 7) as mois,
+          COUNT(*) as nombre_ventes,
+          COALESCE(SUM(quantite_total), 0) as quantite_totale,
+          COALESCE(SUM(montant_total), 0) as montant_total
+        FROM ventes
+        WHERE $where
+        GROUP BY mois
+        ORDER BY mois ASC
+      ''', whereArgs);
+
+      return rows.map((r) => VenteMensuelleStatsModel.fromDbRow(r)).toList();
+    } catch (e) {
+      throw Exception('Erreur lors du chargement des ventes par mois: $e');
+    }
+  }
+
+  /// Obtenir les top clients (agrégé) sur une période
+  ///
+  /// `orderBy` accepte: `montant_total`, `quantite_totale`, `nombre_ventes`.
+  Future<List<VenteTopClientStatsModel>> getTopClients({
+    DateTime? startDate,
+    DateTime? endDate,
+    int? adherentId,
+    int limit = 10,
+    String orderBy = 'montant_total',
+  }) async {
+    try {
+      final db = await DatabaseInitializer.database;
+
+      final allowedOrderBy = <String>{
+        'montant_total',
+        'quantite_totale',
+        'nombre_ventes',
+      };
+      final safeOrderBy = allowedOrderBy.contains(orderBy)
+          ? orderBy
+          : 'montant_total';
+
+      String where = 'v.statut = ?';
+      final whereArgs = <dynamic>['valide'];
+
+      if (adherentId != null) {
+        where += ' AND v.adherent_id = ?';
+        whereArgs.add(adherentId);
+      }
+
+      if (startDate != null) {
+        where += ' AND v.date_vente >= ?';
+        whereArgs.add(startDate.toIso8601String());
+      }
+
+      if (endDate != null) {
+        where += ' AND v.date_vente <= ?';
+        whereArgs.add(endDate.toIso8601String());
+      }
+
+      // Détecter une colonne "nom" valide dans la table clients (migrations différentes selon versions)
+      String? clientNameExpr;
+      try {
+        final cols = await db.rawQuery('PRAGMA table_info(clients)');
+        final names = cols.map((c) => (c['name'] as String?) ?? '').toSet();
+
+        if (names.contains('raison_sociale')) {
+          clientNameExpr = 'c.raison_sociale';
+        } else if (names.contains('nom')) {
+          clientNameExpr = 'c.nom';
+        } else if (names.contains('code_client')) {
+          clientNameExpr = 'c.code_client';
+        } else if (names.contains('code')) {
+          clientNameExpr = 'c.code';
+        }
+      } catch (_) {
+        clientNameExpr = null;
+      }
+
+      final joinClients = clientNameExpr != null;
+
+      // Si on n'a pas la table/colonnes clients, on fallback sur "acheteur"
+      if (!joinClients) {
+        final rows = await db.rawQuery(
+          '''
+          SELECT
+            COALESCE(v.acheteur, 'Inconnu') as client_key,
+            COALESCE(v.acheteur, 'Inconnu') as client_nom,
+            COUNT(*) as nombre_ventes,
+            COALESCE(SUM(v.quantite_total), 0) as quantite_totale,
+            COALESCE(SUM(v.montant_total), 0) as montant_total
+          FROM ventes v
+          WHERE $where
+          GROUP BY client_key, client_nom
+          ORDER BY $safeOrderBy DESC
+          LIMIT ?
+        ''',
+          [...whereArgs, limit],
+        );
+
+        return rows.map((r) => VenteTopClientStatsModel.fromDbRow(r)).toList();
+      }
+
+      final rows = await db.rawQuery(
+        '''
+        SELECT
+          COALESCE(CAST(v.client_id AS TEXT), v.acheteur, 'Inconnu') as client_key,
+          COALESCE($clientNameExpr, v.acheteur, 'Inconnu') as client_nom,
+          COUNT(*) as nombre_ventes,
+          COALESCE(SUM(v.quantite_total), 0) as quantite_totale,
+          COALESCE(SUM(v.montant_total), 0) as montant_total
+        FROM ventes v
+        LEFT JOIN clients c ON c.id = v.client_id
+        WHERE $where
+        GROUP BY client_key, client_nom
+        ORDER BY $safeOrderBy DESC
+        LIMIT ?
+      ''',
+        [...whereArgs, limit],
+      );
+
+      return rows.map((r) => VenteTopClientStatsModel.fromDbRow(r)).toList();
+    } catch (e) {
+      throw Exception('Erreur lors du chargement des top clients: $e');
+    }
+  }
+
   // ========== MODULE VENTES V1 ==========
 
   /// Créer une vente V1 avec toutes les fonctionnalités requises
@@ -645,17 +941,18 @@ class VenteService {
     required DateTime dateVente,
     String? notes,
     required int createdBy,
-    bool overridePrixValidation = false, // Pour admin override si prix hors seuil
+    bool overridePrixValidation =
+        false, // Pour admin override si prix hors seuil
   }) async {
     final db = await DatabaseInitializer.database;
-    
+
     // Démarrer une transaction atomique
     await db.execute('BEGIN TRANSACTION');
-    
+
     try {
       // 1. VALIDATION PRIX (seuils min/max)
       await _validatePrix(prixUnitaire, overridePrixValidation);
-      
+
       // 2. VÉRIFICATION STOCK DISPONIBLE
       final stockDisponible = await _stockService.getStockActuel(adherentId);
       if (stockDisponible < quantiteTotal) {
@@ -664,14 +961,14 @@ class VenteService {
           'Stock insuffisant. Stock disponible: ${stockDisponible.toStringAsFixed(2)} kg, Quantité demandée: ${quantiteTotal.toStringAsFixed(2)} kg',
         );
       }
-      
+
       // 3. CALCULS
       final montantBrut = quantiteTotal * prixUnitaire;
       final parametres = await _parametresService.getParametres();
       final commissionRate = parametres.commissionRate;
       final montantCommission = montantBrut * commissionRate;
       final montantNet = montantBrut - montantCommission;
-      
+
       // 4. CRÉER LA VENTE
       final vente = VenteModel(
         type: 'individuelle',
@@ -691,9 +988,9 @@ class VenteService {
         montantCommission: montantCommission,
         montantNet: montantNet,
       );
-      
+
       final venteId = await db.insert('ventes', vente.toMap());
-      
+
       // 5. DÉBITER LE STOCK EN FIFO (créer vente_lignes)
       await _debiterStockFIFO(
         db: db,
@@ -703,7 +1000,7 @@ class VenteService {
         prixUnitaire: prixUnitaire,
         createdBy: createdBy,
       );
-      
+
       // 6. CRÉER LES RECETTES ADHÉRENTS
       await _recetteService.createRecetteFromVente(
         adherentId: adherentId,
@@ -714,7 +1011,7 @@ class VenteService {
         createdBy: createdBy,
         generateEcritureComptable: true,
       );
-      
+
       // 7. GÉNÉRER QR CODE
       try {
         final documentContent = {
@@ -726,19 +1023,20 @@ class VenteService {
           'quantite': quantiteTotal,
           'date': dateVente.toIso8601String(),
         };
-        
+
         await DocumentSecurityService.generateSecureDocument(
           documentType: 'vente',
           documentId: venteId,
           documentContent: documentContent,
           createdBy: createdBy,
         );
-        
-        final documentSecurise = await DocumentSecurityService.getSecureDocument(
-          documentType: 'vente',
-          documentId: venteId,
-        );
-        
+
+        final documentSecurise =
+            await DocumentSecurityService.getSecureDocument(
+              documentType: 'vente',
+              documentId: venteId,
+            );
+
         if (documentSecurise != null) {
           await db.update(
             'ventes',
@@ -751,7 +1049,7 @@ class VenteService {
         print('Erreur lors de la génération du QR Code: $e');
         // Ne pas faire échouer la transaction
       }
-      
+
       // 8. ENREGISTRER DANS LE JOURNAL
       await _logJournalVente(
         db: db,
@@ -762,7 +1060,7 @@ class VenteService {
         details: 'Vente V1 créée pour client $clientId, campagne $campagneId',
         createdBy: createdBy,
       );
-      
+
       // 9. ENREGISTRER DANS L'HISTORIQUE ADHÉRENT
       await _adherentService.logVente(
         adherentId: adherentId,
@@ -772,26 +1070,27 @@ class VenteService {
         dateVente: dateVente,
         createdBy: createdBy,
       );
-      
+
       // 10. AUDIT
       await _auditService.logAction(
         userId: createdBy,
         action: 'CREATE_VENTE_V1',
         entityType: 'ventes',
         entityId: venteId,
-        details: 'Vente V1 de $quantiteTotal kg pour adhérent $adherentId, client $clientId',
+        details:
+            'Vente V1 de $quantiteTotal kg pour adhérent $adherentId, client $clientId',
       );
-      
+
       // 11. NOTIFICATION
       await _notificationService.notifyVenteCreated(
         venteId: venteId,
         montant: montantBrut,
         userId: createdBy,
       );
-      
+
       // Valider la transaction
       await db.execute('COMMIT');
-      
+
       return vente.copyWith(id: venteId);
     } catch (e) {
       // Rollback en cas d'erreur
@@ -803,39 +1102,43 @@ class VenteService {
   /// Valider le prix par rapport aux seuils min/max
   Future<void> _validatePrix(double prixUnitaire, bool override) async {
     if (override) return; // Admin override
-    
+
     try {
       final db = await DatabaseInitializer.database;
-      
+
       // Récupérer tous les barèmes de qualité
       final baremes = await db.query('baremes_qualite');
-      
+
       bool prixValide = false;
       String? messageErreur;
-      
+
       for (final bareme in baremes) {
         final prixMin = bareme['prix_min'] as num?;
         final prixMax = bareme['prix_max'] as num?;
-        
+
         if (prixMin != null && prixUnitaire < prixMin) {
-          messageErreur = 'Prix trop bas: ${prixUnitaire.toStringAsFixed(0)} FCFA/kg < ${prixMin.toStringAsFixed(0)} FCFA/kg (minimum)';
+          messageErreur =
+              'Prix trop bas: ${prixUnitaire.toStringAsFixed(0)} FCFA/kg < ${prixMin.toStringAsFixed(0)} FCFA/kg (minimum)';
           break;
         }
-        
+
         if (prixMax != null && prixUnitaire > prixMax) {
-          messageErreur = 'Prix trop élevé: ${prixUnitaire.toStringAsFixed(0)} FCFA/kg > ${prixMax.toStringAsFixed(0)} FCFA/kg (maximum)';
+          messageErreur =
+              'Prix trop élevé: ${prixUnitaire.toStringAsFixed(0)} FCFA/kg > ${prixMax.toStringAsFixed(0)} FCFA/kg (maximum)';
           break;
         }
-        
+
         // Si on arrive ici, le prix est dans les seuils pour au moins un barème
-        if ((prixMin == null || prixUnitaire >= prixMin) && 
+        if ((prixMin == null || prixUnitaire >= prixMin) &&
             (prixMax == null || prixUnitaire <= prixMax)) {
           prixValide = true;
         }
       }
-      
+
       if (!prixValide && messageErreur != null) {
-        throw Exception('$messageErreur. Override admin requis pour continuer.');
+        throw Exception(
+          '$messageErreur. Override admin requis pour continuer.',
+        );
       }
     } catch (e) {
       if (e.toString().contains('Override')) {
@@ -856,24 +1159,26 @@ class VenteService {
     required int createdBy,
   }) async {
     // Récupérer les dépôts disponibles en FIFO
-    final depotsDisponibles = await _stockService.getDepotsDisponiblesFIFO(adherentId);
-    
+    final depotsDisponibles = await _stockService.getDepotsDisponiblesFIFO(
+      adherentId,
+    );
+
     double quantiteRestante = quantiteDemandee;
     final venteLignes = <VenteLigneModel>[];
-    
+
     for (final depotInfo in depotsDisponibles) {
       if (quantiteRestante <= 0) break;
-      
+
       final depot = depotInfo['depot'] as StockDepotModel;
       final quantiteDisponible = depotInfo['quantite_disponible'] as double;
       final depotId = depotInfo['depot_id'] as int;
-      
-      final quantiteAPrelever = quantiteRestante < quantiteDisponible 
-          ? quantiteRestante 
+
+      final quantiteAPrelever = quantiteRestante < quantiteDisponible
+          ? quantiteRestante
           : quantiteDisponible;
-      
+
       final montantLigne = quantiteAPrelever * prixUnitaire;
-      
+
       final venteLigne = VenteLigneModel(
         venteId: venteId,
         stockDepotId: depotId,
@@ -883,9 +1188,9 @@ class VenteService {
         montant: montantLigne,
         createdAt: DateTime.now(),
       );
-      
+
       await db.insert('vente_lignes', venteLigne.toMap());
-      
+
       // Créer un mouvement de stock négatif
       await db.insert('stock_mouvements', {
         'adherent_id': adherentId,
@@ -898,12 +1203,14 @@ class VenteService {
         'created_by': createdBy,
         'created_at': DateTime.now().toIso8601String(),
       });
-      
+
       quantiteRestante -= quantiteAPrelever;
     }
-    
+
     if (quantiteRestante > 0) {
-      throw Exception('Stock insuffisant pour compléter la vente. Quantité restante: ${quantiteRestante.toStringAsFixed(2)} kg');
+      throw Exception(
+        'Stock insuffisant pour compléter la vente. Quantité restante: ${quantiteRestante.toStringAsFixed(2)} kg',
+      );
     }
   }
 
@@ -930,14 +1237,14 @@ class VenteService {
       createdBy: createdBy,
       createdAt: DateTime.now(),
     );
-    
+
     await db.insert('journal_ventes', journalEntry.toMap());
   }
 
   // ========== INTÉGRATION ADHÉRENTS ↔ VENTES ==========
 
   /// Créer une vente avec répartition automatique par adhérents
-  /// 
+  ///
   /// Cette méthode :
   /// 1. Sélectionne les stocks disponibles par campagne/qualité
   /// 2. Répartit automatiquement selon FIFO et priorité catégorie
@@ -959,14 +1266,14 @@ class VenteService {
     bool overridePrixValidation = false,
   }) async {
     final db = await DatabaseInitializer.database;
-    
+
     // Démarrer une transaction atomique
     await db.execute('BEGIN TRANSACTION');
-    
+
     try {
       // 1. VALIDATION PRIX
       await _validatePrix(prixUnitaire, overridePrixValidation);
-      
+
       // 2. SÉLECTIONNER LES STOCKS DISPONIBLES
       final stocksDisponibles = await _selectStocksDisponibles(
         quantiteDemandee: quantiteTotal,
@@ -974,18 +1281,20 @@ class VenteService {
         qualite: qualite,
         adherentIdsPrioritaires: adherentIdsPrioritaires,
       );
-      
+
       if (stocksDisponibles.isEmpty) {
         await db.execute('ROLLBACK');
-        throw Exception('Aucun stock disponible pour cette campagne et qualité');
+        throw Exception(
+          'Aucun stock disponible pour cette campagne et qualité',
+        );
       }
-      
+
       // Vérifier que la quantité totale disponible est suffisante
       final quantiteDisponible = stocksDisponibles.fold<double>(
         0.0,
-        (sum, stock) => sum + stock['quantite_disponible'] as double,
+        (sum, stock) => sum + stock['quantite_disponible'],
       );
-      
+
       if (quantiteDisponible < quantiteTotal) {
         await db.execute('ROLLBACK');
         throw Exception(
@@ -993,7 +1302,7 @@ class VenteService {
           'Demandé: ${quantiteTotal.toStringAsFixed(2)} kg',
         );
       }
-      
+
       // 3. CRÉER LA VENTE
       final montantTotal = quantiteTotal * prixUnitaire;
       final vente = VenteModel(
@@ -1012,50 +1321,52 @@ class VenteService {
         clientId: clientId,
         campagneId: campagneId,
       );
-      
+
       final venteId = await db.insert('ventes', vente.toMap());
-      
+
       // 4. RÉPARTIR AUTOMATIQUEMENT PAR ADHÉRENTS (FIFO + PRIORITÉ)
       double quantiteRestante = quantiteTotal;
       final venteAdherents = <VenteAdherentModel>[];
-      
+
       for (final stockInfo in stocksDisponibles) {
         if (quantiteRestante <= 0) break;
-        
+
         final adherentId = stockInfo['adherent_id'] as int;
-        final quantiteDisponibleStock = stockInfo['quantite_disponible'] as double;
+        final quantiteDisponibleStock =
+            stockInfo['quantite_disponible'] as double;
         final depotId = stockInfo['depot_id'] as int?;
         final qualiteStock = stockInfo['qualite'] as String?;
-        
+
         // Vérifier que l'adhérent peut vendre
         final canSell = await _adherentService.canAdherentSell(adherentId);
         if (!canSell) {
           continue; // Passer au suivant
         }
-        
+
         final quantiteAPrelever = quantiteRestante < quantiteDisponibleStock
             ? quantiteRestante
             : quantiteDisponibleStock;
-        
+
         // Calculer les montants pour cet adhérent
         final montantBrut = VenteAdherentModel.calculateMontantBrut(
           quantiteAPrelever,
           prixUnitaire,
         );
-        
+
         // Obtenir le taux de commission selon catégorie
-        final commissionRate = await _adherentService.getCommissionRateForAdherent(adherentId);
-        
+        final commissionRate = await _adherentService
+            .getCommissionRateForAdherent(adherentId);
+
         final commissionAmount = VenteAdherentModel.calculateCommissionAmount(
           montantBrut,
           commissionRate,
         );
-        
+
         final montantNet = VenteAdherentModel.calculateMontantNet(
           montantBrut,
           commissionRate,
         );
-        
+
         // Créer la ligne vente_adherents
         final venteAdherent = VenteAdherentModel(
           venteId: venteId,
@@ -1071,10 +1382,10 @@ class VenteService {
           createdAt: DateTime.now(),
           createdBy: createdBy,
         );
-        
+
         await db.insert('vente_adherents', venteAdherent.toMap());
         venteAdherents.add(venteAdherent);
-        
+
         // Débiter le stock (créer mouvement)
         await db.insert('stock_mouvements', {
           'adherent_id': adherentId,
@@ -1083,22 +1394,25 @@ class VenteService {
           'stock_depot_id': depotId,
           'vente_id': venteId,
           'date_mouvement': dateVente.toIso8601String(),
-          'notes': 'Vente avec répartition automatique - Débit FIFO depuis dépôt ${depotId ?? "N/A"}',
+          'notes':
+              'Vente avec répartition automatique - Débit FIFO depuis dépôt ${depotId ?? "N/A"}',
           'created_by': createdBy,
           'created_at': DateTime.now().toIso8601String(),
         });
-        
+
         // Créer la recette pour cet adhérent
         await _recetteService.createRecetteFromVente(
           adherentId: adherentId,
           venteId: venteId,
           montantBrut: montantBrut,
           commissionRate: commissionRate,
-          notes: 'Recette générée automatiquement pour vente #$venteId (répartition automatique)',
+          notes:
+              'Recette générée automatiquement pour vente #$venteId (répartition automatique)',
           createdBy: createdBy,
-          generateEcritureComptable: false, // Générer une seule écriture pour toute la vente
+          generateEcritureComptable:
+              false, // Générer une seule écriture pour toute la vente
         );
-        
+
         // Enregistrer dans l'historique de l'adhérent
         await _adherentService.logVente(
           adherentId: adherentId,
@@ -1108,17 +1422,17 @@ class VenteService {
           dateVente: dateVente,
           createdBy: createdBy,
         );
-        
+
         quantiteRestante -= quantiteAPrelever;
       }
-      
+
       if (quantiteRestante > 0) {
         await db.execute('ROLLBACK');
         throw Exception(
           'Stock insuffisant pour compléter la vente. Quantité restante: ${quantiteRestante.toStringAsFixed(2)} kg',
         );
       }
-      
+
       // 5. GÉNÉRER QR CODE
       try {
         final documentContent = {
@@ -1130,19 +1444,20 @@ class VenteService {
           'nombre_adherents': venteAdherents.length,
           'date': dateVente.toIso8601String(),
         };
-        
+
         await DocumentSecurityService.generateSecureDocument(
           documentType: 'vente',
           documentId: venteId,
           documentContent: documentContent,
           createdBy: createdBy,
         );
-        
-        final documentSecurise = await DocumentSecurityService.getSecureDocument(
-          documentType: 'vente',
-          documentId: venteId,
-        );
-        
+
+        final documentSecurise =
+            await DocumentSecurityService.getSecureDocument(
+              documentType: 'vente',
+              documentId: venteId,
+            );
+
         if (documentSecurise != null) {
           await db.update(
             'ventes',
@@ -1154,7 +1469,7 @@ class VenteService {
       } catch (e) {
         print('Erreur lors de la génération du QR Code: $e');
       }
-      
+
       // 6. ENREGISTRER DANS LE JOURNAL
       await _logJournalVente(
         db: db,
@@ -1162,39 +1477,43 @@ class VenteService {
         action: 'CREATE',
         nouveauStatut: 'valide',
         nouveauMontant: montantTotal,
-        details: 'Vente avec répartition automatique sur ${venteAdherents.length} adhérent(s), campagne $campagneId',
+        details:
+            'Vente avec répartition automatique sur ${venteAdherents.length} adhérent(s), campagne $campagneId',
         createdBy: createdBy,
       );
-      
+
       // 7. AUDIT
       await _auditService.logAction(
         userId: createdBy,
         action: 'CREATE_VENTE_REPARTITION',
         entityType: 'ventes',
         entityId: venteId,
-        details: 'Vente avec répartition automatique: $quantiteTotal kg sur ${venteAdherents.length} adhérent(s)',
+        details:
+            'Vente avec répartition automatique: $quantiteTotal kg sur ${venteAdherents.length} adhérent(s)',
       );
-      
+
       // 8. NOTIFICATION
       await _notificationService.notifyVenteCreated(
         venteId: venteId,
         montant: montantTotal,
         userId: createdBy,
       );
-      
+
       // Valider la transaction
       await db.execute('COMMIT');
-      
+
       return vente.copyWith(id: venteId);
     } catch (e) {
       // Rollback en cas d'erreur
       await db.execute('ROLLBACK');
-      throw Exception('Erreur lors de la création de la vente avec répartition: $e');
+      throw Exception(
+        'Erreur lors de la création de la vente avec répartition: $e',
+      );
     }
   }
 
   /// Sélectionner les stocks disponibles pour une répartition automatique
-  /// 
+  ///
   /// Retourne une liste triée selon :
   /// 1. Priorité catégorie (actionnaire > adherent > producteur)
   /// 2. FIFO (date dépôt)
@@ -1206,7 +1525,7 @@ class VenteService {
   }) async {
     try {
       final db = await DatabaseInitializer.database;
-      
+
       // Construire la requête SQL
       // Note: campagne_id n'existe pas dans stock_depots
       // La campagne est une propriété de la vente, pas du stock
@@ -1216,26 +1535,28 @@ class VenteService {
         AND a.is_active = 1
         AND (a.statut IS NULL OR a.statut = 'actif')
       ''';
-      
+
       List<dynamic> whereArgs = [];
-      
+
       if (qualite != null) {
         whereClause += ' AND (sd.qualite = ? OR sd.qualite IS NULL)';
         whereArgs.add(qualite);
       }
-      
+
       // Construire la clause ORDER BY
       String orderByClause = '';
       List<dynamic> orderByArgs = [];
-      
-      if (adherentIdsPrioritaires != null && adherentIdsPrioritaires.isNotEmpty) {
+
+      if (adherentIdsPrioritaires != null &&
+          adherentIdsPrioritaires.isNotEmpty) {
         final placeholders = adherentIdsPrioritaires.map((e) => '?').join(',');
-        orderByClause = '''
+        orderByClause =
+            '''
           CASE WHEN sd.adherent_id IN ($placeholders) THEN 0 ELSE 1 END,
         ''';
         orderByArgs.addAll(adherentIdsPrioritaires);
       }
-      
+
       orderByClause += '''
         CASE 
           WHEN a.categorie = 'actionnaire' THEN 1
@@ -1244,9 +1565,10 @@ class VenteService {
         END,
         sd.date_depot ASC
       ''';
-      
+
       // Récupérer les dépôts disponibles avec informations adhérents
-      final result = await db.rawQuery('''
+      final result = await db.rawQuery(
+        '''
         SELECT 
           sd.id as depot_id,
           sd.adherent_id,
@@ -1261,29 +1583,35 @@ class VenteService {
         INNER JOIN adherents a ON sd.adherent_id = a.id
         WHERE $whereClause
         ORDER BY $orderByClause
-      ''', [...whereArgs, ...orderByArgs]);
-      
+      ''',
+        [...whereArgs, ...orderByArgs],
+      );
+
       // Filtrer par campagne après récupération si nécessaire
       // (en vérifiant que les dépôts n'ont pas été utilisés dans des ventes d'une autre campagne)
-      
+
       // Calculer les quantités disponibles (déduire les ventes)
       final stocksDisponibles = <Map<String, dynamic>>[];
-      
+
       for (final row in result) {
         final depotId = row['depot_id'] as int;
         final adherentId = row['adherent_id'] as int;
         final quantiteDepot = (row['quantite_depot'] as num).toDouble();
-        
+
         // Calculer les quantités déjà vendues depuis ce dépôt
-        final ventesResult = await db.rawQuery('''
+        final ventesResult = await db.rawQuery(
+          '''
           SELECT COALESCE(SUM(ABS(sm.quantite)), 0) as total_vendu
           FROM stock_mouvements sm
           WHERE sm.stock_depot_id = ? AND sm.type = 'vente'
-        ''', [depotId]);
-        
-        final quantiteVendue = (ventesResult.first['total_vendu'] as num?)?.toDouble() ?? 0.0;
+        ''',
+          [depotId],
+        );
+
+        final quantiteVendue =
+            (ventesResult.first['total_vendu'] as num?)?.toDouble() ?? 0.0;
         final quantiteDisponible = quantiteDepot - quantiteVendue;
-        
+
         if (quantiteDisponible > 0) {
           stocksDisponibles.add({
             'depot_id': depotId,
@@ -1298,7 +1626,7 @@ class VenteService {
           });
         }
       }
-      
+
       return stocksDisponibles;
     } catch (e) {
       throw Exception('Erreur lors de la sélection des stocks disponibles: $e');
@@ -1309,14 +1637,14 @@ class VenteService {
   Future<List<VenteAdherentModel>> getRepartitionVente(int venteId) async {
     try {
       final db = await DatabaseInitializer.database;
-      
+
       final result = await db.query(
         'vente_adherents',
         where: 'vente_id = ?',
         whereArgs: [venteId],
         orderBy: 'created_at ASC',
       );
-      
+
       return result.map((map) => VenteAdherentModel.fromMap(map)).toList();
     } catch (e) {
       throw Exception('Erreur lors de la récupération de la répartition: $e');
@@ -1327,8 +1655,9 @@ class VenteService {
   Future<List<Map<String, dynamic>>> getVentesByAdherent(int adherentId) async {
     try {
       final db = await DatabaseInitializer.database;
-      
-      final result = await db.rawQuery('''
+
+      final result = await db.rawQuery(
+        '''
         SELECT 
           v.*,
           va.poids_utilise,
@@ -1342,11 +1671,15 @@ class VenteService {
         INNER JOIN vente_adherents va ON va.vente_id = v.id
         WHERE va.adherent_id = ?
         ORDER BY v.date_vente DESC
-      ''', [adherentId]);
-      
+      ''',
+        [adherentId],
+      );
+
       return result;
     } catch (e) {
-      throw Exception('Erreur lors de la récupération des ventes par adhérent: $e');
+      throw Exception(
+        'Erreur lors de la récupération des ventes par adhérent: $e',
+      );
     }
   }
 }

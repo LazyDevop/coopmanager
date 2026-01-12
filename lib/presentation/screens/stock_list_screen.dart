@@ -398,9 +398,9 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                     ...stockViewModel.depots.map((depot) => Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
-                            leading: SizedBox(
+                            leading: const SizedBox(
                               width: 24,
-                              child: const Icon(Icons.inventory_2, color: Colors.brown),
+                              child: Icon(Icons.inventory_2, color: Colors.brown),
                             ),
                             title: Text(
                               '${depot.quantite.toStringAsFixed(2)} kg',

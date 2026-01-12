@@ -126,7 +126,7 @@ class DeleteConfirmationDialog extends StatelessWidget {
       ),
       title: Row(
         children: [
-          Icon(Icons.delete, color: AppTheme.errorColor),
+          const Icon(Icons.delete, color: AppTheme.errorColor),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

@@ -200,28 +200,28 @@ class AccountingService {
     
     if (dateDebut != null) {
       where = 'date_operation >= ?';
-      whereArgs!.add(dateDebut.toIso8601String());
+      whereArgs.add(dateDebut.toIso8601String());
     }
     
     if (dateFin != null) {
       where = where != null 
           ? '$where AND date_operation <= ?'
           : 'date_operation <= ?';
-      whereArgs!.add(dateFin.toIso8601String());
+      whereArgs.add(dateFin.toIso8601String());
     }
     
     if (typeJournal != null) {
       where = where != null
           ? '$where AND type_journal = ?'
           : 'type_journal = ?';
-      whereArgs!.add(typeJournal);
+      whereArgs.add(typeJournal);
     }
     
     if (sourceModule != null) {
       where = where != null
           ? '$where AND source_module = ?'
           : 'source_module = ?';
-      whereArgs!.add(sourceModule);
+      whereArgs.add(sourceModule);
     }
     
     final result = await db.query(

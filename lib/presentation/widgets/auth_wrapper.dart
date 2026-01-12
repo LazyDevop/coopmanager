@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../screens/login_screen.dart';
-import '../../config/routes/routes.dart';
 import '../../services/database/db_initializer.dart';
 import 'main_app_shell.dart';
 

@@ -1,14 +1,13 @@
 import '../document_generator_service.dart';
-import '../../data/models/document/document_model.dart';
+import '../../../data/models/document/document_model.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 /// Exemple d'utilisation du DocumentGeneratorService pour générer une facture
 class FactureDocumentExample {
   final DocumentGeneratorService _documentService;
 
-  FactureDocumentExample({
-    DocumentGeneratorService? documentService,
-  }) : _documentService = documentService ?? DocumentGeneratorService();
+  FactureDocumentExample({DocumentGeneratorService? documentService})
+    : _documentService = documentService ?? DocumentGeneratorService();
 
   /// Générer une facture de vente
   Future<DocumentModel> generateFactureVente({
@@ -33,7 +32,10 @@ class FactureDocumentExample {
               content: [
                 _buildInfoRow('Nom', factureData['client_nom'] ?? ''),
                 _buildInfoRow('Adresse', factureData['client_adresse'] ?? ''),
-                _buildInfoRow('Téléphone', factureData['client_telephone'] ?? ''),
+                _buildInfoRow(
+                  'Téléphone',
+                  factureData['client_telephone'] ?? '',
+                ),
               ],
             ),
             pw.SizedBox(height: 20),
@@ -43,7 +45,10 @@ class FactureDocumentExample {
               content: [
                 _buildInfoRow('Référence', factureReference),
                 _buildInfoRow('Date', factureData['date'] ?? ''),
-                _buildInfoRow('Montant total', '${factureData['montant_total']} FCFA'),
+                _buildInfoRow(
+                  'Montant total',
+                  '${factureData['montant_total']} FCFA',
+                ),
               ],
             ),
             pw.SizedBox(height: 20),
@@ -76,10 +81,7 @@ class FactureDocumentExample {
         children: [
           pw.Text(
             title,
-            style: pw.TextStyle(
-              fontSize: 12,
-              fontWeight: pw.FontWeight.bold,
-            ),
+            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 8),
           ...content,
@@ -101,10 +103,7 @@ class FactureDocumentExample {
             ),
           ),
           pw.Expanded(
-            child: pw.Text(
-              value,
-              style: pw.TextStyle(fontSize: 10),
-            ),
+            child: pw.Text(value, style: const pw.TextStyle(fontSize: 10)),
           ),
         ],
       ),
@@ -132,14 +131,16 @@ class FactureDocumentExample {
           ],
         ),
         // Lignes
-        ...articles.map((article) => pw.TableRow(
-              children: [
-                _buildTableCell(article['nom'] ?? ''),
-                _buildTableCell('${article['quantite']}'),
-                _buildTableCell('${article['prix']} FCFA'),
-                _buildTableCell('${article['total']} FCFA'),
-              ],
-            )),
+        ...articles.map(
+          (article) => pw.TableRow(
+            children: [
+              _buildTableCell(article['nom'] ?? ''),
+              _buildTableCell('${article['quantite']}'),
+              _buildTableCell('${article['prix']} FCFA'),
+              _buildTableCell('${article['total']} FCFA'),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -157,4 +158,3 @@ class FactureDocumentExample {
     );
   }
 }
-

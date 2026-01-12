@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
-import 'package:sqflite_common/sqlite_api.dart';
 import '../database/db_initializer.dart';
 import '../../data/models/user_model.dart';
 import '../../data/models/audit_log_model.dart';

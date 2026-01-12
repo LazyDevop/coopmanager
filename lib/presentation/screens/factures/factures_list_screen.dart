@@ -156,7 +156,7 @@ class _FacturesListScreenState extends State<FacturesListScreen> {
                 child: Consumer<AdherentViewModel>(
                   builder: (context, adherentViewModel, child) {
                     return DropdownButtonFormField<int?>(
-                      value: viewModel.filterAdherentId,
+                      initialValue: viewModel.filterAdherentId,
                       decoration: InputDecoration(
                         labelText: 'Adhérent',
                         border: OutlineInputBorder(
@@ -182,7 +182,7 @@ class _FacturesListScreenState extends State<FacturesListScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  value: viewModel.filterType,
+                  initialValue: viewModel.filterType,
                   decoration: InputDecoration(
                     labelText: 'Type',
                     border: OutlineInputBorder(
@@ -205,7 +205,7 @@ class _FacturesListScreenState extends State<FacturesListScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  value: viewModel.filterStatut,
+                  initialValue: viewModel.filterStatut,
                   decoration: InputDecoration(
                     labelText: 'Statut',
                     border: OutlineInputBorder(
@@ -326,9 +326,11 @@ class _FacturesListScreenState extends State<FacturesListScreen> {
                 ),
               ],
             ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
+            trailing: Wrap(
+              direction: Axis.vertical,
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              spacing: 4,
               children: [
                 Text(
                   '${numberFormat.format(facture.montantTotal)} FCFA',
@@ -342,7 +344,6 @@ class _FacturesListScreenState extends State<FacturesListScreen> {
                             : Colors.brown.shade700,
                   ),
                 ),
-                const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(

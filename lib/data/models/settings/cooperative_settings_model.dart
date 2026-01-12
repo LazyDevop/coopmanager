@@ -42,7 +42,7 @@ class CooperativeSettingsModel {
 
   factory CooperativeSettingsModel.fromMap(Map<String, dynamic> map) {
     // Gérer les valeurs null de manière sécurisée
-    String? _getString(String key, {String? defaultValue}) {
+    String? getString(String key, {String? defaultValue}) {
       final value = map[key];
       if (value == null) return defaultValue;
       if (value is String) return value;
@@ -50,7 +50,7 @@ class CooperativeSettingsModel {
     }
     
     // Helper pour convertir en int? de manière sécurisée
-    int? _getInt(String key) {
+    int? getInt(String key) {
       final value = map[key];
       if (value == null) return null;
       if (value is int) return value;
@@ -59,23 +59,23 @@ class CooperativeSettingsModel {
     }
     
     return CooperativeSettingsModel(
-      id: _getInt('id'),
-      raisonSociale: _getString('raison_sociale', defaultValue: 'Coopérative de Cacaoculteurs') ?? 'Coopérative de Cacaoculteurs',
-      sigle: _getString('sigle'),
-      formeJuridique: _getString('forme_juridique'),
-      numeroAgrement: _getString('numero_agrement'),
-      rccm: _getString('rccm'),
+      id: getInt('id'),
+      raisonSociale: getString('raison_sociale', defaultValue: 'Coopérative de Cacaoculteurs') ?? 'Coopérative de Cacaoculteurs',
+      sigle: getString('sigle'),
+      formeJuridique: getString('forme_juridique'),
+      numeroAgrement: getString('numero_agrement'),
+      rccm: getString('rccm'),
       dateCreation: map['date_creation'] != null && map['date_creation'] is String
           ? DateTime.tryParse(map['date_creation'] as String)
           : null,
-      adresse: _getString('adresse'),
-      region: _getString('region'),
-      departement: _getString('departement'),
-      telephone: _getString('telephone'),
-      email: _getString('email'),
-      devise: _getString('devise', defaultValue: 'XAF') ?? 'XAF',
-      langue: _getString('langue', defaultValue: 'FR') ?? 'FR',
-      logoPath: _getString('logo_path'),
+      adresse: getString('adresse'),
+      region: getString('region'),
+      departement: getString('departement'),
+      telephone: getString('telephone'),
+      email: getString('email'),
+      devise: getString('devise', defaultValue: 'XAF') ?? 'XAF',
+      langue: getString('langue', defaultValue: 'FR') ?? 'FR',
+      logoPath: getString('logo_path'),
       isActive: map['is_active'] != null 
           ? ((map['is_active'] is int && (map['is_active'] as int) == 1) ||
              (map['is_active'] is bool && map['is_active'] as bool))
@@ -83,7 +83,7 @@ class CooperativeSettingsModel {
       updatedAt: map['updated_at'] != null && map['updated_at'] is String
           ? DateTime.tryParse(map['updated_at'] as String)
           : null,
-      updatedBy: _getInt('updated_by'),
+      updatedBy: getInt('updated_by'),
     );
   }
 

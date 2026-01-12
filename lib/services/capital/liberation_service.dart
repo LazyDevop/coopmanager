@@ -54,7 +54,7 @@ class LiberationService {
         // Vérifier que le montant ne dépasse pas le capital souscrit
         if (nouveauTotal > souscription.montantSouscrit) {
           throw Exception(
-            'Le montant libéré (${nouveauTotal} FCFA) dépasse le capital souscrit (${souscription.montantSouscrit} FCFA)'
+            'Le montant libéré ($nouveauTotal FCFA) dépasse le capital souscrit (${souscription.montantSouscrit} FCFA)'
           );
         }
         
@@ -143,7 +143,7 @@ class LiberationService {
           action: 'CREATE_LIBERATION',
           entityType: 'liberations_capital',
           entityId: id,
-          details: 'Libération de ${montantLibere} FCFA pour souscription #$souscriptionId',
+          details: 'Libération de $montantLibere FCFA pour souscription #$souscriptionId',
         );
         
         await db.execute('COMMIT');

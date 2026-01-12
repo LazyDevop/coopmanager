@@ -360,7 +360,7 @@ class PermissionsMigration {
     for (final perm in permissions) {
       try {
         await db.insert('role_permissions', {
-          'id': 'rp-${roleId}-${perm['id']}',
+          'id': 'rp-$roleId-${perm['id']}',
           'role_id': roleId,
           'permission_id': perm['id'] as String,
           'granted': 1,
@@ -379,7 +379,7 @@ class PermissionsMigration {
         final perm = await db.query('permissions', where: 'code = ?', whereArgs: [code], limit: 1);
         if (perm.isNotEmpty) {
           await db.insert('role_permissions', {
-            'id': 'rp-${roleId}-${perm.first['id']}',
+            'id': 'rp-$roleId-${perm.first['id']}',
             'role_id': roleId,
             'permission_id': perm.first['id'] as String,
             'granted': 1,
@@ -435,7 +435,7 @@ class PermissionsMigration {
     for (final view in views) {
       try {
         await db.insert('role_ui_views', {
-          'id': 'ruv-${roleId}-${view['id']}',
+          'id': 'ruv-$roleId-${view['id']}',
           'role_id': roleId,
           'ui_view_id': view['id'] as String,
           'can_read': canRead ? 1 : 0,
@@ -456,7 +456,7 @@ class PermissionsMigration {
         final view = await db.query('ui_views', where: 'code = ?', whereArgs: [code], limit: 1);
         if (view.isNotEmpty) {
           await db.insert('role_ui_views', {
-            'id': 'ruv-${roleId}-${view.first['id']}',
+            'id': 'ruv-$roleId-${view.first['id']}',
             'role_id': roleId,
             'ui_view_id': view.first['id'] as String,
             'can_read': canRead ? 1 : 0,

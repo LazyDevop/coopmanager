@@ -1,7 +1,4 @@
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../../data/models/ecriture_capital_model.dart';
-import '../../data/models/journal_comptable_model.dart';
-import '../../data/models/capital_social_model.dart';
 import '../../data/models/compte_comptable_model.dart' show PlanComptesFusionne;
 import '../database/db_initializer.dart';
 import '../auth/audit_service.dart';

@@ -293,21 +293,21 @@ class ComptabiliteService {
     
     if (dateDebut != null) {
       where = 'date_ecriture >= ?';
-      whereArgs!.add(dateDebut.toIso8601String());
+      whereArgs.add(dateDebut.toIso8601String());
     }
     
     if (dateFin != null) {
       where = where != null 
           ? '$where AND date_ecriture <= ?'
           : 'date_ecriture <= ?';
-      whereArgs!.add(dateFin.toIso8601String());
+      whereArgs.add(dateFin.toIso8601String());
     }
     
     if (typeOperation != null) {
       where = where != null
           ? '$where AND type_operation = ?'
           : 'type_operation = ?';
-      whereArgs!.add(typeOperation);
+      whereArgs.add(typeOperation);
     }
     
     final result = await db.query(

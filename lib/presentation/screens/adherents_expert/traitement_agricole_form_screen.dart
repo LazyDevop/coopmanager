@@ -326,7 +326,7 @@ class _TraitementAgricoleFormScreenState extends State<TraitementAgricoleFormScr
                       children: [
                         // Sélection du champ
                         DropdownButtonFormField<ChampParcelleModel>(
-                      value: _selectedChamp,
+                      initialValue: _selectedChamp,
                       decoration: InputDecoration(
                         labelText: 'Champ *',
                         prefixIcon: const Icon(Icons.agriculture),
@@ -354,7 +354,7 @@ class _TraitementAgricoleFormScreenState extends State<TraitementAgricoleFormScr
 
                     // Type de traitement
                     DropdownButtonFormField<String>(
-                      value: _typeTraitement,
+                      initialValue: _typeTraitement,
                       decoration: InputDecoration(
                         labelText: 'Type de traitement *',
                         prefixIcon: const Icon(Icons.science),
@@ -430,7 +430,7 @@ class _TraitementAgricoleFormScreenState extends State<TraitementAgricoleFormScr
                         const SizedBox(width: 8),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: _uniteQuantite,
+                            initialValue: _uniteQuantite,
                             decoration: InputDecoration(
                               labelText: 'Unité',
                               border: OutlineInputBorder(

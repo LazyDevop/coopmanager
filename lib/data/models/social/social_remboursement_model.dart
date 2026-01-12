@@ -34,7 +34,7 @@ class SocialRemboursementModel {
   bool get isCaisse => source == 'CAISSE';
 
   factory SocialRemboursementModel.fromMap(Map<String, dynamic> map) {
-    int? _parseInt(dynamic value) {
+    int? parseInt(dynamic value) {
       if (value == null) return null;
       if (value is int) return value;
       if (value is String) return int.tryParse(value);
@@ -42,7 +42,7 @@ class SocialRemboursementModel {
       return null;
     }
 
-    double _parseDouble(dynamic value) {
+    double parseDouble(dynamic value) {
       if (value == null) return 0.0;
       if (value is double) return value;
       if (value is int) return value.toDouble();
@@ -51,13 +51,13 @@ class SocialRemboursementModel {
       return 0.0;
     }
 
-    String _parseStringRequired(dynamic value, String defaultValue) {
+    String parseStringRequired(dynamic value, String defaultValue) {
       if (value == null) return defaultValue;
       if (value is String) return value.isEmpty ? defaultValue : value;
       return value.toString();
     }
 
-    DateTime? _parseDateTime(dynamic value) {
+    DateTime? parseDateTime(dynamic value) {
       if (value == null) return null;
       if (value is DateTime) return value;
       if (value is String) {
@@ -71,15 +71,15 @@ class SocialRemboursementModel {
     }
 
     return SocialRemboursementModel(
-      id: _parseInt(map['id']),
-      aideId: _parseInt(map['aide_id']) ?? 0,
-      montant: _parseDouble(map['montant']),
-      dateRemboursement: _parseDateTime(map['date_remboursement']) ?? DateTime.now(),
-      source: _parseStringRequired(map['source'], 'CAISSE'),
-      recetteId: _parseInt(map['recette_id']),
+      id: parseInt(map['id']),
+      aideId: parseInt(map['aide_id']) ?? 0,
+      montant: parseDouble(map['montant']),
+      dateRemboursement: parseDateTime(map['date_remboursement']) ?? DateTime.now(),
+      source: parseStringRequired(map['source'], 'CAISSE'),
+      recetteId: parseInt(map['recette_id']),
       notes: map['notes']?.toString(),
-      createdAt: _parseDateTime(map['created_at']) ?? DateTime.now(),
-      createdBy: _parseInt(map['created_by']),
+      createdAt: parseDateTime(map['created_at']) ?? DateTime.now(),
+      createdBy: parseInt(map['created_by']),
     );
   }
 

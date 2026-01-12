@@ -1161,9 +1161,9 @@ class _AdherentDetailScreenState extends State<AdherentDetailScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'Paiement reçu',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -1186,7 +1186,7 @@ class _AdherentDetailScreenState extends State<AdherentDetailScreen>
                   ],
                 ),
                 const SizedBox(height: 12),
-                Divider(),
+                const Divider(),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1213,14 +1213,14 @@ class _AdherentDetailScreenState extends State<AdherentDetailScreen>
                   ],
                 ),
                 const SizedBox(height: 4),
-                Divider(),
+                const Divider(),
                 const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    const Text(
                       'Montant net:',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),

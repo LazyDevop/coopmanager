@@ -61,7 +61,7 @@ class CentralizeSettingsMigration {
       }
       
       final settings = coopSettings.first;
-      final uuid = const Uuid();
+      const uuid = Uuid();
       
       // Mapper les champs de coop_settings vers settings (category: cooperative)
       final cooperativeMappings = {

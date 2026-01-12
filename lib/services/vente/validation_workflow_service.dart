@@ -1,16 +1,5 @@
-/// Service de Workflow de Validation Multi-niveaux (V2)
-/// 
-/// Étapes :
-/// 1. Préparation (gestionnaire)
-/// 2. Validation Prix (superviseur)
-/// 3. Confirmation Finale (admin)
-/// 
-/// Journal de validation obligatoire
-
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../database/db_initializer.dart';
 import '../../data/models/validation_vente_model.dart';
-import '../../data/models/vente_model.dart';
 import '../auth/audit_service.dart';
 
 class ValidationWorkflowService {

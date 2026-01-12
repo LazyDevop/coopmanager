@@ -18,19 +18,19 @@ class DocumentSettingsModel {
 
   factory DocumentSettingsModel.fromMap(Map<String, dynamic> map) {
     // Helper functions for safe type conversion
-    String? _parseString(dynamic value) {
+    String? parseString(dynamic value) {
       if (value == null) return null;
       if (value is String) return value.isEmpty ? null : value;
       return value.toString();
     }
 
-    String _parseStringRequired(dynamic value, String defaultValue) {
+    String parseStringRequired(dynamic value, String defaultValue) {
       if (value == null) return defaultValue;
       if (value is String) return value.isEmpty ? defaultValue : value;
       return value.toString();
     }
 
-    bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    bool parseBool(dynamic value, {bool defaultValue = false}) {
       if (value == null) return defaultValue;
       if (value is bool) return value;
       if (value is int) return value == 1;
@@ -54,11 +54,11 @@ class DocumentSettingsModel {
 
     return DocumentSettingsModel(
       typesDocuments: typesDocs,
-      mentionsLegales: _parseString(map['mentions_legales']),
-      signatureAutomatique: _parseBool(map['signature_automatique']),
-      qrCodeActif: _parseBool(map['qr_code_actif']),
-      qrCodeFormat: _parseStringRequired(map['qr_code_format'], 'url'),
-      qrCodeUrlBase: _parseString(map['qr_code_url_base']),
+      mentionsLegales: parseString(map['mentions_legales']),
+      signatureAutomatique: parseBool(map['signature_automatique']),
+      qrCodeActif: parseBool(map['qr_code_actif']),
+      qrCodeFormat: parseStringRequired(map['qr_code_format'], 'url'),
+      qrCodeUrlBase: parseString(map['qr_code_url_base']),
     );
   }
 
@@ -113,19 +113,19 @@ class DocumentTypeConfig {
 
   factory DocumentTypeConfig.fromMap(Map<String, dynamic> map) {
     // Helper functions for safe type conversion
-    String _parseStringRequired(dynamic value, String defaultValue) {
+    String parseStringRequired(dynamic value, String defaultValue) {
       if (value == null) return defaultValue;
       if (value is String) return value.isEmpty ? defaultValue : value;
       return value.toString();
     }
 
-    String? _parseString(dynamic value) {
+    String? parseString(dynamic value) {
       if (value == null) return null;
       if (value is String) return value.isEmpty ? null : value;
       return value.toString();
     }
 
-    bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    bool parseBool(dynamic value, {bool defaultValue = false}) {
       if (value == null) return defaultValue;
       if (value is bool) return value;
       if (value is int) return value == 1;
@@ -138,10 +138,10 @@ class DocumentTypeConfig {
     }
 
     return DocumentTypeConfig(
-      prefixe: _parseStringRequired(map['prefixe'], ''),
-      formatNumero: _parseStringRequired(map['format_numero'], ''),
-      actif: _parseBool(map['actif'], defaultValue: true),
-      template: _parseString(map['template']),
+      prefixe: parseStringRequired(map['prefixe'], ''),
+      formatNumero: parseStringRequired(map['format_numero'], ''),
+      actif: parseBool(map['actif'], defaultValue: true),
+      template: parseString(map['template']),
     );
   }
 

@@ -245,7 +245,7 @@ class _CommissionFormScreenState extends State<CommissionFormScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<CommissionTypeApplication>(
-              value: _typeApplication,
+              initialValue: _typeApplication,
               decoration: const InputDecoration(
                 labelText: 'Type d\'application *',
               ),

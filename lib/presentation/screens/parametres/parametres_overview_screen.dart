@@ -663,44 +663,44 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                     _buildInfoRow(
                       icon: Icons.currency_exchange,
                       label: 'Devise',
-                      value: generalSettings!.devise,
+                      value: generalSettings.devise,
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.calendar_view_day,
                       label: 'Format de date',
-                      value: generalSettings!.dateFormat,
+                      value: generalSettings.dateFormat,
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.cloud_off,
                       label: 'Mode hors ligne',
-                      value: generalSettings!.offlineMode ? 'Activé' : 'Désactivé',
+                      value: generalSettings.offlineMode ? 'Activé' : 'Désactivé',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.timer,
                       label: 'Durée de session',
-                      value: '${generalSettings!.sessionDurationMinutes} minutes',
+                      value: '${generalSettings.sessionDurationMinutes} minutes',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.notifications,
                       label: 'Notifications',
-                      value: generalSettings!.notificationsEnabled ? 'Activées' : 'Désactivées',
+                      value: generalSettings.notificationsEnabled ? 'Activées' : 'Désactivées',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.palette,
                       label: 'Thème',
-                      value: generalSettings!.uiTheme == 'light' ? 'Clair' : 'Sombre',
+                      value: generalSettings.uiTheme == 'light' ? 'Clair' : 'Sombre',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.backup,
                       label: 'Sauvegarde automatique',
-                      value: generalSettings!.autoBackup 
-                          ? 'Activée (tous les ${generalSettings!.backupIntervalDays} jours)'
+                      value: generalSettings.autoBackup 
+                          ? 'Activée (tous les ${generalSettings.backupIntervalDays} jours)'
                           : 'Désactivée',
                     ),
                   ] else
@@ -733,36 +733,36 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                     _buildInfoRow(
                       icon: Icons.monetization_on,
                       label: 'Valeur d\'une part',
-                      value: '${capitalSettings!.valeurPart.toStringAsFixed(0)} FCFA',
+                      value: '${capitalSettings.valeurPart.toStringAsFixed(0)} FCFA',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.numbers,
                       label: 'Nombre de parts',
-                      value: capitalSettings!.nombreMaxParts != null
-                          ? '${capitalSettings!.nombreMinParts} - ${capitalSettings!.nombreMaxParts}'
-                          : 'Minimum: ${capitalSettings!.nombreMinParts}',
+                      value: capitalSettings.nombreMaxParts != null
+                          ? '${capitalSettings.nombreMinParts} - ${capitalSettings.nombreMaxParts}'
+                          : 'Minimum: ${capitalSettings.nombreMinParts}',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.lock,
                       label: 'Libération obligatoire',
-                      value: capitalSettings!.liberationObligatoire ? 'Oui' : 'Non',
+                      value: capitalSettings.liberationObligatoire ? 'Oui' : 'Non',
                     ),
-                    if (capitalSettings!.delaiLiberationJours != null) ...[
+                    if (capitalSettings.delaiLiberationJours != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
                         icon: Icons.schedule,
                         label: 'Délai de libération',
-                        value: '${capitalSettings!.delaiLiberationJours} jours',
+                        value: '${capitalSettings.delaiLiberationJours} jours',
                       ),
                     ],
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.trending_up,
                       label: 'Dividendes',
-                      value: capitalSettings!.dividendesActives 
-                          ? 'Actifs${capitalSettings!.tauxDividende != null ? ' (${(capitalSettings!.tauxDividende! * 100).toStringAsFixed(2)}%)' : ''}'
+                      value: capitalSettings.dividendesActives 
+                          ? 'Actifs${capitalSettings.tauxDividende != null ? ' (${(capitalSettings.tauxDividende! * 100).toStringAsFixed(2)}%)' : ''}'
                           : 'Inactifs',
                     ),
                   ] else
@@ -792,40 +792,40 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (accountingSettings != null) ...[
-                    if (accountingSettings!.exerciceActif != null) ...[
+                    if (accountingSettings.exerciceActif != null) ...[
                       _buildInfoRow(
                         icon: Icons.event,
                         label: 'Exercice actif',
-                        value: accountingSettings!.exerciceActif!,
+                        value: accountingSettings.exerciceActif!,
                       ),
                       const SizedBox(height: 12),
                     ],
                     _buildInfoRow(
                       icon: Icons.account_balance_wallet,
                       label: 'Solde initial caisse',
-                      value: '${accountingSettings!.soldeInitialCaisse.toStringAsFixed(0)} FCFA',
+                      value: '${accountingSettings.soldeInitialCaisse.toStringAsFixed(0)} FCFA',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.account_balance,
                       label: 'Solde initial banque',
-                      value: '${accountingSettings!.soldeInitialBanque.toStringAsFixed(0)} FCFA',
+                      value: '${accountingSettings.soldeInitialBanque.toStringAsFixed(0)} FCFA',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.percent,
                       label: 'Taux frais de gestion',
-                      value: '${(accountingSettings!.tauxFraisGestion * 100).toStringAsFixed(2)}%',
+                      value: '${(accountingSettings.tauxFraisGestion * 100).toStringAsFixed(2)}%',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.savings,
                       label: 'Taux réserve',
-                      value: '${(accountingSettings!.tauxReserve * 100).toStringAsFixed(2)}%',
+                      value: '${(accountingSettings.tauxReserve * 100).toStringAsFixed(2)}%',
                     ),
-                    if (accountingSettings!.compteCaisse != null || 
-                        accountingSettings!.compteBanque != null ||
-                        accountingSettings!.compteVente != null) ...[
+                    if (accountingSettings.compteCaisse != null || 
+                        accountingSettings.compteBanque != null ||
+                        accountingSettings.compteVente != null) ...[
                       const SizedBox(height: 16),
                       const Divider(),
                       const SizedBox(height: 12),
@@ -838,26 +838,26 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      if (accountingSettings!.compteCaisse != null)
+                      if (accountingSettings.compteCaisse != null)
                         _buildInfoRow(
                           icon: Icons.account_balance_wallet,
                           label: 'Compte caisse',
-                          value: accountingSettings!.compteCaisse!,
+                          value: accountingSettings.compteCaisse!,
                         ),
-                      if (accountingSettings!.compteBanque != null) ...[
+                      if (accountingSettings.compteBanque != null) ...[
                         const SizedBox(height: 12),
                         _buildInfoRow(
                           icon: Icons.account_balance,
                           label: 'Compte banque',
-                          value: accountingSettings!.compteBanque!,
+                          value: accountingSettings.compteBanque!,
                         ),
                       ],
-                      if (accountingSettings!.compteVente != null) ...[
+                      if (accountingSettings.compteVente != null) ...[
                         const SizedBox(height: 12),
                         _buildInfoRow(
                           icon: Icons.shopping_cart,
                           label: 'Compte vente',
-                          value: accountingSettings!.compteVente!,
+                          value: accountingSettings.compteVente!,
                         ),
                       ],
                     ],
@@ -891,29 +891,29 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                     _buildInfoRow(
                       icon: Icons.arrow_downward,
                       label: 'Prix minimum cacao',
-                      value: '${salesSettings!.prixMinimumCacao.toStringAsFixed(0)} FCFA/kg',
+                      value: '${salesSettings.prixMinimumCacao.toStringAsFixed(0)} FCFA/kg',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.arrow_upward,
                       label: 'Prix maximum cacao',
-                      value: '${salesSettings!.prixMaximumCacao.toStringAsFixed(0)} FCFA/kg',
+                      value: '${salesSettings.prixMaximumCacao.toStringAsFixed(0)} FCFA/kg',
                     ),
-                    if (salesSettings!.prixDuJour != null) ...[
+                    if (salesSettings.prixDuJour != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
                         icon: Icons.today,
                         label: 'Prix du jour',
-                        value: '${salesSettings!.prixDuJour!.toStringAsFixed(0)} FCFA/kg',
+                        value: '${salesSettings.prixDuJour!.toStringAsFixed(0)} FCFA/kg',
                       ),
                     ],
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.verified,
                       label: 'Mode validation prix',
-                      value: salesSettings!.modeValidationPrix == 'auto' 
+                      value: salesSettings.modeValidationPrix == 'auto' 
                           ? 'Automatique'
-                          : salesSettings!.modeValidationPrix == 'manuel'
+                          : salesSettings.modeValidationPrix == 'manuel'
                               ? 'Manuel'
                               : 'Validation requise',
                     ),
@@ -921,27 +921,27 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                     _buildInfoRow(
                       icon: Icons.percent,
                       label: 'Commission coopérative',
-                      value: '${(salesSettings!.commissionCooperative * 100).toStringAsFixed(2)}%',
+                      value: '${(salesSettings.commissionCooperative * 100).toStringAsFixed(2)}%',
                     ),
-                    if (salesSettings!.retenuesAutomatiques.isNotEmpty) ...[
+                    if (salesSettings.retenuesAutomatiques.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
                         icon: Icons.auto_fix_high,
                         label: 'Retenues automatiques',
-                        value: salesSettings!.retenuesAutomatiques.join(', '),
+                        value: salesSettings.retenuesAutomatiques.join(', '),
                       ),
                     ],
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.warning,
                       label: 'Alerte prix hors plage',
-                      value: salesSettings!.alertePrixHorsPlage ? 'Activée' : 'Désactivée',
+                      value: salesSettings.alertePrixHorsPlage ? 'Activée' : 'Désactivée',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.history,
                       label: 'Historique des prix',
-                      value: salesSettings!.historiquePrixActif ? 'Actif' : 'Inactif',
+                      value: salesSettings.historiquePrixActif ? 'Actif' : 'Inactif',
                     ),
                   ] else
                     Center(
@@ -974,17 +974,17 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                     _buildInfoRow(
                       icon: Icons.edit,
                       label: 'Signature automatique',
-                      value: documentSettings!.signatureAutomatique ? 'Activée' : 'Désactivée',
+                      value: documentSettings.signatureAutomatique ? 'Activée' : 'Désactivée',
                     ),
                     // Mentions légales
-                    if (documentSettings!.mentionsLegales != null && documentSettings!.mentionsLegales!.isNotEmpty) ...[
+                    if (documentSettings.mentionsLegales != null && documentSettings.mentionsLegales!.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
                         icon: Icons.gavel,
                         label: 'Mentions légales',
-                        value: documentSettings!.mentionsLegales!.length > 50
-                            ? '${documentSettings!.mentionsLegales!.substring(0, 50)}...'
-                            : documentSettings!.mentionsLegales!,
+                        value: documentSettings.mentionsLegales!.length > 50
+                            ? '${documentSettings.mentionsLegales!.substring(0, 50)}...'
+                            : documentSettings.mentionsLegales!,
                       ),
                     ],
                     // QR Code
@@ -992,26 +992,26 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                     _buildInfoRow(
                       icon: Icons.qr_code,
                       label: 'QR Code',
-                      value: documentSettings!.qrCodeActif ? 'Activé' : 'Désactivé',
+                      value: documentSettings.qrCodeActif ? 'Activé' : 'Désactivé',
                     ),
-                    if (documentSettings!.qrCodeActif) ...[
+                    if (documentSettings.qrCodeActif) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
                         icon: Icons.format_align_left,
                         label: 'Format QR Code',
-                        value: documentSettings!.qrCodeFormat ?? 'url',
+                        value: documentSettings.qrCodeFormat ?? 'url',
                       ),
-                      if (documentSettings!.qrCodeUrlBase != null) ...[
+                      if (documentSettings.qrCodeUrlBase != null) ...[
                         const SizedBox(height: 12),
                         _buildInfoRow(
                           icon: Icons.link,
                           label: 'URL de base',
-                          value: documentSettings!.qrCodeUrlBase!,
+                          value: documentSettings.qrCodeUrlBase!,
                         ),
                       ],
                     ],
                     // Types de documents
-                    if (documentSettings!.typesDocuments.isNotEmpty) ...[
+                    if (documentSettings.typesDocuments.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       const Divider(),
                       const SizedBox(height: 12),
@@ -1024,7 +1024,7 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ...documentSettings!.typesDocuments.entries.map((entry) => Padding(
+                      ...documentSettings.typesDocuments.entries.map((entry) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: Container(
                               padding: const EdgeInsets.all(12),
@@ -1179,9 +1179,9 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                     _buildInfoRow(
                       icon: Icons.verified_user,
                       label: 'Validation requise',
-                      value: socialSettings!.validationRequise ? 'Oui' : 'Non',
+                      value: socialSettings.validationRequise ? 'Oui' : 'Non',
                     ),
-                    if (socialSettings!.typesAides.isNotEmpty) ...[
+                    if (socialSettings.typesAides.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       const Divider(),
                       const SizedBox(height: 12),
@@ -1194,7 +1194,7 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ...socialSettings!.typesAides.map((aide) => Padding(
+                      ...socialSettings.typesAides.map((aide) => Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Row(
                               children: [
@@ -1217,7 +1217,7 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                                   ),
                                 ),
                                 if (aide.actif)
-                                  Icon(Icons.check_circle, size: 16, color: Colors.green),
+                                  const Icon(Icons.check_circle, size: 16, color: Colors.green),
                               ],
                             ),
                           )),
@@ -1249,7 +1249,7 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (moduleSettings != null) ...[
-                    if (moduleSettings!.modulesActives.isNotEmpty) ...[
+                    if (moduleSettings.modulesActives.isNotEmpty) ...[
                       const Text(
                         'Modules actifs',
                         style: TextStyle(
@@ -1262,7 +1262,7 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: moduleSettings!.modulesActives.entries
+                        children: moduleSettings.modulesActives.entries
                             .where((entry) => entry.value)
                             .map((entry) => Chip(
                                   label: Text(entry.key),
@@ -1278,40 +1278,40 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
                     _buildInfoRow(
                       icon: Icons.lock,
                       label: 'Verrouillage paramétrage',
-                      value: moduleSettings!.verrouillageParametrage ? 'Activé' : 'Désactivé',
+                      value: moduleSettings.verrouillageParametrage ? 'Activé' : 'Désactivé',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.history,
                       label: 'Logs d\'audit',
-                      value: moduleSettings!.auditLogsActif ? 'Actifs' : 'Inactifs',
+                      value: moduleSettings.auditLogsActif ? 'Actifs' : 'Inactifs',
                     ),
-                    if (moduleSettings!.auditLogsActif) ...[
+                    if (moduleSettings.auditLogsActif) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
                         icon: Icons.schedule,
                         label: 'Durée conservation logs',
-                        value: '${moduleSettings!.dureeConservationLogsJours} jours',
+                        value: '${moduleSettings.dureeConservationLogsJours} jours',
                       ),
                     ],
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.verified_user,
                       label: 'Authentification 2FA',
-                      value: moduleSettings!.authentificationDoubleFacteur ? 'Activée' : 'Désactivée',
+                      value: moduleSettings.authentificationDoubleFacteur ? 'Activée' : 'Désactivée',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Icons.timer,
                       label: 'Durée de session',
-                      value: '${moduleSettings!.dureeSessionMinutes} minutes',
+                      value: '${moduleSettings.dureeSessionMinutes} minutes',
                     ),
-                    if (moduleSettings!.ipAutorisees != null && moduleSettings!.ipAutorisees!.isNotEmpty) ...[
+                    if (moduleSettings.ipAutorisees != null && moduleSettings.ipAutorisees!.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
                         icon: Icons.computer,
                         label: 'IP autorisées',
-                        value: '${moduleSettings!.ipAutorisees!.length} adresse(s)',
+                        value: '${moduleSettings.ipAutorisees!.length} adresse(s)',
                       ),
                     ],
                   ] else
@@ -1330,11 +1330,11 @@ class _ParametresOverviewScreenState extends State<ParametresOverviewScreen> {
           // Bouton pour accéder aux paramètres détaillés
           Card(
             color: Colors.brown.shade50,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+            child: const Padding(
+              padding: EdgeInsets.all(16),
               child: Column(
                 children: [
-                  const Text(
+                  Text(
                     'Pour modifier ces paramètres, utilisez le menu de navigation',
                     style: TextStyle(
                       fontSize: 14,

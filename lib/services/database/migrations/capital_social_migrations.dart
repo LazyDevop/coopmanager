@@ -1,8 +1,8 @@
 /// Migrations de base de données pour le Module Capital Social (V18)
-/// 
+///
 /// Ces migrations ajoutent :
 /// - Table actionnaires (adhérents actionnaires)
-/// - Table parts_sociales (valeur des parts)
+/// - Table parts_sociales_valeurs (valeur des parts)
 /// - Table souscriptions_capital (souscriptions de parts)
 /// - Table liberations_capital (libérations de capital)
 /// - Table mouvements_capital (historique des mouvements)
@@ -14,28 +14,28 @@ class CapitalSocialMigrations {
   static Future<void> migrateToV18(Database db) async {
     try {
       print('🔄 Début de la migration vers V18 (Module Capital Social)...');
-      
-      // 1. Créer la table parts_sociales (doit être créée en premier)
+
+      // 1. Créer la table parts_sociales_valeurs (doit être créée en premier)
       await _createPartsSocialesTable(db);
-      
+
       // 2. Créer la table actionnaires
       await _createActionnairesTable(db);
-      
+
       // 3. Créer la table souscriptions_capital
       await _createSouscriptionsCapitalTable(db);
-      
+
       // 4. Créer la table liberations_capital
       await _createLiberationsCapitalTable(db);
-      
+
       // 5. Créer la table mouvements_capital
       await _createMouvementsCapitalTable(db);
-      
+
       // 6. Insérer la valeur de part par défaut
       await _insertDefaultPartSociale(db);
-      
+
       // 7. Créer les index pour performance
       await _createIndexes(db);
-      
+
       print('✅ Migration vers V18 (Module Capital Social) réussie');
     } catch (e) {
       print('❌ Erreur lors de la migration vers V18: $e');
@@ -43,10 +43,10 @@ class CapitalSocialMigrations {
     }
   }
 
-  /// Créer la table parts_sociales
+  /// Créer la table parts_sociales_valeurs
   static Future<void> _createPartsSocialesTable(Database db) async {
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS parts_sociales (
+      CREATE TABLE IF NOT EXISTS parts_sociales_valeurs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         valeur_part REAL NOT NULL,
         devise TEXT NOT NULL DEFAULT 'FCFA',
@@ -57,7 +57,7 @@ class CapitalSocialMigrations {
         FOREIGN KEY (created_by) REFERENCES users(id)
       )
     ''');
-    print('✅ Table parts_sociales créée');
+    print('✅ Table parts_sociales_valeurs créée');
   }
 
   /// Créer la table actionnaires
@@ -157,22 +157,19 @@ class CapitalSocialMigrations {
     try {
       // Vérifier si une part active existe déjà
       final existing = await db.query(
-        'parts_sociales',
+        'parts_sociales_valeurs',
         where: 'active = 1',
         limit: 1,
       );
 
       if (existing.isEmpty) {
-        await db.insert(
-          'parts_sociales',
-          {
-            'valeur_part': 5000.0, // Valeur par défaut : 5000 FCFA
-            'devise': 'FCFA',
-            'date_effet': DateTime.now().toIso8601String(),
-            'active': 1,
-            'created_at': DateTime.now().toIso8601String(),
-          },
-        );
+        await db.insert('parts_sociales_valeurs', {
+          'valeur_part': 5000.0, // Valeur par défaut : 5000 FCFA
+          'devise': 'FCFA',
+          'date_effet': DateTime.now().toIso8601String(),
+          'active': 1,
+          'created_at': DateTime.now().toIso8601String(),
+        });
         print('✅ Valeur de part par défaut insérée (5000 FCFA)');
       }
     } catch (e) {
@@ -229,4 +226,3 @@ class CapitalSocialMigrations {
     print('✅ Index créés');
   }
 }
-

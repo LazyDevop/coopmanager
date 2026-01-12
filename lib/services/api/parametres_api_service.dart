@@ -1,6 +1,5 @@
 import '../api/api_client.dart';
 import '../../data/models/parametres_cooperative_model.dart';
-import '../api/api_exception.dart';
 
 /// Service API pour les paramètres
 class ParametresApiService {

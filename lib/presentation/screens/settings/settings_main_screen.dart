@@ -40,7 +40,7 @@ class _SettingsMainScreenState extends State<SettingsMainScreen> {
     SettingsMenuItem(
       title: 'Vue d\'ensemble',
       icon: Icons.dashboard,
-      screen: ParametresOverviewScreen(
+      screen: const ParametresOverviewScreen(
         onNavigateToTab: null, // Pas de TabController ici
       ),
       category: 'overview',
@@ -168,7 +168,7 @@ class _SettingsMainScreenState extends State<SettingsMainScreen> {
                 Container(
                   width: 280,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceVariant,
+                    color: theme.colorScheme.surfaceContainerHighest,
                     border: Border(
                       right: BorderSide(
                         color: theme.colorScheme.outline.withOpacity(0.2),

@@ -20,9 +20,9 @@ class DashboardLayoutExample extends StatelessWidget {
   Widget build(BuildContext context) {
     // Le DashboardLayout gère tout le layout (sidebar + header)
     // La page retourne uniquement son contenu
-    return DashboardLayout(
+    return const DashboardLayout(
       currentRoute: AppRoutes.dashboard,
-      child: const EnhancedDashboardScreen(),
+      child: EnhancedDashboardScreen(),
     );
   }
 }

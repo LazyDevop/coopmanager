@@ -1,19 +1,8 @@
-/// Service d'intégration Adhérents ↔ Ventes
-/// 
-/// Gère toute la logique de couplage entre les modules Adhérents et Ventes :
-/// - Validation des adhérents avant vente
-/// - Répartition automatique par adhérent
-/// - Calcul différencié selon catégorie
-/// - Traçabilité complète
-
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../database/db_initializer.dart';
 import '../auth/audit_service.dart';
 import '../notification/notification_service.dart';
 import '../../data/models/adherent_model.dart';
-import '../../data/models/vente_model.dart';
 import '../../data/models/vente_adherent_model.dart';
-import '../../data/models/stock_model.dart';
 import '../../data/models/recette_model.dart';
 import '../../config/app_config.dart';
 import '../recette/recette_service.dart';

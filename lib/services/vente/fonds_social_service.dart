@@ -1,12 +1,5 @@
-/// Service de Gestion du Fonds Social (V2)
-/// 
-/// Gestion de l'impact social avec pourcentage ou montant affecté au fonds social
-/// Affichage sur facture et écriture comptable automatique
-
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../database/db_initializer.dart';
 import '../../data/models/fonds_social_model.dart';
-import '../../data/models/vente_model.dart';
 import '../comptabilite/comptabilite_service.dart';
 import '../auth/audit_service.dart';
 

@@ -344,7 +344,7 @@ class _FondsSocialScreenState extends State<FondsSocialScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  value: selectedSource,
+                  initialValue: selectedSource,
                   decoration: const InputDecoration(
                     labelText: 'Source',
                     border: OutlineInputBorder(),
@@ -361,7 +361,7 @@ class _FondsSocialScreenState extends State<FondsSocialScreen> {
                 if (selectedSource == 'vente') ...[
                   const SizedBox(height: 16),
                   DropdownButtonFormField<int?>(
-                    value: selectedVenteId,
+                    initialValue: selectedVenteId,
                     decoration: const InputDecoration(
                       labelText: 'Vente',
                       border: OutlineInputBorder(),
@@ -425,10 +425,10 @@ class _FondsSocialScreenState extends State<FondsSocialScreen> {
               onPressed: () async {
                 if (descriptionController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Description requise'),
+                    const SnackBar(
+                      content: Text('Description requise'),
                       backgroundColor: AppTheme.errorColor,
-                      duration: const Duration(seconds: 3),
+                      duration: Duration(seconds: 3),
                     ),
                   );
                   return;
@@ -460,20 +460,20 @@ class _FondsSocialScreenState extends State<FondsSocialScreen> {
                   // Contribution manuelle
                   if (montantController.text.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Montant requis'),
+                      const SnackBar(
+                        content: Text('Montant requis'),
                         backgroundColor: AppTheme.errorColor,
-                        duration: const Duration(seconds: 3),
+                        duration: Duration(seconds: 3),
                       ),
                     );
                     return;
                   }
                   // TODO: Implémenter création contribution manuelle dans ViewModel
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Contribution manuelle à implémenter'),
+                    const SnackBar(
+                      content: Text('Contribution manuelle à implémenter'),
                       backgroundColor: AppTheme.infoColor,
-                      duration: const Duration(seconds: 3),
+                      duration: Duration(seconds: 3),
                     ),
                   );
                   return;
@@ -483,10 +483,10 @@ class _FondsSocialScreenState extends State<FondsSocialScreen> {
                   Navigator.pop(context);
                   if (success) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Contribution créée avec succès'),
+                      const SnackBar(
+                        content: Text('Contribution créée avec succès'),
                         backgroundColor: AppTheme.successColor,
-                        duration: const Duration(seconds: 3),
+                        duration: Duration(seconds: 3),
                       ),
                     );
                   } else {
